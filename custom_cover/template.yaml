@@ -1,0 +1,48 @@
+- platform: template
+  covers:
+    buro_custom:
+      friendly_name: "Rollladen Büro Custom"
+      device_class: shutter
+      position_template: 0 #"{{ states('sensor.cover_buro_optimistic_position') }}"
+      open_cover:
+        - service: cover.open_cover
+          target:
+            entity_id: cover.buro
+      close_cover:
+        - service: cover.close_cover
+          target:
+            entity_id: cover.buro
+      stop_cover:
+        - service: cover.stop_cover
+          target:
+            entity_id: cover.buro
+      set_cover_position:
+        - service: cover.set_cover_position
+          target:
+            entity_id:
+              - cover.buro
+          data:
+            position: "{{position}}"
+    linus_sud_custom:
+      friendly_name: "Rollladen Linus Süd Custom"
+      device_class: shutter
+      position_template: 0 #"{{ states('sensor.cover_linus_sud_optimistic_position') }}"
+      open_cover:
+        - service: cover.open_cover
+          target:
+            entity_id: cover.linus_sud
+      close_cover:
+        - service: cover.close_cover
+          target:
+            entity_id: cover.linus_sud
+      stop_cover:
+        - service: cover.stop_cover
+          target:
+            entity_id: cover.linus_sud
+      set_cover_position:
+        - service: cover.set_cover_position
+          target:
+            entity_id:
+              - cover.linus_sud
+          data:
+            position: "{{position}}"

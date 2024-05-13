@@ -1,0 +1,411 @@
+# Räume
+# 1 - Diele EG
+# 2 - Essen/Wohnen
+# 3 - Büro
+# 4 - Schlafen
+# 5 - Kind 1 - Linus
+# 6 - Kind 2 - Erik
+# 7 - WC/DU EG
+# 8 - Bad OG
+
+- name: WGT
+  type: tcp
+  host: !secret wgt_ip
+  port: !secret wgt_port
+
+  sensors:
+    - name: "Außentemperatur"
+      unit_of_measurement: "°C"
+      slave: 1
+      device_class: temperature
+      state_class: measurement
+      address: 209
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur Schlafzimmer"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 363
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur Büro"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 362
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur Diele"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 360
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur Wohnzimmer"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 361
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur WC EG"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 366
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur Bad OG"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 367
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur Erik"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 365
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur Linus-Henry"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 364
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Betriebsart WGT"
+      slave: 1
+      address: 100
+      data_type: int16
+    - name: "Manuelle Luftstufe WGT"
+      slave: 1
+      address: 101
+      data_type: int16
+    - name: "Aktuelle Luftstufe WGT"
+      slave: 1
+      address: 102
+      data_type: int16
+    - name: "Luftleistung Zuluft WGT"
+      unit_of_measurement: "%"
+      slave: 1
+      address: 142
+      data_type: int16
+    - name: "Luftleistung Abluft WGT"
+      unit_of_measurement: "%"
+      slave: 1
+      address: 143
+      data_type: int16
+    - name: "Drehzahl Zuluft WGT"
+      unit_of_measurement: "rpm"
+      slave: 1
+      address: 144
+      data_type: int16
+    - name: "Drehzahl Abluft WGT"
+      unit_of_measurement: "rpm"
+      slave: 1
+      address: 145
+      data_type: int16
+    - name: "Gerätefilter WGT reinigen"
+      slave: 1
+      address: 245
+      data_type: int16
+    - name: "Gerätefilter WGT Restlaufzeit"
+      slave: 1
+      address: 265
+      data_type: int16
+    - name: "Vorgelagerter Filter WGT reinigen"
+      slave: 1
+      address: 246
+      data_type: int16
+    - name: "Vorgelagerter Filter WGT Restlaufzeit"
+      unit_of_measurement: "Tage"
+      slave: 1
+      address: 263
+      data_type: int16
+    - name: "Temperatur nach EWT"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 200
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur nach VHR"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 201
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur vor NE"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 202
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur nach NE"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 203
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur Abluft"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 204
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur im WT"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 205
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur Verdampfer"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 206
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Temperatur Kondensator"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 207
+      scale: 0.1
+      precision: 1
+      data_type: int16
+    - name: "Stoßlüften Restlaufzeit"
+      unit_of_measurement: "Min"
+      slave: 1
+      address: 112
+      data_type: int16
+    - name: "Zusatzheizung aktiv Diele"
+      slave: 1
+      address: 460
+      data_type: int16
+    - name: "Zusatzheizung aktiv Wohnzimmer"
+      slave: 1
+      address: 461
+      data_type: int16
+    - name: "Zusatzheizung aktiv Büro"
+      slave: 1
+      address: 462
+      data_type: int16
+    - name: "Zusatzheizung aktiv Schlafzimmer"
+      slave: 1
+      address: 463
+      data_type: int16
+    - name: "Zusatzheizung aktiv Linus"
+      slave: 1
+      address: 464
+      data_type: int16
+    - name: "Zusatzheizung aktiv Erik"
+      slave: 1
+      address: 465
+      data_type: int16
+    - name: "Zusatzheizung aktiv WC EG"
+      slave: 1
+      address: 466
+      data_type: int16
+    - name: "Zusatzheizung aktiv Bad OG"
+      slave: 1
+      address: 467
+      data_type: int16
+    - name: "Status Waermepumpe WGT"
+      slave: 1
+      address: 114
+      data_type: int16
+    - name: "EVU-Sperre WGT"
+      slave: 1
+      address: 251
+      data_type: int16
+
+  switches:
+    - name: "Stoßlüften aktivieren"
+      address: 111
+      slave: 1
+      write_type: holdings
+      command_on: 1
+      command_off: 0
+      verify:
+        delay: 5
+    - name: "Zusatzheizungen aktiv"
+      address: 234
+      slave: 1
+      write_type: holdings
+      command_on: 1
+      command_off: 0
+      verify:
+        delay: 5
+    - name: "Zusatzheizungen Diele EG"
+      address: 440
+      slave: 1
+      write_type: holdings
+      command_on: 1
+      command_off: 0
+      verify:
+        delay: 5
+    - name: "Zusatzheizungen Wohnzimmer"
+      address: 441
+      slave: 1
+      write_type: holdings
+      command_on: 1
+      command_off: 0
+      verify:
+        delay: 5
+    - name: "Zusatzheizungen Büro"
+      address: 442
+      slave: 1
+      write_type: holdings
+      command_on: 1
+      command_off: 0
+      verify:
+        delay: 10
+    - name: "Zusatzheizungen Schlafzimmer"
+      address: 443
+      slave: 1
+      write_type: holdings
+      command_on: 1
+      command_off: 0
+      verify:
+        delay: 5
+    - name: "Zusatzheizungen Linus"
+      address: 444
+      slave: 1
+      write_type: holdings
+      command_on: 1
+      command_off: 0
+      verify:
+        delay: 5
+    - name: "Zusatzheizungen Erik"
+      address: 445
+      slave: 1
+      write_type: holdings
+      command_on: 1
+      command_off: 0
+      verify:
+        delay: 5
+    - name: "Zusatzheizungen WC EG"
+      address: 446
+      slave: 1
+      write_type: holdings
+      command_on: 1
+      command_off: 0
+      verify:
+        delay: 5
+    - name: "Zusatzheizungen Bad OG"
+      address: 447
+      slave: 1
+      write_type: holdings
+      command_on: 1
+      command_off: 0
+      verify:
+        delay: 5
+
+  climates:
+    - name: "Büro"
+      address: 362
+      # count: 1
+      data_type: int16
+      max_temp: 30
+      min_temp: 10
+      offset: 0
+      precision: 1
+      scale: 0.1
+      target_temp_register: 402
+      temp_step: 1
+      temperature_unit: C
+    - name: "Diele"
+      address: 360
+      # count: 1
+      data_type: int16
+      max_temp: 30
+      min_temp: 10
+      offset: 0
+      precision: 1
+      scale: 0.1
+      target_temp_register: 400
+      temp_step: 1
+      temperature_unit: C
+    - name: "Wohnzimmer"
+      address: 361
+      # count: 1
+      data_type: int16
+      max_temp: 30
+      min_temp: 10
+      offset: 0
+      precision: 1
+      scale: 0.1
+      target_temp_register: 401
+      temp_step: 1
+      temperature_unit: C
+    - name: "WC EG"
+      address: 366
+      # count: 1
+      data_type: int16
+      max_temp: 30
+      min_temp: 10
+      offset: 0
+      precision: 1
+      scale: 0.1
+      target_temp_register: 406
+      temp_step: 1
+      temperature_unit: C
+    - name: "Bad OG"
+      address: 367
+      # count: 1
+      data_type: int16
+      max_temp: 30
+      min_temp: 10
+      offset: 0
+      precision: 1
+      scale: 0.1
+      target_temp_register: 407
+      temp_step: 1
+      temperature_unit: C
+    - name: "Schlafen"
+      address: 363
+      # count: 1
+      data_type: int16
+      max_temp: 30
+      min_temp: 10
+      offset: 0
+      precision: 1
+      scale: 0.1
+      target_temp_register: 403
+      temp_step: 1
+      temperature_unit: C
+    - name: "Linus"
+      address: 364
+      # count: 1
+      data_type: int16
+      max_temp: 30
+      min_temp: 10
+      offset: 0
+      precision: 1
+      scale: 0.1
+      target_temp_register: 404
+      temp_step: 1
+      temperature_unit: C
+    - name: "Erik"
+      address: 365
+      # count: 1
+      data_type: int16
+      max_temp: 30
+      min_temp: 10
+      offset: 0
+      precision: 1
+      scale: 0.1
+      target_temp_register: 405
+      temp_step: 1
+      temperature_unit: C
