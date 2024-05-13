@@ -1,0 +1,297 @@
+- platform: template
+  sensors:
+    #----------------------------------------------------------------------
+    zusatzheizung_aktiv_wohnzimmer_text:
+      friendly_name: "zusatzheizung_aktiv_wohnzimmer_Text"
+      value_template: >-
+        {% set mapper =  {
+            '0' : 'Aus',
+            '1' : 'Aktiv' } %}
+        {% set state =  states.sensor.zusatzheizung_aktiv_wohnzimmer.state %}
+        {{ mapper[state] if state in mapper else 'Unknown' }}
+    zusatzheizung_aktiv_wc_eg_text:
+      friendly_name: "zusatzheizung_aktiv_wc_eg_Text"
+      value_template: >-
+        {% set mapper =  {
+            '0' : 'Aus',
+            '1' : 'Aktiv' } %}
+        {% set state =  states.sensor.zusatzheizung_aktiv_wc_eg.state %}
+        {{ mapper[state] if state in mapper else 'Unknown' }}
+    zusatzheizung_aktiv_diele_text:
+      friendly_name: "zusatzheizung_aktiv_diele_Text"
+      value_template: >-
+        {% set mapper =  {
+            '0' : 'Aus',
+            '1' : 'Aktiv' } %}
+        {% set state =  states.sensor.zusatzheizung_aktiv_diele.state %}
+        {{ mapper[state] if state in mapper else 'Unknown' }}
+    zusatzheizung_aktiv_buro_text:
+      friendly_name: "zusatzheizung_aktiv_buro_Text"
+      value_template: >-
+        {% set mapper =  {
+            '0' : 'Aus',
+            '1' : 'Aktiv' } %}
+        {% set state =  states.sensor.zusatzheizung_aktiv_buro.state %}
+        {{ mapper[state] if state in mapper else 'Unknown' }}
+    zusatzheizung_aktiv_schlafzimmer_text:
+      friendly_name: "zusatzheizung_aktiv_schlafzimmer_Text"
+      value_template: >-
+        {% set mapper =  {
+            '0' : 'Aus',
+            '1' : 'Aktiv' } %}
+        {% set state =  states.sensor.zusatzheizung_aktiv_schlafzimmer.state %}
+        {{ mapper[state] if state in mapper else 'Unknown' }}
+    zusatzheizung_aktiv_erik_text:
+      friendly_name: "zusatzheizung_aktiv_erik_Text"
+      value_template: >-
+        {% set mapper =  {
+            '0' : 'Aus',
+            '1' : 'Aktiv' } %}
+        {% set state =  states.sensor.zusatzheizung_aktiv_erik.state %}
+        {{ mapper[state] if state in mapper else 'Unknown' }}
+    zusatzheizung_aktiv_linus_text:
+      friendly_name: "zusatzheizung_aktiv_linus_Text"
+      value_template: >-
+        {% set mapper =  {
+            '0' : 'Aus',
+            '1' : 'Aktiv' } %}
+        {% set state =  states.sensor.zusatzheizung_aktiv_linus.state %}
+        {{ mapper[state] if state in mapper else 'Unknown' }}
+    zusatzheizung_aktiv_bad_og_text:
+      friendly_name: "zusatzheizung_aktiv_bad_og_Text"
+      value_template: >-
+        {% set mapper =  {
+            '0' : 'Aus',
+            '1' : 'Aktiv' } %}
+        {% set state =  states.sensor.zusatzheizung_aktiv_bad_og.state %}
+        {{ mapper[state] if state in mapper else 'Unknown' }}
+    evu_sperre_wgt_text:
+      friendly_name: "EVU Sperre WGT Text"
+      value_template: >-
+        {% set mapper =  {
+            '0' : 'Frei',
+            '1' : 'GESPERRT' } %}
+        {% set state =  states.sensor.evu_sperre_wgt.state %}
+        {{ mapper[state] if state in mapper else 'Unknown' }}
+
+    # SUN Values
+    next_sunrise:
+      friendly_name: Sunrise
+      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_rising) | timestamp_custom("%H:%M") }}'
+    next_sunset:
+      friendly_name: Sunset
+      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_setting) | timestamp_custom("%H:%M") }}'
+    next_dusk:
+      friendly_name: Dusk
+      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_dusk) | timestamp_custom("%H:%M") }}'
+    next_dawn:
+      friendly_name: Dawn
+      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_dawn) | timestamp_custom("%H:%M") }}'
+    next_midnight:
+      friendly_name: Midnight
+      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_midnight) | timestamp_custom("%H:%M") }}'
+    next_noon:
+      friendly_name: Noon
+      value_template: '{{ as_timestamp(states.sun.sun.attributes.next_noon) | timestamp_custom("%H:%M") }}'
+    sun_elevation:
+      friendly_name: sun_elevation
+      unit_of_measurement: "°"
+      value_template: "{{ states.sun.sun.attributes.elevation }}"
+    sun_azimuth:
+      friendly_name: sun_azimuth
+      unit_of_measurement: "°"
+      value_template: "{{ states.sun.sun.attributes.azimuth }}"
+
+    zistern_water_today:
+      friendly_name: "Zisternenwasser Entnahme heute"
+      unit_of_measurement: "l"
+      value_template: "{{ ((states.sensor.zisternenentnahme_heute.state | float * 1000)) | round(0) }}"
+
+    #------------------------SOLAR EDGE---------------------------------------
+    mb_solaredge_garage_status_text:
+      friendly_name: "SolarEdge Wechselrichter Garage Status"
+      value_template: >-
+        {% if is_state('sensor.mb_solaredge_garage_status', '1') %}
+          Off
+        {% elif is_state('sensor.mb_solaredge_garage_status', '2') %}
+          Sleeping
+        {% elif is_state('sensor.mb_solaredge_garage_status', '3') %}
+          Starting
+        {% elif is_state('sensor.mb_solaredge_garage_status', '4') %}
+          Productive
+        {% elif is_state('sensor.mb_solaredge_garage_status', '5') %}
+          Throttled
+        {% elif is_state('sensor.mb_solaredge_garage_status', '6') %}
+          Shutting Down
+        {% elif is_state('sensor.mb_solaredge_garage_status', '7') %}
+          Fault
+        {% elif is_state('sensor.mb_solaredge_garage_status', '8') %}
+          Maintenance
+        {% endif %}
+
+    mb_solaredge_garage_energy_now_final:
+      friendly_name: "PV Garage Power now"
+      value_template: '{{ (states("sensor.mb_solaredge_garage_energy_now") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_AC_Power_SF") | float(-3))) }}'
+      unit_of_measurement: "W"
+
+    mb_solaredge_garage_temp_final:
+      friendly_name: "Temperatur Wechselrichter Garage"
+      value_template: '{{ ((states("sensor.mb_solaredge_garage_temp") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_temp_sf") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "°C"
+
+    mb_solaredge_garage_energy_lifetime_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_garage_AC_LifetimeEnergy") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_AC_LifetimeEnergy_SF") | float(-1))) * 0.001) | round(2) }}'
+      unit_of_measurement: "kWh"
+      device_class: energy
+
+    mb_solaredge_garage_dc_current_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_garage_DC_Current") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_DC_Current_SF") | float(-3)))) | round(2) }}'
+      unit_of_measurement: "A"
+
+    mb_solaredge_garage_dc_voltage_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_garage_DC_voltage") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_DC_voltage_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "V"
+
+    mb_solaredge_garage_dc_power_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_garage_DC_power") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_DC_power_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "W"
+
+    mb_solaredge_garage_ac_current_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_garage_aC_Current") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_ac_Current_SF") | float(-3)))) | round(2) }}'
+      unit_of_measurement: "A"
+
+    mb_solaredge_garage_ac_voltage_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_garage_aC_voltage") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_ac_voltage_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "V"
+
+    mb_solaredge_garage_ac_freq_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_garage_ac_freq") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_ac_freq_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "Hz"
+
+    mb_solaredge_garage_ac_va_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_garage_ac_va") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_ac_va_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "VA"
+
+    mb_solaredge_garage_ac_var_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_garage_ac_var") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_ac_var_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "VAR"
+
+    mb_solaredge_garage_ac_pf_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_garage_ac_pf") | float(0)) * (10 ** (states("sensor.mb_solaredge_garage_ac_pf_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "%"
+
+    #-------------- METER 1-------------------------
+
+    mb_solaredge_m1_ac_power_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_ac_power") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_ac_power_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "W"
+
+    mb_solaredge_m1_ac_power_a_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_ac_power_A") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_ac_power_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "W"
+
+    mb_solaredge_m1_ac_power_b_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_ac_power_B") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_ac_power_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "W"
+
+    mb_solaredge_m1_ac_power_c_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_ac_power_C") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_ac_power_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "W"
+
+    mb_solaredge_m1_energy_w_import_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_energy_w_import") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_energy_w_SF") | float(-3))))  * 0.001 }}'
+      unit_of_measurement: "kWh"
+
+    mb_solaredge_m1_energy_w_export_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_energy_w_export") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_energy_w_SF") | float(-3))))  * 0.001 }}'
+      unit_of_measurement: "kWh"
+
+    mb_solaredge_m1_ac_current_a_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_ac_current_A") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_ac_current_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "A"
+
+    mb_solaredge_m1_ac_current_b_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_ac_current_B") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_ac_current_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "A"
+
+    mb_solaredge_m1_ac_current_c_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_ac_current_C") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_ac_current_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "A"
+
+    mb_solaredge_m1_ac_volt_a_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_ac_volt_A") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_ac_volt_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "V"
+
+    mb_solaredge_m1_ac_volt_b_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_ac_volt_B") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_ac_volt_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "V"
+
+    mb_solaredge_m1_ac_volt_c_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_ac_volt_C") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_ac_volt_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "V"
+
+    mb_solaredge_m1_ac_freq_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_ac_freq") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_ac_freq_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "Hz"
+
+    mb_solaredge_m1_ac_power_app_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_app_sum") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_app_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "VA"
+
+    mb_solaredge_m1_ac_power_app_a_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_app_A") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_app_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "VA"
+
+    mb_solaredge_m1_ac_power_app_b_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_app_B") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_app_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "VA"
+
+    mb_solaredge_m1_ac_power_app_c_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_app_C") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_app_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "VA"
+
+    mb_solaredge_m1_ac_power_rea_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_rea_sum") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_rea_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "VAR"
+
+    mb_solaredge_m1_ac_power_rea_a_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_rea_A") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_rea_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "VAR"
+
+    mb_solaredge_m1_ac_power_rea_b_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_rea_B") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_rea_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "VAR"
+
+    mb_solaredge_m1_ac_power_rea_c_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_rea_C") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_rea_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "VAR"
+
+    mb_solaredge_m1_ac_power_fac_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_fac_avg") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_fac_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "%"
+
+    mb_solaredge_m1_ac_power_fac_a_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_fac_A") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_fac_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "%"
+
+    mb_solaredge_m1_ac_power_fac_b_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_fac_B") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_fac_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "%"
+
+    mb_solaredge_m1_ac_power_fac_c_final:
+      value_template: '{{ ((states("sensor.mb_solaredge_m1_power_fac_C") | float(0)) * (10 ** (states("sensor.mb_solaredge_m1_power_fac_SF") | float(-3)))) | round(1) }}'
+      unit_of_measurement: "%"
+
+    #------------------------Garagentor Status---------------------------------------
+    mb_garagentor_status_text:
+      friendly_name: "Garagentor"
+      value_template: >-
+        {% if is_state('sensor.status_garagentor', '0') %}
+          teilweise geöffnet
+        {% elif is_state('sensor.status_garagentor', '1') %}
+          Lüftungstellung
+        {% elif is_state('sensor.status_garagentor', '2') %}
+          geschlossen
+        {% elif is_state('sensor.status_garagentor', '3') %}
+          geöffnet
+        {% endif %}

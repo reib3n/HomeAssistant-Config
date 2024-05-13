@@ -1,0 +1,10 @@
+haustur_impuls:
+  alias: Haustür Impuls
+  sequence:
+  - service: modbus.write_coil
+    data:
+      address: 1016
+      state: 1
+      hub: Beckhoff
+  mode: single
+  icon: mdi:door

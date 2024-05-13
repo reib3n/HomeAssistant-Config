@@ -1,0 +1,20 @@
+- platform: statistics
+  name: "Aussentemperatur (stat)"
+  entity_id: sensor.aussentemperatur
+  state_characteristic: average_linear
+  sampling_size: 20
+- platform: statistics
+  name: "m1_ac_power_a_stat"
+  entity_id: sensor.mb_solaredge_m1_ac_power_a_final
+  state_characteristic: average_linear
+  sampling_size: 20
+- platform: statistics
+  name: "m1_ac_power_b_stat"
+  entity_id: sensor.mb_solaredge_m1_ac_power_b_final
+  state_characteristic: average_linear
+  sampling_size: 20
+- platform: statistics
+  name: "m1_ac_power_c_stat"
+  entity_id: sensor.mb_solaredge_m1_ac_power_c_final
+  state_characteristic: average_linear
+  sampling_size: 20
