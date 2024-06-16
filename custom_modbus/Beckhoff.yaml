@@ -60,6 +60,7 @@
       scan_interval: 5
       input_type: coil
       device_class: door
+      unique_id: "Balkontür"
     - name: "Werkstatttür"
       address: 1209
       scan_interval: 5
@@ -136,6 +137,7 @@
       device_class: temperature
       state_class: measurement
       data_type: int16
+      unique_id: "mb_temp_Wohnzimmer"
     - name: "mb_hum_Wohnzimmer"
       address: 2015
       unit_of_measurement: "%"
