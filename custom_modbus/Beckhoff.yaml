@@ -144,12 +144,14 @@
       device_class: humidity
       state_class: measurement
       data_type: int16
+      unique_id: "mb_hum_Wohnzimmer"
     - name: "mb_co2_Wohnzimmer"
       address: 2016
       unit_of_measurement: "ppm"
       device_class: carbon_dioxide
       state_class: measurement
       data_type: int16
+      unique_id: "mb_co2_Wohnzimmer"
     - name: "mb_temp_Technikraum"
       address: 2017
       unit_of_measurement: °C

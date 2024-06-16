@@ -462,10 +462,7 @@
       seconds: 0
     id: aussen_tiefer
     below: sensor.mb_temp_wohnzimmer
-  condition:
-  - condition: state
-    entity_id: input_select.jahreszeiten
-    state: Sommer
+  condition: []
   action:
   - choose:
     - conditions:
