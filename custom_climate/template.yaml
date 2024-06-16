@@ -1,0 +1,31 @@
+#- platform: climate_template
+#  name: "Büro_template"
+#  unique_id: "Büro_template"
+#  hvac_modes:
+#    - "heat"
+#    - "off"
+#  min_temp: 17
+#  max_temp: 23
+#  current_temperature_template: "{{ states('sensor.temperatur_buro') }}"
+#  target_temperature_template: "{{ states('sensor.zieltemperatur_buro') }}"
+#  hvac_mode_template: "{{ states('switch.zusatzheizungen_buro') }}"
+#  set_hvac_mode:
+#    - service: modbus.write_register
+#    data:
+#        hub: WGT
+#        address: 292
+#        slave: 1
+#        value: >-
+#        {% set mapper =  {
+#            '0' : 'Aus',
+#            '1' : 'Aktiv' } %}
+#        {% set state =  states.sensor.zusatzheizung_aktiv_diele.state %}
+#        {{ mapper[state] if state in mapper else 'Unknown' }}
+#
+#  set_temperature:
+#   - service: modbus.write_register
+#      data_template:
+#        hub: "WGT"
+#        unit: 1
+#        address: 402
+#        value: "{{ temperature }}"

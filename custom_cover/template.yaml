@@ -3,7 +3,7 @@
     buro_custom:
       friendly_name: "Rollladen Büro Custom"
       device_class: shutter
-      position_template: 0 #"{{ states('sensor.cover_buro_optimistic_position') }}"
+      position_template: 1 #"{{ states('sensor.cover_buro_optimistic_position') }}"
       open_cover:
         - service: cover.open_cover
           target:
@@ -26,7 +26,7 @@
     linus_sud_custom:
       friendly_name: "Rollladen Linus Süd Custom"
       device_class: shutter
-      position_template: 0 #"{{ states('sensor.cover_linus_sud_optimistic_position') }}"
+      position_template: 1 #"{{ states('sensor.cover_linus_sud_optimistic_position') }}"
       open_cover:
         - service: cover.open_cover
           target:

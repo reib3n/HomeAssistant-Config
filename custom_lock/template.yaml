@@ -1,6 +1,6 @@
 - platform: template
   name: Haustür
-  value_template: "{{ is_state('switch.mb_haustur_dauer', 'off') }}"
+  value_template: "{{ is_state('switch.mb_haustur_dauer', 'off') and is_state('switch.mb_haustur_impuls', 'off') }}"
   optimistic: true
   lock:
     service: switch.turn_off
@@ -10,3 +10,39 @@
     service: switch.turn_on
     target:
       entity_id: switch.mb_haustur_dauer
+- platform: template
+  name: Garage Haus
+  value_template: "{{ is_state('switch.mb_turoffner_garage_haus', 'off') }}"
+  optimistic: true
+  lock:
+    service: switch.turn_off
+    target:
+      entity_id: switch.mb_turoffner_garage_haus
+  unlock:
+    service: switch.turn_on
+    target:
+      entity_id: switch.mb_turoffner_garage_haus
+- platform: template
+  name: Garage Strasse
+  value_template: "{{ is_state('switch.mb_turoffner_garage_strasse', 'off') }}"
+  optimistic: true
+  lock:
+    service: switch.turn_off
+    target:
+      entity_id: switch.mb_turoffner_garage_strasse
+  unlock:
+    service: switch.turn_on
+    target:
+      entity_id: switch.mb_turoffner_garage_strasse
+- platform: template
+  name: Werkstatt
+  value_template: "{{ is_state('switch.mb_turoffner_werkstatt', 'off') }}"
+  optimistic: true
+  lock:
+    service: switch.turn_off
+    target:
+      entity_id: switch.mb_turoffner_werkstatt
+  unlock:
+    service: switch.turn_on
+    target:
+      entity_id: switch.mb_turoffner_werkstatt

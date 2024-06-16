@@ -34,23 +34,6 @@ homeassistant:
 http:
   server_port: 443
 
-#------------------ Notification Groups --------------------
-notify:
-  - name: ALL_Devices
-    platform: group
-    services:
-      - service: mobile_app_riphone
-      - service: mobile_app_babsisiphone
-      - service: mobile_app_ipad
-  - name: Benny
-    platform: group
-    services:
-      - service: mobile_app_riphone
-  - name: Babsi
-    platform: group
-    services:
-      - service: mobile_app_babsisiphone
-
 #------------------ Other Includes ----------------------
 light: !include_dir_merge_list custom_light
 cover: !include_dir_merge_list custom_cover
@@ -58,7 +41,9 @@ sensor: !include_dir_merge_list custom_sensor
 modbus: !include_dir_merge_list custom_modbus
 lock: !include_dir_merge_list custom_lock
 alarm_control_panel: !include_dir_merge_list custom_secPanel
+notify: !include notify.yaml
 group: !include groups.yaml
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
+climate: !include_dir_merge_list custom_climate

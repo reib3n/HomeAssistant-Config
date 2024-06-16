@@ -1,0 +1,14 @@
+- name: notification_group_ALL_Devices
+  platform: group
+  services:
+    - service: mobile_app_riphone15
+    - service: mobile_app_babsisiphone12
+    - service: mobile_app_ipad
+- name: notification_group_ben
+  platform: group
+  services:
+    - service: mobile_app_riphone15
+- name: notification_group_babsi
+  platform: group
+  services:
+    - service: mobile_app_babsisiphone12

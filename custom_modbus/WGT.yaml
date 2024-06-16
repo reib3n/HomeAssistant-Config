@@ -37,6 +37,13 @@
       scale: 0.1
       precision: 1
       data_type: int16
+    - name: "Zieltemperatur Büro"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 402
+      scale: 0.1
+      precision: 1
+      data_type: int16
     - name: "Temperatur Diele"
       unit_of_measurement: "°C"
       slave: 1
