@@ -1,6 +1,6 @@
 - platform: template
   panels:
-    safe_alarm_panel:
+    Alarm_Panel_Home:
       value_template: "{{ states('switch.mb_') }}"
       arm_away:
         service: switch.turn_on
