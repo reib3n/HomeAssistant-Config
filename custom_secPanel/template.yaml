@@ -23,3 +23,27 @@
             entity_id: switch.mb_testalarm_esszimmertisch
           data:
             code: !secret alarm_code
+
+    alarm_panel_garage:
+      value_template: "{{ states('switch.mb_') }}"
+      arm_away:
+        service: switch.turn_on
+        target:
+          entity_id: switch.mb_testalarm_esszimmertisch
+        data:
+          code: !secret alarm_code
+      arm_home:
+        service: switch.turn_on
+        target:
+          entity_id: switch.mb_testalarm_esszimmertisch
+        data:
+          code: !secret alarm_code
+      disarm:
+        - condition: state
+          entity_id: device_tracker.riphone15
+          state: "home"
+        - service: switch.turn_off
+          target:
+            entity_id: switch.mb_testalarm_esszimmertisch
+          data:
+            code: !secret alarm_code
