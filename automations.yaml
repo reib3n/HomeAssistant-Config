@@ -500,3 +500,82 @@
     data:
       compressed: true
   mode: single
+- id: '1718780262317'
+  alias: Prevent Power Fridge OFF
+  description: ''
+  trigger:
+  - platform: time_pattern
+    seconds: '30'
+  condition:
+  - condition: device
+    type: is_off
+    device_id: fdb7d62111ba59cfeadd758cd1ea4b35
+    entity_id: 0cd9d297a3128c925fcc0be941e3c3a4
+    domain: switch
+  action:
+  - type: turn_on
+    device_id: fdb7d62111ba59cfeadd758cd1ea4b35
+    entity_id: 0cd9d297a3128c925fcc0be941e3c3a4
+    domain: switch
+  mode: parallel
+  max: 10
+- id: '1719771764641'
+  alias: Smart Mirror Power
+  description: ''
+  trigger:
+  - platform: time
+    at: 06:00:00
+    id: Ein
+  - platform: time
+    at: '22:00:00'
+    id: Aus
+  condition:
+  - condition: state
+    entity_id: input_boolean.urlaubsmodus
+    state: 'off'
+  action:
+  - if:
+    - condition: trigger
+      id:
+      - Ein
+    then:
+    - service: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - switch.mb_power_smartmirror
+        - switch.usw_main_smartmirror_poe
+  - if:
+    - condition: trigger
+      id:
+      - Aus
+    then:
+    - service: switch.turn_off
+      target:
+        entity_id:
+        - switch.mb_power_smartmirror
+        - switch.usw_main_smartmirror_poe
+      data: {}
+  mode: single
+- id: '1719777380572'
+  alias: Urlaubsmodus
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - input_boolean.urlaubsmodus
+    from: 'off'
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 5
+  condition: []
+  action:
+  - service: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      label_id: urlaubsmodus
+  mode: single

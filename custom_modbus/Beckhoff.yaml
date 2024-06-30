@@ -323,6 +323,7 @@
       address: 1021
       write_type: coil
       verify:
+      unique_id: "mb_powersocket_aussen_haustur"
     - name: "mb_powersocket_aussen_balkon"
       address: 1022
       write_type: coil
@@ -335,6 +336,7 @@
       address: 1024
       write_type: coil
       verify:
+      unique_id: "mb_power_SmartMirror"
     - name: "mb_powersocket_LED-Band_Wohn"
       address: 1025
       write_type: coil
