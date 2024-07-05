@@ -2,7 +2,7 @@
   sensors:
     #----------------------------------------------------------------------
     zusatzheizung_aktiv_wohnzimmer_text:
-      friendly_name: "zusatzheizung_aktiv_wohnzimmer_Text"
+      friendly_name: "Wohnz."
       value_template: >-
         {% set mapper =  {
             '0' : 'Aus',
@@ -10,7 +10,7 @@
         {% set state =  states.sensor.zusatzheizung_aktiv_wohnzimmer.state %}
         {{ mapper[state] if state in mapper else 'Unknown' }}
     zusatzheizung_aktiv_wc_eg_text:
-      friendly_name: "zusatzheizung_aktiv_wc_eg_Text"
+      friendly_name: "WC"
       value_template: >-
         {% set mapper =  {
             '0' : 'Aus',
@@ -18,7 +18,7 @@
         {% set state =  states.sensor.zusatzheizung_aktiv_wc_eg.state %}
         {{ mapper[state] if state in mapper else 'Unknown' }}
     zusatzheizung_aktiv_diele_text:
-      friendly_name: "zusatzheizung_aktiv_diele_Text"
+      friendly_name: "Diele"
       value_template: >-
         {% set mapper =  {
             '0' : 'Aus',
@@ -26,7 +26,7 @@
         {% set state =  states.sensor.zusatzheizung_aktiv_diele.state %}
         {{ mapper[state] if state in mapper else 'Unknown' }}
     zusatzheizung_aktiv_buro_text:
-      friendly_name: "zusatzheizung_aktiv_buro_Text"
+      friendly_name: "Büro"
       value_template: >-
         {% set mapper =  {
             '0' : 'Aus',
@@ -34,7 +34,7 @@
         {% set state =  states.sensor.zusatzheizung_aktiv_buro.state %}
         {{ mapper[state] if state in mapper else 'Unknown' }}
     zusatzheizung_aktiv_schlafzimmer_text:
-      friendly_name: "zusatzheizung_aktiv_schlafzimmer_Text"
+      friendly_name: "Schlafz."
       value_template: >-
         {% set mapper =  {
             '0' : 'Aus',
@@ -42,7 +42,7 @@
         {% set state =  states.sensor.zusatzheizung_aktiv_schlafzimmer.state %}
         {{ mapper[state] if state in mapper else 'Unknown' }}
     zusatzheizung_aktiv_erik_text:
-      friendly_name: "zusatzheizung_aktiv_erik_Text"
+      friendly_name: "Erik"
       value_template: >-
         {% set mapper =  {
             '0' : 'Aus',
@@ -50,7 +50,7 @@
         {% set state =  states.sensor.zusatzheizung_aktiv_erik.state %}
         {{ mapper[state] if state in mapper else 'Unknown' }}
     zusatzheizung_aktiv_linus_text:
-      friendly_name: "zusatzheizung_aktiv_linus_Text"
+      friendly_name: "Linus"
       value_template: >-
         {% set mapper =  {
             '0' : 'Aus',
@@ -58,7 +58,7 @@
         {% set state =  states.sensor.zusatzheizung_aktiv_linus.state %}
         {{ mapper[state] if state in mapper else 'Unknown' }}
     zusatzheizung_aktiv_bad_og_text:
-      friendly_name: "zusatzheizung_aktiv_bad_og_Text"
+      friendly_name: "Bad"
       value_template: >-
         {% set mapper =  {
             '0' : 'Aus',
