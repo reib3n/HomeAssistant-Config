@@ -23,6 +23,8 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      unique_id: "Außentemperatur"
+
     - name: "Temperatur Schlafzimmer"
       unit_of_measurement: "°C"
       slave: 1
@@ -30,6 +32,19 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
+      unique_id: "Temperatur Schlafzimmer"
+    - name: "Zieltemperatur Schlafzimmer"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 403
+      scale: 0.1
+      precision: 1
+      data_type: int16
+      device_class: temperature
+      state_class: measurement
+
     - name: "Temperatur Büro"
       unit_of_measurement: "°C"
       slave: 1
@@ -37,6 +52,9 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
+      unique_id: "Temperatur Büro"
     - name: "Zieltemperatur Büro"
       unit_of_measurement: "°C"
       slave: 1
@@ -44,6 +62,9 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
+
     - name: "Temperatur Diele"
       unit_of_measurement: "°C"
       slave: 1
@@ -51,6 +72,19 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
+      unique_id: "Temperatur Diele"
+    - name: "Zieltemperatur Diele"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 400
+      scale: 0.1
+      precision: 1
+      data_type: int16
+      device_class: temperature
+      state_class: measurement
+
     - name: "Temperatur Wohnzimmer"
       unit_of_measurement: "°C"
       slave: 1
@@ -58,6 +92,19 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
+      unique_id: "Temperatur Wohnzimmer"
+    - name: "Zieltemperatur Wohnzimmer"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 401
+      scale: 0.1
+      precision: 1
+      data_type: int16
+      device_class: temperature
+      state_class: measurement
+
     - name: "Temperatur WC EG"
       unit_of_measurement: "°C"
       slave: 1
@@ -65,6 +112,19 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
+      unique_id: "Temperatur WC EG"
+    - name: "Zieltemperatur WC EG"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 406
+      scale: 0.1
+      precision: 1
+      data_type: int16
+      device_class: temperature
+      state_class: measurement
+
     - name: "Temperatur Bad OG"
       unit_of_measurement: "°C"
       slave: 1
@@ -72,6 +132,19 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
+      unique_id: "Temperatur Bad OG"
+    - name: "Zieltemperatur Bad OG"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 407
+      scale: 0.1
+      precision: 1
+      data_type: int16
+      device_class: temperature
+      state_class: measurement
+
     - name: "Temperatur Erik"
       unit_of_measurement: "°C"
       slave: 1
@@ -79,6 +152,19 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
+      unique_id: "Temperatur Erik"
+    - name: "Zieltemperatur Erik"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 405
+      scale: 0.1
+      precision: 1
+      data_type: int16
+      device_class: temperature
+      state_class: measurement
+
     - name: "Temperatur Linus-Henry"
       unit_of_measurement: "°C"
       slave: 1
@@ -86,6 +172,19 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
+      unique_id: "Temperatur Linus-Henry"
+    - name: "Zieltemperatur Linus-Henry"
+      unit_of_measurement: "°C"
+      slave: 1
+      address: 404
+      scale: 0.1
+      precision: 1
+      data_type: int16
+      device_class: temperature
+      state_class: measurement
+
     - name: "Betriebsart WGT"
       slave: 1
       address: 100
@@ -142,6 +241,8 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
     - name: "Temperatur nach VHR"
       unit_of_measurement: "°C"
       slave: 1
@@ -149,6 +250,8 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
     - name: "Temperatur vor NE"
       unit_of_measurement: "°C"
       slave: 1
@@ -156,6 +259,8 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
     - name: "Temperatur nach NE"
       unit_of_measurement: "°C"
       slave: 1
@@ -163,6 +268,8 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
     - name: "Temperatur Abluft"
       unit_of_measurement: "°C"
       slave: 1
@@ -170,6 +277,8 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
     - name: "Temperatur im WT"
       unit_of_measurement: "°C"
       slave: 1
@@ -177,6 +286,8 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
     - name: "Temperatur Verdampfer"
       unit_of_measurement: "°C"
       slave: 1
@@ -184,6 +295,8 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
     - name: "Temperatur Kondensator"
       unit_of_measurement: "°C"
       slave: 1
@@ -191,6 +304,8 @@
       scale: 0.1
       precision: 1
       data_type: int16
+      device_class: temperature
+      state_class: measurement
     - name: "Stoßlüften Restlaufzeit"
       unit_of_measurement: "Min"
       slave: 1
@@ -318,101 +433,3 @@
       command_off: 0
       verify:
         delay: 5
-
-  climates:
-    - name: "Büro"
-      address: 362
-      # count: 1
-      data_type: int16
-      max_temp: 30
-      min_temp: 10
-      offset: 0
-      precision: 1
-      scale: 0.1
-      target_temp_register: 402
-      temp_step: 1
-      temperature_unit: C
-    - name: "Diele"
-      address: 360
-      # count: 1
-      data_type: int16
-      max_temp: 30
-      min_temp: 10
-      offset: 0
-      precision: 1
-      scale: 0.1
-      target_temp_register: 400
-      temp_step: 1
-      temperature_unit: C
-    - name: "Wohnzimmer"
-      address: 361
-      # count: 1
-      data_type: int16
-      max_temp: 30
-      min_temp: 10
-      offset: 0
-      precision: 1
-      scale: 0.1
-      target_temp_register: 401
-      temp_step: 1
-      temperature_unit: C
-    - name: "WC EG"
-      address: 366
-      # count: 1
-      data_type: int16
-      max_temp: 30
-      min_temp: 10
-      offset: 0
-      precision: 1
-      scale: 0.1
-      target_temp_register: 406
-      temp_step: 1
-      temperature_unit: C
-    - name: "Bad OG"
-      address: 367
-      # count: 1
-      data_type: int16
-      max_temp: 30
-      min_temp: 10
-      offset: 0
-      precision: 1
-      scale: 0.1
-      target_temp_register: 407
-      temp_step: 1
-      temperature_unit: C
-    - name: "Schlafen"
-      address: 363
-      # count: 1
-      data_type: int16
-      max_temp: 30
-      min_temp: 10
-      offset: 0
-      precision: 1
-      scale: 0.1
-      target_temp_register: 403
-      temp_step: 1
-      temperature_unit: C
-    - name: "Linus"
-      address: 364
-      # count: 1
-      data_type: int16
-      max_temp: 30
-      min_temp: 10
-      offset: 0
-      precision: 1
-      scale: 0.1
-      target_temp_register: 404
-      temp_step: 1
-      temperature_unit: C
-    - name: "Erik"
-      address: 365
-      # count: 1
-      data_type: int16
-      max_temp: 30
-      min_temp: 10
-      offset: 0
-      precision: 1
-      scale: 0.1
-      target_temp_register: 405
-      temp_step: 1
-      temperature_unit: C
