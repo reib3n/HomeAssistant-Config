@@ -225,6 +225,7 @@
       slave: 1
       address: 265
       data_type: int16
+      unit_of_measurement: "Tage"
     - name: "Vorgelagerter Filter WGT reinigen"
       slave: 1
       address: 246
@@ -350,6 +351,34 @@
     - name: "EVU-Sperre WGT"
       slave: 1
       address: 251
+      data_type: int16
+    - name: "WGT Heizen_Kühlen"
+      slave: 1
+      address: 230
+      data_type: int16
+    - name: "WGT Heizen"
+      slave: 1
+      address: 231
+      data_type: int16
+    - name: "WGT Kühlen"
+      slave: 1
+      address: 232
+      data_type: int16
+    - name: "WGT Fehler"
+      slave: 1
+      address: 240
+      data_type: int16
+    - name: "WGT NHR Zustand"
+      slave: 1
+      address: 116
+      data_type: int16
+    - name: "WGT Status Zuluft"
+      slave: 1
+      address: 117
+      data_type: int16
+    - name: "WGT Status Abluft"
+      slave: 1
+      address: 118
       data_type: int16
 
   switches:
