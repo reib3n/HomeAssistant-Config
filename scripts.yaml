@@ -1,1 +1,129 @@
-{}
+wgt_mode_2:
+  alias: WGT-Mode
+  sequence:
+  - if:
+    - condition: template
+      value_template: '{{modus == "cool"}}'
+    then:
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 100
+        slave: 1
+        value:
+        - 3
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 230
+        slave: 1
+        value:
+        - 2
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 231
+        slave: 1
+        value:
+        - 0
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 232
+        slave: 1
+        value:
+        - 1
+  - if:
+    - condition: template
+      value_template: '{{modus == "off"}}'
+    then:
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 100
+        slave: 1
+        value:
+        - 0
+  - if:
+    - condition: template
+      value_template: '{{modus == "heat"}}'
+    then:
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 100
+        slave: 1
+        value:
+        - 2
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 230
+        slave: 1
+        value:
+        - 1
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 231
+        slave: 1
+        value:
+        - 1
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 232
+        slave: 1
+        value:
+        - 0
+  - if:
+    - condition: template
+      value_template: '{{modus == "fan_only"}}'
+    then:
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 100
+        slave: 1
+        value:
+        - 3
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 230
+        slave: 1
+        value:
+        - 0
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 231
+        slave: 1
+        value:
+        - 0
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 232
+        slave: 1
+        value:
+        - 0
+  - if:
+    - condition: template
+      value_template: '{{modus == "auto"}}'
+    then:
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 100
+        slave: 1
+        value:
+        - 4
+  description: ''
+  icon: mdi:thermostat-cog
+  fields:
+    modus:
+      selector:
+        text:
+      name: Modus
+      required: true

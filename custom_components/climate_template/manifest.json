@@ -7,5 +7,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/litinoveweedle/hass-template-climate/issues",
   "requirements": [],
-  "version": "0.7.2"
+  "version": "0.7.3"
 }

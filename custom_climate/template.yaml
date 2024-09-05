@@ -23,3 +23,199 @@
       unit: 1
       address: 402
       value: "{{ [temperature * 10] }}"
+
+- platform: climate_template
+  name: "Wohnzimmer_template"
+  unique_id: "Wohnzimmer_template"
+  hvac_modes:
+    - "heat"
+    - "off"
+  min_temp: 17
+  max_temp: 23
+  current_temperature_template: "{{ states('sensor.temperatur_wohnzimmer') }}"
+  target_temperature_template: "{{ states('sensor.zieltemperatur_wohnzimmer') }}"
+  hvac_mode_template: "{{ iif(is_state('switch.zusatzheizungen_wohnzimmer', 'on'), 'heat', 'off') }}"
+  set_hvac_mode:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 441
+      value: "{{ [iif(hvac_mode == 'heat', 1, 0)] }}"
+  set_temperature:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 401
+      value: "{{ [temperature * 10] }}"
+
+- platform: climate_template
+  name: "Diele_template"
+  unique_id: "Diele_template"
+  hvac_modes:
+    - "heat"
+    - "off"
+  min_temp: 17
+  max_temp: 23
+  current_temperature_template: "{{ states('sensor.temperatur_diele') }}"
+  target_temperature_template: "{{ states('sensor.zieltemperatur_diele') }}"
+  hvac_mode_template: "{{ iif(is_state('switch.zusatzheizungen_diele', 'on'), 'heat', 'off') }}"
+  set_hvac_mode:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 440
+      value: "{{ [iif(hvac_mode == 'heat', 1, 0)] }}"
+  set_temperature:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 400
+      value: "{{ [temperature * 10] }}"
+
+- platform: climate_template
+  name: "WC_template"
+  unique_id: "WC_template"
+  hvac_modes:
+    - "heat"
+    - "off"
+  min_temp: 17
+  max_temp: 23
+  current_temperature_template: "{{ states('sensor.temperatur_wc_eg') }}"
+  target_temperature_template: "{{ states('sensor.zieltemperatur_wc_eg') }}"
+  hvac_mode_template: "{{ iif(is_state('switch.zusatzheizungen_wc_eg', 'on'), 'heat', 'off') }}"
+  set_hvac_mode:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 446
+      value: "{{ [iif(hvac_mode == 'heat', 1, 0)] }}"
+  set_temperature:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 406
+      value: "{{ [temperature * 10] }}"
+
+- platform: climate_template
+  name: "Schlafzimmer_template"
+  unique_id: "Schlafzimmer_template"
+  hvac_modes:
+    - "heat"
+    - "off"
+  min_temp: 17
+  max_temp: 23
+  current_temperature_template: "{{ states('sensor.temperatur_schlafzimmer') }}"
+  target_temperature_template: "{{ states('sensor.zieltemperatur_schlafzimmer') }}"
+  hvac_mode_template: "{{ iif(is_state('switch.zusatzheizungen_schlafzimmer', 'on'), 'heat', 'off') }}"
+  set_hvac_mode:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 443
+      value: "{{ [iif(hvac_mode == 'heat', 1, 0)] }}"
+  set_temperature:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 403
+      value: "{{ [temperature * 10] }}"
+
+- platform: climate_template
+  name: "Erik_template"
+  unique_id: "Erik_template"
+  hvac_modes:
+    - "heat"
+    - "off"
+  min_temp: 17
+  max_temp: 23
+  current_temperature_template: "{{ states('sensor.temperatur_erik') }}"
+  target_temperature_template: "{{ states('sensor.zieltemperatur_erik') }}"
+  hvac_mode_template: "{{ iif(is_state('switch.zusatzheizungen_erik', 'on'), 'heat', 'off') }}"
+  set_hvac_mode:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 445
+      value: "{{ [iif(hvac_mode == 'heat', 1, 0)] }}"
+  set_temperature:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 405
+      value: "{{ [temperature * 10] }}"
+
+- platform: climate_template
+  name: "LiHe_template"
+  unique_id: "LiHe_template"
+  hvac_modes:
+    - "heat"
+    - "off"
+  min_temp: 17
+  max_temp: 23
+  current_temperature_template: "{{ states('sensor.temperatur_linus_henry') }}"
+  target_temperature_template: "{{ states('sensor.zieltemperatur_linus_henry') }}"
+  hvac_mode_template: "{{ iif(is_state('switch.zusatzheizungen_linus_henry', 'on'), 'heat', 'off') }}"
+  set_hvac_mode:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 444
+      value: "{{ [iif(hvac_mode == 'heat', 1, 0)] }}"
+  set_temperature:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 404
+      value: "{{ [temperature * 10] }}"
+
+- platform: climate_template
+  name: "Bad_template"
+  unique_id: "Bad_template"
+  hvac_modes:
+    - "heat"
+    - "off"
+  min_temp: 17
+  max_temp: 23
+  current_temperature_template: "{{ states('sensor.temperatur_bad_og') }}"
+  target_temperature_template: "{{ states('sensor.zieltemperatur_bad_og') }}"
+  hvac_mode_template: "{{ iif(is_state('switch.zusatzheizungen_bad_og', 'on'), 'heat', 'off') }}"
+  set_hvac_mode:
+    service: modbus.write_register
+    data_template:
+      hub: WGT
+      unit: 1
+      address: 447
+      value: "{{ [iif(hvac_mode == 'heat', 1, 0)] }}"
+  set_temperature:
+    service: modbus.write_register
+    data:
+      hub: WGT
+      unit: 1
+      address: 407
+      value: "{{ [temperature * 10] }}"
+
+- platform: climate_template
+  name: "WGTMode_template"
+  unique_id: "WGTMode_template"
+  hvac_modes:
+    - "heat"
+    - "cool"
+    - "fan_only"
+    - "off"
+    - "auto"
+  set_hvac_mode:
+    service: script.wgt_mode_2
+    data:
+      modus: "{{ hvac_mode }}"

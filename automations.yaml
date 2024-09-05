@@ -1,128 +1,3 @@
-- id: 5edb8df3448840a28f316e4f5db8d7fe
-  alias: Z_SET - WGT-Mode from input_select
-  trigger:
-  - platform: state
-    entity_id: input_select.wgt_mode
-  action:
-  - service: modbus.write_register
-    data_template:
-      hub: WGT
-      unit: 1
-      address: 100
-      value: "{% if is_state(\"input_select.wgt_mode\", \"Aus\") %}\n  [0]\n{%-elif
-        is_state(\"input_select.wgt_mode\", \"Handbetrieb\") %}\n  [1]\n{%-elif is_state(\"input_select.wgt_mode\",
-        \"Winterbetrieb\") %}\n  [2]\n{%-elif is_state(\"input_select.wgt_mode\",
-        \"Sommerbetrieb\") %}\n  [3]\n{%-elif is_state(\"input_select.wgt_mode\",
-        \"Sommer Abluft\") %}\n  [4]\n{%-else %}\n  [0]\n{% endif %}\n"
-  mode: single
-- id: 4fdd0bd14e1f4ac5af05ec5d10129414
-  alias: Z_SET - WGT-Mode input_select from modbus sensor
-  trigger:
-  - platform: state
-    entity_id: sensor.betriebsart_wgt
-  action:
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.wgt_mode
-      option: "{% if is_state(\"sensor.betriebsart_wgt\", \"0\") %}\n  Aus\n{%-elif
-        is_state(\"sensor.betriebsart_wgt\", \"1\") %}\n  Handbetrieb\n{%-elif is_state(\"sensor.betriebsart_wgt\",
-        \"2\") %}\n  Winterbetrieb\n{%-elif is_state(\"sensor.betriebsart_wgt\", \"3\")
-        %}\n  Sommerbetrieb\n{%-else %}\n  Sommer Abluft\n{% endif %}\n"
-  mode: single
-- id: 4f0cf86c00f042269cb31c6eaeb10fdf
-  alias: Z_SET - WGT-FANLevel from input_select
-  trigger:
-  - platform: state
-    entity_id: input_select.wgt_fanlevel
-  action:
-  - service: modbus.write_register
-    data_template:
-      hub: WGT
-      unit: 1
-      address: 101
-      value: "{% if is_state(\"input_select.wgt_fanlevel\", \"Aus\") %}\n  [0]\n{%-elif
-        is_state(\"input_select.wgt_fanlevel\", \"Stufe 1\") %}\n  [1]\n{%-elif is_state(\"input_select.wgt_fanlevel\",
-        \"Stufe 2\") %}\n  [2]\n{%-elif is_state(\"input_select.wgt_fanlevel\", \"Stufe
-        3\") %}\n  [3]\n{%-else %}\n  [4]\n{% endif %}\n"
-  mode: single
-- id: 077070120e2e4f938569ca5cb19543a8
-  alias: Z_SET - WGT-FANLevel input_select from modbus sensor
-  trigger:
-  - platform: state
-    entity_id: sensor.aktuelle_luftstufe_wgt
-  action:
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.wgt_fanlevel
-      option: "{% if is_state(\"sensor.aktuelle_luftstufe_wgt\", \"0\") %}\n  Aus\n{%-elif
-        is_state(\"sensor.aktuelle_luftstufe_wgt\", \"1\") %}\n  Stufe 1\n{%-elif
-        is_state(\"sensor.aktuelle_luftstufe_wgt\", \"2\") %}\n  Stufe 2\n{%-elif
-        is_state(\"sensor.aktuelle_luftstufe_wgt\", \"3\") %}\n  Stufe 3\n{%-else
-        %}\n  Stufe 4\n{% endif %}\n"
-  mode: single
-- id: '1623677127283'
-  alias: WGT - Sommersteuerung (an) (10min)
-  description: ''
-  trigger:
-  - platform: time_pattern
-    minutes: /10
-  condition:
-  - condition: template
-    value_template: '{{ (states(''sensor.aussentemperatur'') | float ) < (states(''sensor.temp_wohnzimmer'')
-      | float) }}'
-  - condition: state
-    entity_id: input_boolean.wgt_sommerabluft
-    state: 'off'
-  action:
-  - service: modbus.write_register
-    data_template:
-      hub: WGT
-      unit: 1
-      address: 100
-      value:
-      - 3
-  mode: single
-- id: '1623679629206'
-  alias: WGT - Sommersteuerung (aus) (10min)
-  description: ''
-  trigger:
-  - platform: time_pattern
-    minutes: /10
-  condition:
-  - condition: template
-    value_template: '{{ (states(''sensor.aussentemperatur'') | float ) > (states(''sensor.temperatur_schlafzimmer'')
-      | float) }}'
-  action:
-  - service: modbus.write_register
-    data_template:
-      hub: WGT
-      unit: 1
-      address: 100
-      value:
-      - 0
-  - service: input_boolean.turn_off
-    data: {}
-    target:
-      entity_id: input_boolean.wgt_sommerabluft
-  mode: single
-- id: '1633984089879'
-  alias: WGT - Temperaturwächter Wohnzimmer AN
-  description: ''
-  trigger:
-  - platform: time_pattern
-    minutes: /10
-  condition:
-  - condition: template
-    value_template: '{{ (states(''sensor.temp_wohnzimmer'') | float ) < (19) }}'
-  action:
-  - service: modbus.write_register
-    data_template:
-      hub: WGT
-      unit: 1
-      address: 100
-      value:
-      - 2
-  mode: single
 - id: '1639928034409'
   alias: Weihnachtsbeleuchtung
   description: ''
@@ -423,71 +298,6 @@
     target:
       entity_id: cover.buro
   mode: single
-- id: '1655670656038'
-  alias: WGT - Modus
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - input_boolean.wgt_sommerabluft
-    from: 'off'
-    to: 'on'
-  condition: []
-  action:
-  - service: modbus.write_register
-    data:
-      address: 100
-      slave: 1
-      hub: WGT
-      value:
-      - 4
-  mode: single
-- id: '1686488507294'
-  alias: WGT - Sommersteuerung
-  description: ''
-  trigger:
-  - platform: numeric_state
-    entity_id: sensor.aussentemperatur
-    for:
-      hours: 0
-      minutes: 5
-      seconds: 0
-    above: sensor.mb_temp_wohnzimmer
-    id: aussen_hoeher
-  - platform: numeric_state
-    entity_id: sensor.aussentemperatur
-    for:
-      hours: 0
-      minutes: 5
-      seconds: 0
-    id: aussen_tiefer
-    below: sensor.mb_temp_wohnzimmer
-  condition: []
-  action:
-  - choose:
-    - conditions:
-      - condition: trigger
-        id: aussen_hoeher
-      sequence:
-      - service: modbus.write_register
-        data_template:
-          hub: WGT
-          unit: 1
-          address: 100
-          value:
-          - 0
-    - conditions:
-      - condition: trigger
-        id: aussen_tiefer
-      sequence:
-      - service: modbus.write_register
-        data_template:
-          hub: WGT
-          unit: 1
-          address: 100
-          value:
-          - 3
-  mode: single
 - id: '1699107705657'
   alias: Backup to NAS
   description: ''
@@ -578,4 +388,205 @@
     data: {}
     target:
       label_id: urlaubsmodus
+  mode: single
+- id: '1720557606127'
+  alias: WGT - Sommersteuerung Temp
+  description: ''
+  trigger:
+  - platform: template
+    value_template: '{{ states(''sensor.aussentemperatur'') | float < states(''sensor.temperatur_wohnzimmer'')
+      | float }}'
+    id: Lüftung an
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+  - platform: template
+    value_template: '{{ states(''sensor.aussentemperatur'') | float > states(''sensor.temperatur_wohnzimmer'')
+      | float }}'
+    id: Lüftung aus
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+  condition:
+  - condition: state
+    entity_id: input_boolean.sommersteuerung_luftung
+    state: 'on'
+  - condition: template
+    value_template: '{{ states(''climate.wgtmode_template'') == "fan_only" or states(''climate.wgtmode_template'')
+      == "off" or states(''climate.wgtmode_template'') == "heat" }}'
+  action:
+  - if:
+    - condition: trigger
+      id:
+      - Lüftung an
+    then:
+    - service: climate.set_hvac_mode
+      metadata: {}
+      data:
+        hvac_mode: fan_only
+      target:
+        entity_id: climate.wgtmode_template
+  - if:
+    - condition: trigger
+      id:
+      - Lüftung aus
+    then:
+    - service: climate.set_hvac_mode
+      metadata: {}
+      data:
+        hvac_mode: 'off'
+      target:
+        entity_id: climate.wgtmode_template
+  mode: single
+- id: '1722603963360'
+  alias: WGT - Set Fan Level Dropdown
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - sensor.aktuelle_luftstufe_wgt
+  condition: []
+  action:
+  - if:
+    - condition: numeric_state
+      entity_id: sensor.aktuelle_luftstufe_wgt
+      below: 1
+    then:
+    - service: input_select.select_option
+      metadata: {}
+      data:
+        option: Aus
+      target:
+        entity_id: input_select.wgt_fanlevel
+  - if:
+    - condition: numeric_state
+      entity_id: sensor.aktuelle_luftstufe_wgt
+      above: 2
+      below: 4
+    then:
+    - service: input_select.select_option
+      metadata: {}
+      data:
+        option: Stufe 3
+      target:
+        entity_id: input_select.wgt_fanlevel
+  - if:
+    - condition: numeric_state
+      entity_id: sensor.aktuelle_luftstufe_wgt
+      above: 3
+    then:
+    - service: input_select.select_option
+      metadata: {}
+      data:
+        option: Stufe 4
+      target:
+        entity_id: input_select.wgt_fanlevel
+  - if:
+    - condition: numeric_state
+      entity_id: sensor.aktuelle_luftstufe_wgt
+      below: 2
+      above: 0
+    then:
+    - service: input_select.select_option
+      metadata: {}
+      data:
+        option: Stufe 1
+      target:
+        entity_id: input_select.wgt_fanlevel
+  - if:
+    - condition: numeric_state
+      entity_id: sensor.aktuelle_luftstufe_wgt
+      below: 3
+      above: 1
+    then:
+    - service: input_select.select_option
+      metadata: {}
+      data:
+        option: Stufe 2
+      target:
+        entity_id: input_select.wgt_fanlevel
+  mode: single
+- id: '1722606836815'
+  alias: WGT - Set Climate Mode from WGT
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - sensor.betriebsart_wgt
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 1
+  condition:
+  - condition: and
+    conditions:
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: climate.wgtmode_template
+        state: cool
+      enabled: false
+    - condition: template
+      value_template: '{{ (states(''sensor.betriebsart_wgt'') == ''0'' and states(''climate.wgtmode_template'')
+        != ''off'' ) or (states(''sensor.betriebsart_wgt'') == ''2'' and states(''climate.wgtmode_template'')
+        != ''heat'' ) or
+
+
+        (states(''sensor.betriebsart_wgt'') == ''3'' and ( (states(''climate.wgtmode_template'')
+        != ''fan_only'' and states(''climate.wgtmode_template'') == ''cool'') or (states(''climate.wgtmode_template'')
+        == ''fan_only'' and states(''climate.wgtmode_template'') != ''cool'')  ))
+        or
+
+
+        (states(''sensor.betriebsart_wgt'') == ''4'' and states(''climate.wgtmode_template'')
+        != ''auto'' )  }}'
+  action:
+  - if:
+    - condition: numeric_state
+      entity_id: sensor.betriebsart_wgt
+      below: 1
+    then:
+    - service: climate.set_hvac_mode
+      metadata: {}
+      data:
+        hvac_mode: 'off'
+      target:
+        entity_id: climate.wgtmode_template
+  - if:
+    - condition: numeric_state
+      entity_id: sensor.betriebsart_wgt
+      below: 4
+      above: 2
+    then:
+    - service: climate.set_hvac_mode
+      metadata: {}
+      data:
+        hvac_mode: fan_only
+      target:
+        entity_id: climate.wgtmode_template
+  - if:
+    - condition: numeric_state
+      entity_id: sensor.betriebsart_wgt
+      below: 3
+      above: 1
+    then:
+    - service: climate.set_hvac_mode
+      metadata: {}
+      data:
+        hvac_mode: heat
+      target:
+        entity_id: climate.wgtmode_template
+  - if:
+    - condition: numeric_state
+      entity_id: sensor.betriebsart_wgt
+      above: 3
+    then:
+    - service: climate.set_hvac_mode
+      metadata: {}
+      data:
+        hvac_mode: auto
+      target:
+        entity_id: climate.wgtmode_template
   mode: single
