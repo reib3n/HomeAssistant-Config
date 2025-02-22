@@ -12,10 +12,12 @@ from homeassistant.helpers.selector import (
     TextSelector,
     LocationSelector,
     NumberSelector,
+    ColorRGBSelector,
 )
 from simple_dwd_weatherforecast import dwdforecast
 
 from .const import (
+    CONF_ADDITIONAL_FORECAST_ATTRIBUTES,
     CONF_DATA_TYPE,
     CONF_DATA_TYPE_FORECAST,
     CONF_DATA_TYPE_MIXED,
@@ -28,6 +30,7 @@ from .const import (
     CONF_LOCATION_COORDINATES,
     CONF_CUSTOM_LOCATION,
     CONF_MAP_BACKGROUND_TYPE,
+    CONF_MAP_DARK_MODE,
     CONF_MAP_FOREGROUND_MAXTEMP,
     CONF_MAP_FOREGROUND_POLLENFLUG,
     CONF_MAP_FOREGROUND_PRECIPITATION,
@@ -42,10 +45,16 @@ from .const import (
     CONF_MAP_BACKGROUND_KREISE,
     CONF_MAP_BACKGROUND_GEMEINDEN,
     CONF_MAP_BACKGROUND_SATELLIT,
+    CONF_MAP_HOMEMARKER,
+    CONF_MAP_HOMEMARKER_COLOR,
+    CONF_MAP_HOMEMARKER_SHAPE,
+    CONF_MAP_HOMEMARKER_SHAPE_CROSS,
+    CONF_MAP_HOMEMARKER_SHAPE_SQUARE,
+    CONF_MAP_HOMEMARKER_SIZE,
     CONF_MAP_ID,
     CONF_MAP_LOOP_COUNT,
     CONF_MAP_LOOP_SPEED,
-    CONF_MAP_MARKER,
+    CONF_MAP_CENTERMARKER,
     CONF_MAP_TIMESTAMP,
     CONF_MAP_TYPE,
     CONF_MAP_TYPE_CUSTOM,
@@ -57,6 +66,7 @@ from .const import (
     CONF_VERSION,
     CONF_WIND_DIRECTION_TYPE,
     conversion_table_map_foreground,
+    CONF_MAP_HOMEMARKER_SHAPE_CIRCLE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -264,6 +274,10 @@ class DWDWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_HOURLY_UPDATE,
                         default=False,  # type: ignore
                     ): BooleanSelector({}),
+                    vol.Required(
+                        CONF_ADDITIONAL_FORECAST_ATTRIBUTES,
+                        default=False,  # type: ignore
+                    ): BooleanSelector({}),
                 }
             )
 
@@ -345,10 +359,13 @@ class DWDWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ):
                 return await self.async_step_select_map_loop()
             else:
-                return self.async_create_entry(
-                    title=f"Weathermap {conversion_table_map_foreground[self.config_data[CONF_MAP_FOREGROUND_TYPE]]}",
-                    data=self.config_data,
-                )
+                if user_input[CONF_MAP_HOMEMARKER]:
+                    return await self.async_step_select_map_homemarker()
+                else:
+                    return self.async_create_entry(
+                        title=f"Weathermap {conversion_table_map_foreground[self.config_data[CONF_MAP_FOREGROUND_TYPE]]}",
+                        data=self.config_data,
+                    )
 
         data_schema = vol.Schema(
             {
@@ -385,7 +402,7 @@ class DWDWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 CONF_MAP_BACKGROUND_BUNDESLAENDER,
                                 CONF_MAP_BACKGROUND_KREISE,
                                 CONF_MAP_BACKGROUND_GEMEINDEN,
-                                # CONF_MAP_BACKGROUND_SATELLIT,
+                                CONF_MAP_BACKGROUND_SATELLIT,
                             ]
                         ),
                         "custom_value": False,
@@ -394,8 +411,16 @@ class DWDWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     }
                 ),
                 vol.Required(
-                    CONF_MAP_MARKER,
+                    CONF_MAP_CENTERMARKER,
                     default=False,  # type: ignore
+                ): BooleanSelector({}),
+                vol.Required(
+                    CONF_MAP_HOMEMARKER,
+                    default=False,
+                ): BooleanSelector({}),
+                vol.Required(
+                    CONF_MAP_DARK_MODE,
+                    default=False,
                 ): BooleanSelector({}),
             }
         )
@@ -411,10 +436,16 @@ class DWDWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input[CONF_MAP_LOOP_COUNT] = int(user_input[CONF_MAP_LOOP_COUNT] / 5)
             self.config_data.update(user_input)
 
-            return self.async_create_entry(
-                title=f"Weathermap {conversion_table_map_foreground[self.config_data[CONF_MAP_FOREGROUND_TYPE]]}",
-                data=self.config_data,
-            )
+            if (
+                CONF_MAP_HOMEMARKER in self.config_data
+                and self.config_data[CONF_MAP_HOMEMARKER]
+            ):
+                return await self.async_step_select_map_homemarker()
+            else:
+                return self.async_create_entry(
+                    title=f"Weathermap {conversion_table_map_foreground[self.config_data[CONF_MAP_FOREGROUND_TYPE]]}",
+                    data=self.config_data,
+                )
 
         data_schema = vol.Schema(
             {
@@ -453,6 +484,57 @@ class DWDWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="select_map_loop", data_schema=data_schema, errors=errors
         )
 
+    async def async_step_select_map_homemarker(self, user_input=None):
+        errors = {}
+        _LOGGER.debug("Map_window:user_input: {}".format(user_input))
+        if user_input is not None:
+            self.config_data.update(user_input)
+            return self.async_create_entry(
+                title=f"Weathermap {conversion_table_map_foreground[self.config_data[CONF_MAP_FOREGROUND_TYPE]]}",
+                data=self.config_data,
+            )
+
+        data_schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_MAP_HOMEMARKER_SHAPE,
+                    default=CONF_MAP_HOMEMARKER_SHAPE_CIRCLE,
+                ): SelectSelector(
+                    {
+                        "options": list(
+                            [
+                                CONF_MAP_HOMEMARKER_SHAPE_CIRCLE,
+                                CONF_MAP_HOMEMARKER_SHAPE_CROSS,
+                                CONF_MAP_HOMEMARKER_SHAPE_SQUARE,
+                            ]
+                        ),
+                        "custom_value": False,
+                        "mode": "dropdown",
+                        "translation_key": CONF_MAP_HOMEMARKER_SHAPE,
+                    }
+                ),
+                vol.Required(
+                    CONF_MAP_HOMEMARKER_SIZE,
+                    default=10,
+                ): NumberSelector(
+                    {
+                        "min": 1,
+                        "max": 25,
+                        "step": "1",
+                        "unit_of_measurement": "px",
+                    }
+                ),
+                vol.Required(
+                    CONF_MAP_HOMEMARKER_COLOR,
+                    default=[255, 0, 0],
+                ): ColorRGBSelector({}),
+            }
+        )
+        _LOGGER.debug("Map_homemarker:user_input:error {}".format(errors))
+        return self.async_show_form(
+            step_id="select_map_homemarker", data_schema=data_schema, errors=errors
+        )
+
     @staticmethod
     @callback
     def async_get_options_flow(
@@ -463,6 +545,8 @@ class DWDWeatherConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
+    config_data = {}
+
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
@@ -493,7 +577,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     data=user_input,
                     options=self.config_entry.options,
                 )
-                return self.async_create_entry(title="", data={})
+                return self.async_create_entry(title="", data=user_input)
 
             return self.async_show_form(
                 step_id="init",
@@ -501,7 +585,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     {
                         vol.Required(
                             CONF_DATA_TYPE,
-                            default=self.config_entry.data["data_type"],
+                            default=self.config_entry.data[CONF_DATA_TYPE],
                         ): SelectSelector(
                             {
                                 "options": list(
@@ -518,7 +602,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         ),
                         vol.Required(
                             CONF_WIND_DIRECTION_TYPE,
-                            default=self.config_entry.data["wind_direction_type"],
+                            default=self.config_entry.data[CONF_WIND_DIRECTION_TYPE],
                         ): SelectSelector(
                             {
                                 "options": list(["degrees", "direction"]),
@@ -529,11 +613,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         ),
                         vol.Required(
                             CONF_INTERPOLATE,
-                            default=self.config_entry.data["interpolate"],
+                            default=self.config_entry.data[CONF_INTERPOLATE],
                         ): BooleanSelector({}),
                         vol.Required(
                             CONF_HOURLY_UPDATE,
-                            default=self.config_entry.data["hourly_update"],
+                            default=self.config_entry.data[CONF_HOURLY_UPDATE],
+                        ): BooleanSelector({}),
+                        vol.Required(
+                            CONF_ADDITIONAL_FORECAST_ATTRIBUTES,
+                            default=self.config_entry.data[
+                                CONF_ADDITIONAL_FORECAST_ATTRIBUTES
+                            ],
                         ): BooleanSelector({}),
                     }
                 ),
@@ -559,12 +649,16 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     user_input[CONF_MAP_LOOP_COUNT] = int(
                         user_input[CONF_MAP_LOOP_COUNT] / 5
                     )
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry,
-                    data=user_input,
-                    options=self.config_entry.options,
-                )
-                return self.async_create_entry(title="", data={})
+                if user_input[CONF_MAP_HOMEMARKER]:
+                    self.config_data.update(user_input)
+                    return await self.async_step_homemarker()
+                else:
+                    self.hass.config_entries.async_update_entry(
+                        self.config_entry,
+                        data=user_input,
+                        options=self.config_entry.options,
+                    )
+                    return self.async_create_entry(title="", data=user_input)
             data_schema = vol.Schema(
                 {
                     vol.Required(
@@ -578,7 +672,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                     CONF_MAP_BACKGROUND_BUNDESLAENDER,
                                     CONF_MAP_BACKGROUND_KREISE,
                                     CONF_MAP_BACKGROUND_GEMEINDEN,
-                                    # CONF_MAP_BACKGROUND_SATELLIT,
+                                    CONF_MAP_BACKGROUND_SATELLIT,
                                 ]
                             ),
                             "custom_value": False,
@@ -586,10 +680,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             "translation_key": CONF_MAP_BACKGROUND_TYPE,
                         }
                     ),
-                    vol.Required(
-                        CONF_MAP_MARKER,
-                        default=self.config_entry.data[CONF_MAP_MARKER],  # type: ignore
-                    ): BooleanSelector({}),
                 }
             )
             if (
@@ -628,7 +718,83 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         ),
                     }
                 )
+            data_schema = data_schema.extend(
+                {
+                    vol.Required(
+                        CONF_MAP_CENTERMARKER,
+                        default=self.config_entry.data[CONF_MAP_CENTERMARKER],  # type: ignore
+                    ): BooleanSelector({}),
+                    vol.Required(
+                        CONF_MAP_HOMEMARKER,
+                        default=self.config_entry.data[CONF_MAP_HOMEMARKER],
+                    ): BooleanSelector({}),
+                    vol.Required(
+                        CONF_MAP_DARK_MODE,
+                        default=self.config_entry.data[CONF_MAP_DARK_MODE],
+                    ): BooleanSelector({}),
+                }
+            )
             return self.async_show_form(
                 step_id="init",
                 data_schema=data_schema,
             )
+
+    async def async_step_homemarker(self, user_input=None) -> FlowResult:  # type: ignore
+        """Manage the options for the homemarker."""
+        if user_input is not None:
+            _LOGGER.debug(
+                "OptionsFlowHandler map marker: user_input {}".format(user_input)
+            )
+            self.config_data.update(user_input)
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                data=self.config_data,
+                options=self.config_entry.options,
+            )
+            return self.async_create_entry(title="", data=self.config_data)
+        data_schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_MAP_HOMEMARKER_SHAPE,
+                    default=self.config_entry.data[CONF_MAP_HOMEMARKER_SHAPE]
+                    if CONF_MAP_HOMEMARKER_SHAPE in self.config_entry.data
+                    else CONF_MAP_HOMEMARKER_SHAPE_CIRCLE,
+                ): SelectSelector(
+                    {
+                        "options": list(
+                            [
+                                CONF_MAP_HOMEMARKER_SHAPE_CIRCLE,
+                                CONF_MAP_HOMEMARKER_SHAPE_CROSS,
+                                CONF_MAP_HOMEMARKER_SHAPE_SQUARE,
+                            ]
+                        ),
+                        "custom_value": False,
+                        "mode": "dropdown",
+                        "translation_key": CONF_MAP_HOMEMARKER_SHAPE,
+                    }
+                ),
+                vol.Required(
+                    CONF_MAP_HOMEMARKER_SIZE,
+                    default=self.config_entry.data[CONF_MAP_HOMEMARKER_SIZE]
+                    if CONF_MAP_HOMEMARKER_SIZE in self.config_entry.data
+                    else 10,
+                ): NumberSelector(
+                    {
+                        "min": 1,
+                        "max": 25,
+                        "step": "1",
+                        "unit_of_measurement": "px",
+                    }
+                ),
+                vol.Required(
+                    CONF_MAP_HOMEMARKER_COLOR,
+                    default=self.config_entry.data[CONF_MAP_HOMEMARKER_COLOR]
+                    if CONF_MAP_HOMEMARKER_COLOR in self.config_entry.data
+                    else [255, 0, 0],
+                ): ColorRGBSelector({}),
+            }
+        )
+        return self.async_show_form(
+            step_id="homemarker",
+            data_schema=data_schema,
+        )

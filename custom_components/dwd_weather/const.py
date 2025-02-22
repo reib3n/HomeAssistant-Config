@@ -7,21 +7,30 @@ from homeassistant.const import Platform
 # Base component constants
 NAME = "DWD Weather"
 DOMAIN = "dwd_weather"
-CONF_VERSION = 7
+CONF_VERSION = 10
 ATTRIBUTION = "Data provided by Deutscher Wetterdienst (DWD)"
 # Platforms
 PLATFORMS = [
     Platform.SENSOR,
     Platform.WEATHER,
 ]
-INTEGRATION_VERSION = "v2.1.7"
-MIN_REQUIRED_HA_VERSION = "2024.06.1"
+INTEGRATION_VERSION = "2.1.28"
+MIN_REQUIRED_HA_VERSION = "2024.10"
 
 ATTR_LATEST_UPDATE = "latest_update_utc"
 ATTR_REPORT_ISSUE_TIME = "report_time_utc"
 ATTR_ISSUE_TIME = "forecast_time_utc"
 ATTR_STATION_ID = "station_id"
 ATTR_STATION_NAME = "station_name"
+
+ATTR_FORECAST_SUN_DURATION = "sun_duration"
+ATTR_FORECAST_PRESSURE = "pressure"
+ATTR_FORECAST_PRECIPITATION_DURATION = "precipitation_duration"
+ATTR_FORECAST_CLOUD_COVERAGE = "cloud_coverage"
+ATTR_FORECAST_VISIBILITY = "visibility"
+ATTR_FORECAST_SUN_IRRADIANCE = "sun_irradiance"
+ATTR_FORECAST_FOG_PROBABILITY = "fog_probability"
+ATTR_FORECAST_EVAPORATION = "evaporation"
 
 DEFAULT_SCAN_INTERVAL = timedelta(minutes=1)
 DEFAULT_MAP_INTERVAL = timedelta(minutes=1)
@@ -47,11 +56,13 @@ CONF_STATION_NAME = "station_name"
 CONF_WIND_DIRECTION_TYPE = "wind_direction_type"
 CONF_INTERPOLATE = "interpolate"
 CONF_HOURLY_UPDATE = "hourly_update"
+CONF_ADDITIONAL_FORECAST_ATTRIBUTES = "additional_forecast_attributes"
 
 CONF_MAP_TYPE = "map_type"
 CONF_MAP_TYPE_GERMANY = "map_germany"
 CONF_MAP_TYPE_CUSTOM = "map_custom"
 CONF_MAP_WINDOW = "map_window"
+CONF_MAP_DARK_MODE = "map_dark_mode"
 CONF_MAP_FOREGROUND_TYPE = "map_foreground_type"
 CONF_MAP_FOREGROUND_PRECIPITATION = "map_foreground_precipitation"
 CONF_MAP_FOREGROUND_MAXTEMP = "map_foreground_maxtemp"
@@ -67,7 +78,11 @@ CONF_MAP_BACKGROUND_BUNDESLAENDER = "map_background_bundeslaender"
 CONF_MAP_BACKGROUND_KREISE = "map_background_kreise"
 CONF_MAP_BACKGROUND_GEMEINDEN = "map_background_gemeinden"
 CONF_MAP_BACKGROUND_SATELLIT = "map_background_satellit"
-CONF_MAP_MARKER = "map_marker"
+CONF_MAP_CENTERMARKER = "map_marker"
+CONF_MAP_HOMEMARKER = "map_homemarker"
+CONF_MAP_HOMEMARKER_SHAPE = "map_homemarker_shape"
+CONF_MAP_HOMEMARKER_SIZE = "map_homemarker_size"
+CONF_MAP_HOMEMARKER_COLOR = "map_homemarker_color"
 CONF_MAP_TIMESTAMP = "map_timestamp"
 CONF_MAP_LOOP_COUNT = "map_loop_count"
 CONF_MAP_LOOP_SPEED = "map_loop_speed"
@@ -82,5 +97,9 @@ conversion_table_map_foreground = {
     CONF_MAP_FOREGROUND_WARNUNGEN_GEMEINDEN: "Warnungen Gemeinden",
     CONF_MAP_FOREGROUND_WARNUNGEN_KREISE: "Warnungen Kreise",
 }
+
+CONF_MAP_HOMEMARKER_SHAPE_CIRCLE = "map_homemarker_shape_circle"
+CONF_MAP_HOMEMARKER_SHAPE_CROSS = "map_homemarker_shape_cross"
+CONF_MAP_HOMEMARKER_SHAPE_SQUARE = "map_homemarker_shape_square"
 
 CONF_OPTION_MAP_MESSAGE = "map_options_message"

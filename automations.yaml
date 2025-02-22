@@ -1,25 +1,44 @@
 - id: '1639928034409'
   alias: Weihnachtsbeleuchtung
   description: ''
-  trigger:
-  - platform: sun
-    event: sunset
-    offset: '1200'
+  triggers:
+  - event: sunset
     id: EIN_Zeit
-  - platform: time
-    at: '23:00:00'
+    trigger: sun
+  - at: '23:00:00'
     id: AUS_Zeit
-  condition: []
-  action:
+    trigger: time
+  - trigger: time
+    at: 06:00:00
+    id: EIN_Zeit
+  - trigger: sun
+    event: sunrise
+    offset: 00:30:00
+    id: AUS_Zeit
+  conditions:
+  - condition: state
+    entity_id: input_boolean.weihnachtsbeleuchtung_verfugbar
+    state: 'on'
+  actions:
   - choose:
     - conditions:
       - condition: trigger
         id: EIN_Zeit
-      sequence: []
+      sequence:
+      - action: light.turn_on
+        metadata: {}
+        data: {}
+        target:
+          entity_id: light.weihnachtsbeleuchtung
     - conditions:
       - condition: trigger
         id: AUS_Zeit
-      sequence: []
+      sequence:
+      - action: light.turn_off
+        metadata: {}
+        data: {}
+        target:
+          entity_id: light.weihnachtsbeleuchtung
     default: []
   mode: single
 - id: '1639979694151'
@@ -297,18 +316,6 @@
     data: {}
     target:
       entity_id: cover.buro
-  mode: single
-- id: '1699107705657'
-  alias: Backup to NAS
-  description: ''
-  trigger:
-  - platform: time
-    at: '12:00:00'
-  condition: []
-  action:
-  - service: hassio.backup_full
-    data:
-      compressed: true
   mode: single
 - id: '1718780262317'
   alias: Prevent Power Fridge OFF
@@ -590,3 +597,57 @@
       target:
         entity_id: climate.wgtmode_template
   mode: single
+- id: '1733170085023'
+  alias: Prevent Kühlschrank from OFF
+  description: ''
+  triggers:
+  - seconds: '30'
+    trigger: time_pattern
+  conditions:
+  - condition: device
+    type: is_off
+    device_id: bc2325c10edce6d5480fca12778e70e4
+    entity_id: 9864ad8023597e71d21b0dfb0ca31ed4
+    domain: switch
+  actions:
+  - type: turn_on
+    device_id: bc2325c10edce6d5480fca12778e70e4
+    entity_id: 9864ad8023597e71d21b0dfb0ca31ed4
+    domain: switch
+  mode: parallel
+  max: 10
+- id: '1735476152143'
+  alias: Waschmaschine
+  description: Monitoring der Waschmaschine
+  use_blueprint:
+    path: leofabri/appliance-status-monitor.yaml
+    input:
+      automation_self_trigger: input_boolean.waschmaschine_automation_self_trigger
+      appliance_socket: switch.shelly_em_wasch
+      appliance_power_sensor: sensor.waschmaschine_power
+      appliance_finishing_power_threshold: 1
+      appliance_starting_power_threshold: 30
+      actions_job_cycle_ends:
+      - action: notify.mobile_app_riphone15
+        metadata: {}
+        data:
+          message: Waschmaschine fertig
+      delayed_job_completion_duration: 301
+      actions_new_job_cycle_begins: []
+      delayed_job_completion_timer: timer.waschmaschine_delayed_job_completion_timer
+      appliance_job_cycle: input_boolean.waschmaschine_job_cycle
+      appliance_state_machine: input_select.waschmaschine_state_machine
+- id: '1735744081129'
+  alias: Spülmaschine
+  description: ''
+  use_blueprint:
+    path: leofabri/appliance-status-monitor.yaml
+    input:
+      automation_self_trigger: input_boolean.spulmschine_automation_self_trigger
+      appliance_socket: switch.std_spulmaschine
+      appliance_power_sensor: sensor.std_spulmaschine_leistung
+      appliance_starting_power_threshold: 10
+      appliance_state_machine: input_select.spulmaschine_state_machine
+      appliance_job_cycle: input_boolean.spulmaschine_job_cycle
+      delayed_job_completion_timer: timer.spulmschine_delayed_job_completion_timer
+      delayed_job_completion_duration: 60
