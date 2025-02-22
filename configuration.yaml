@@ -36,6 +36,12 @@ homeassistant:
 http:
   server_port: 443
 
+# ADS Config
+ads:
+  ip_address: "192.168.40.2"
+  device: "5.87.70.110.1.1"
+  port: 851
+
 #------------------ Other Includes ----------------------
 light: !include_dir_merge_list custom_light
 cover: !include_dir_merge_list custom_cover

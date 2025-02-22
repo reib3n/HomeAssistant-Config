@@ -9,49 +9,77 @@ import PIL.ImageDraw
 import PIL.ImageFont
 from markdownify import markdownify
 from homeassistant.config_entries import ConfigEntry
-from suntimes import SunTimes
 from io import BytesIO
+import warnings
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=SyntaxWarning)
+    from suntimes import SunTimes
 
 from homeassistant.components.weather import (
     ATTR_FORECAST_CONDITION,
     ATTR_FORECAST_NATIVE_PRECIPITATION,
     ATTR_FORECAST_NATIVE_TEMP,
     ATTR_FORECAST_NATIVE_TEMP_LOW,
+    ATTR_FORECAST_NATIVE_DEW_POINT,
     ATTR_FORECAST_TIME,
     ATTR_FORECAST_WIND_BEARING,
     ATTR_FORECAST_NATIVE_WIND_SPEED,
+    ATTR_FORECAST_PRECIPITATION_PROBABILITY,
     Forecast,
 )
 
 from homeassistant.components.weather.const import (
     ATTR_WEATHER_WIND_GUST_SPEED,
+    ATTR_WEATHER_UV_INDEX,
     WeatherEntityFeature,
 )
 
 from simple_dwd_weatherforecast import dwdforecast, dwdmap
 from simple_dwd_weatherforecast.dwdforecast import WeatherDataType
+from simple_dwd_weatherforecast.dwdmap import MarkerShape
 
 from .const import (
+    ATTR_FORECAST_CLOUD_COVERAGE,
+    ATTR_FORECAST_EVAPORATION,
+    ATTR_FORECAST_FOG_PROBABILITY,
+    ATTR_FORECAST_PRECIPITATION_DURATION,
+    ATTR_FORECAST_PRESSURE,
+    ATTR_FORECAST_SUN_IRRADIANCE,
+    ATTR_FORECAST_VISIBILITY,
     ATTR_ISSUE_TIME,
     ATTR_REPORT_ISSUE_TIME,
     ATTR_LATEST_UPDATE,
     ATTR_STATION_ID,
     ATTR_STATION_NAME,
+    ATTR_FORECAST_SUN_DURATION,
+    CONF_ADDITIONAL_FORECAST_ATTRIBUTES,
     CONF_DATA_TYPE,
     CONF_DATA_TYPE_FORECAST,
     CONF_DATA_TYPE_MIXED,
     CONF_DATA_TYPE_REPORT,
     CONF_INTERPOLATE,
+    CONF_MAP_BACKGROUND_TYPE,
     CONF_MAP_FOREGROUND_TYPE,
+    CONF_MAP_HOMEMARKER_COLOR,
+    CONF_MAP_HOMEMARKER_SHAPE,
+    CONF_MAP_HOMEMARKER_SHAPE_CIRCLE,
+    CONF_MAP_HOMEMARKER_SHAPE_CROSS,
+    CONF_MAP_HOMEMARKER_SHAPE_SQUARE,
+    CONF_MAP_HOMEMARKER_SIZE,
     CONF_MAP_LOOP_COUNT,
-    CONF_MAP_MARKER,
+    CONF_MAP_CENTERMARKER,
+    CONF_MAP_HOMEMARKER,
     CONF_MAP_TIMESTAMP,
+    CONF_MAP_TYPE,
     CONF_MAP_TYPE_GERMANY,
+    CONF_MAP_WINDOW,
     CONF_STATION_ID,
     CONF_STATION_NAME,
     CONF_WIND_DIRECTION_TYPE,
     CONF_HOURLY_UPDATE,
     DEFAULT_WIND_DIRECTION_TYPE,
+    CONF_MAP_DARK_MODE,
     CONF_MAP_FOREGROUND_PRECIPITATION,
     CONF_MAP_FOREGROUND_MAXTEMP,
     CONF_MAP_FOREGROUND_UVINDEX,
@@ -66,6 +94,12 @@ from .const import (
     CONF_MAP_BACKGROUND_GEMEINDEN,
     CONF_MAP_BACKGROUND_SATELLIT,
 )
+
+conversion_table_map_homemarker_shape = {
+    CONF_MAP_HOMEMARKER_SHAPE_CIRCLE: MarkerShape.CIRCLE,
+    CONF_MAP_HOMEMARKER_SHAPE_CROSS: MarkerShape.CROSS,
+    CONF_MAP_HOMEMARKER_SHAPE_SQUARE: MarkerShape.SQUARE,
+}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -113,6 +147,7 @@ class DWDWeatherData:
                     else False
                 ),
                 with_report=True,
+                with_uv=True,
             )
             if self._config[CONF_HOURLY_UPDATE]:
                 # Hacky workaround: as the hourly data does not provide a forecast for the actual hour, we have to clone the next hour and pretend we have a forecast
@@ -205,17 +240,13 @@ class DWDWeatherData:
                         weather_interval,
                         False,
                     )
-                    if temp_max is not None:
-                        temp_max = int(round(temp_max - 273.1, 0))
 
-                    temp_min = self.dwd_weather.get_timeframe_min(
-                        WeatherDataType.TEMPERATURE,
+                    dew_point = self.dwd_weather.get_timeframe_max(
+                        WeatherDataType.DEWPOINT,
                         timestep,
                         weather_interval,
                         False,
                     )
-                    if temp_min is not None:
-                        temp_min = int(round(temp_min - 273.1, 0))
 
                     wind_dir = self.dwd_weather.get_timeframe_avg(
                         WeatherDataType.WIND_DIRECTION,
@@ -239,7 +270,13 @@ class DWDWeatherData:
                     if precipitation_prop is not None:
                         precipitation_prop = int(precipitation_prop)
 
-                    uv_index = self.dwd_weather.get_uv_index(timestep.day - now.day)
+                    uv_index = (
+                        self.dwd_weather.get_uv_index(
+                            timestep.day - now.day, shouldUpdate=False
+                        )
+                        if timestep.day >= 0 and timestep.day < 3
+                        else None
+                    )
                     wind_speed = self.dwd_weather.get_timeframe_max(
                         WeatherDataType.WIND_SPEED,
                         timestep,
@@ -252,17 +289,39 @@ class DWDWeatherData:
                         weather_interval,
                         False,
                     )
+                    pressure = self.dwd_weather.get_timeframe_max(
+                        WeatherDataType.PRESSURE,
+                        timestep,
+                        weather_interval,
+                        False,
+                    )
+
                     data_item = {
                         ATTR_FORECAST_TIME: timestep.strftime("%Y-%m-%dT%H:00:00Z"),
+                        ATTR_FORECAST_CLOUD_COVERAGE: self.dwd_weather.get_timeframe_max(
+                            WeatherDataType.CLOUD_COVERAGE,
+                            timestep,
+                            weather_interval,
+                            False,
+                        ),
                         ATTR_FORECAST_CONDITION: condition,
-                        ATTR_FORECAST_NATIVE_TEMP: temp_max,
+                        ATTR_FORECAST_NATIVE_DEW_POINT: int(round(dew_point - 273.1, 0))
+                        if dew_point is not None
+                        else None,
                         ATTR_FORECAST_NATIVE_PRECIPITATION: self.dwd_weather.get_timeframe_sum(
                             WeatherDataType.PRECIPITATION,
                             timestep,
                             weather_interval,
                             False,
                         ),
-                        ATTR_FORECAST_WIND_BEARING: wind_dir,
+                        ATTR_FORECAST_PRECIPITATION_PROBABILITY: precipitation_prop,
+                        ATTR_FORECAST_PRESSURE: round(pressure / 100, 1)
+                        if pressure is not None
+                        else None,
+                        ATTR_FORECAST_NATIVE_TEMP: int(round(temp_max - 273.1, 0))
+                        if temp_max is not None
+                        else None,
+                        ATTR_WEATHER_UV_INDEX: uv_index,
                         ATTR_FORECAST_NATIVE_WIND_SPEED: (
                             round(wind_speed * 3.6, 1)
                             if wind_speed is not None
@@ -273,11 +332,50 @@ class DWDWeatherData:
                             if wind_gusts is not None
                             else None
                         ),
-                        "uv_index": uv_index,
-                        "precipitation_probability": precipitation_prop,
+                        ATTR_FORECAST_WIND_BEARING: wind_dir,
                     }
-                    if weather_interval == 24:
-                        data_item[ATTR_FORECAST_NATIVE_TEMP_LOW] = temp_min
+                    # Additional attributes raises errors when parsed in HA weather template so this has to be optional
+                    if self._config[CONF_ADDITIONAL_FORECAST_ATTRIBUTES]:
+                        data_item.update(
+                            {
+                                ATTR_FORECAST_EVAPORATION: self.dwd_weather.get_timeframe_max(
+                                    WeatherDataType.EVAPORATION,
+                                    timestep,
+                                    weather_interval,
+                                    False,
+                                ),
+                                ATTR_FORECAST_FOG_PROBABILITY: self.dwd_weather.get_timeframe_max(
+                                    WeatherDataType.FOG_PROBABILITY,
+                                    timestep,
+                                    weather_interval,
+                                    False,
+                                ),
+                                ATTR_FORECAST_SUN_IRRADIANCE: self.dwd_weather.get_timeframe_sum(
+                                    WeatherDataType.SUN_IRRADIANCE,
+                                    timestep,
+                                    weather_interval,
+                                    False,
+                                ),
+                                ATTR_FORECAST_VISIBILITY: self.dwd_weather.get_timeframe_min(
+                                    WeatherDataType.VISIBILITY,
+                                    timestep,
+                                    weather_interval,
+                                    False,
+                                ),
+                                ATTR_FORECAST_SUN_DURATION: self.dwd_weather.get_timeframe_sum(
+                                    WeatherDataType.SUN_DURATION,
+                                    timestep,
+                                    weather_interval,
+                                    False,
+                                ),
+                                ATTR_FORECAST_PRECIPITATION_DURATION: self.dwd_weather.get_timeframe_max(
+                                    WeatherDataType.PRECIPITATION_DURATION,
+                                    timestep,
+                                    weather_interval,
+                                    False,
+                                ),
+                            }
+                        )
                     forecast_data.append(data_item)
                     timestep += timedelta(hours=weather_interval)
         return forecast_data
@@ -309,16 +407,18 @@ class DWDWeatherData:
                     timestep,
                     False,
                 )
-                if temp_max is not None:
-                    temp_max = int(round(temp_max - 273.1, 0))
 
                 temp_min = self.dwd_weather.get_daily_min(
                     WeatherDataType.TEMPERATURE,
                     timestep,
                     False,
                 )
-                if temp_min is not None:
-                    temp_min = int(round(temp_min - 273.1, 0))
+
+                dew_point = self.dwd_weather.get_daily_max(
+                    WeatherDataType.DEWPOINT,
+                    timestep,
+                    False,
+                )
 
                 wind_dir = self.dwd_weather.get_daily_avg(
                     WeatherDataType.WIND_DIRECTION,
@@ -340,7 +440,13 @@ class DWDWeatherData:
                 if precipitation_prop is not None:
                     precipitation_prop = int(precipitation_prop)
 
-                uv_index = self.dwd_weather.get_uv_index(timestep.day - now.day)
+                uv_index = (
+                    self.dwd_weather.get_uv_index(
+                        timestep.day - now.day, shouldUpdate=False
+                    )
+                    if timestep.day >= 0 and timestep.day < 3
+                    else None
+                )
                 wind_speed = self.dwd_weather.get_daily_max(
                     WeatherDataType.WIND_SPEED,
                     timestep,
@@ -351,26 +457,83 @@ class DWDWeatherData:
                     timestep,
                     False,
                 )
+                pressure = self.dwd_weather.get_daily_max(
+                    WeatherDataType.PRESSURE,
+                    timestep,
+                    False,
+                )
+
                 data_item = {
                     ATTR_FORECAST_TIME: timestep.strftime("%Y-%m-%dT%H:00:00Z"),
+                    ATTR_FORECAST_CLOUD_COVERAGE: self.dwd_weather.get_daily_max(
+                        WeatherDataType.CLOUD_COVERAGE,
+                        timestep,
+                        False,
+                    ),
                     ATTR_FORECAST_CONDITION: condition,
-                    ATTR_FORECAST_NATIVE_TEMP: temp_max,
+                    ATTR_FORECAST_NATIVE_DEW_POINT: int(round(dew_point - 273.1, 0))
+                    if dew_point is not None
+                    else None,
                     ATTR_FORECAST_NATIVE_PRECIPITATION: self.dwd_weather.get_daily_sum(
                         WeatherDataType.PRECIPITATION,
                         timestep,
                         False,
                     ),
-                    ATTR_FORECAST_WIND_BEARING: wind_dir,
+                    ATTR_FORECAST_PRECIPITATION_PROBABILITY: precipitation_prop,
+                    ATTR_FORECAST_PRESSURE: round(pressure / 100, 1)
+                    if pressure is not None
+                    else None,
+                    ATTR_FORECAST_NATIVE_TEMP: int(round(temp_max - 273.1, 0))
+                    if temp_max is not None
+                    else None,
+                    ATTR_FORECAST_NATIVE_TEMP_LOW: int(round(temp_min - 273.1, 0))
+                    if temp_min is not None
+                    else None,
+                    ATTR_WEATHER_UV_INDEX: uv_index,
                     ATTR_FORECAST_NATIVE_WIND_SPEED: (
                         round(wind_speed * 3.6, 1) if wind_speed is not None else None
                     ),
                     ATTR_WEATHER_WIND_GUST_SPEED: (
                         round(wind_gusts * 3.6, 1) if wind_gusts is not None else None
                     ),
-                    "uv_index": uv_index,
-                    "precipitation_probability": precipitation_prop,
+                    ATTR_FORECAST_WIND_BEARING: wind_dir,
                 }
-                data_item[ATTR_FORECAST_NATIVE_TEMP_LOW] = temp_min
+                # Additional attributes raises errors when parsed in HA weather template so this has to be optional
+                if self._config[CONF_ADDITIONAL_FORECAST_ATTRIBUTES]:
+                    data_item.update(
+                        {
+                            ATTR_FORECAST_EVAPORATION: self.dwd_weather.get_daily_max(
+                                WeatherDataType.EVAPORATION,
+                                timestep,
+                                False,
+                            ),
+                            ATTR_FORECAST_FOG_PROBABILITY: self.dwd_weather.get_daily_max(
+                                WeatherDataType.FOG_PROBABILITY,
+                                timestep,
+                                False,
+                            ),
+                            ATTR_FORECAST_SUN_IRRADIANCE: self.dwd_weather.get_daily_sum(
+                                WeatherDataType.SUN_IRRADIANCE,
+                                timestep,
+                                False,
+                            ),
+                            ATTR_FORECAST_VISIBILITY: self.dwd_weather.get_daily_min(
+                                WeatherDataType.VISIBILITY,
+                                timestep,
+                                False,
+                            ),
+                            ATTR_FORECAST_SUN_DURATION: self.dwd_weather.get_daily_sum(
+                                WeatherDataType.SUN_DURATION,
+                                timestep,
+                                False,
+                            ),
+                            ATTR_FORECAST_PRECIPITATION_DURATION: self.dwd_weather.get_daily_sum(
+                                WeatherDataType.PRECIPITATION_DURATION,
+                                timestep,
+                                False,
+                            ),
+                        }
+                    )
                 forecast_data.append(data_item)
                 timestep += timedelta(hours=weather_interval)
         _LOGGER.debug("Daily Forecast data {}".format(forecast_data))
@@ -509,6 +672,14 @@ class DWDWeatherData:
     def get_uv_index(self):
         return self.dwd_weather.get_uv_index(days_from_today=0, shouldUpdate=False)
 
+    def get_evaporation(self):
+        # Evaporation is reported as "within the last 24 hours. Therefore we have to add a day in the request"
+        return self.dwd_weather.get_daily_max(
+            WeatherDataType.EVAPORATION,
+            datetime.now() + timedelta(days=1),
+            False,
+        )
+
     def get_condition_hourly(self):
         data = []
         forecast_data = self.dwd_weather.forecast_data
@@ -623,6 +794,38 @@ class DWDWeatherData:
     def get_humidity_hourly(self):
         return self.get_hourly(WeatherDataType.HUMIDITY)
 
+    def get_uv_index_daily(self):
+        return {
+            "today": self.dwd_weather.get_uv_index(
+                days_from_today=0, shouldUpdate=False
+            ),
+            "tomorrow": self.dwd_weather.get_uv_index(
+                days_from_today=1, shouldUpdate=False
+            ),
+            "dayaftertomorrow": self.dwd_weather.get_uv_index(
+                days_from_today=2, shouldUpdate=False
+            ),
+        }
+
+    def get_evaporation_daily(self):
+        data = []
+        for i in range(9):
+            timestamp = self.dwd_weather.issue_time + timedelta(days=1 + i)  # type: ignore
+            timestamp = timestamp.replace(hour=6)
+            evaporation = self.dwd_weather.get_daily_max(
+                WeatherDataType.EVAPORATION,
+                timestamp,
+                False,
+            )
+            data.append(
+                {
+                    ATTR_FORECAST_TIME: timestamp - timedelta(days=1),
+                    "value": evaporation,
+                }
+            )
+
+        return data
+
     def get_wind_direction_symbol(self, value):
         if value is None:
             return ""
@@ -649,16 +852,12 @@ class DWDWeatherData:
 class DWDMapData:
     def __init__(self, hass, config_entry: ConfigEntry):
         """Initialize the data object."""
-        self._config = config_entry.data
+        self._configentry = config_entry
+        self._configdata = config_entry.data
         self._hass = hass
         self._image = None
+        self._images = None
 
-        self._map_type = None
-        self._longitude = None
-        self._latitude = None
-        self._radius_km = None
-        self._foreground_type = None
-        self._background_type = None
         self._width = None
         self._height = None
         self._maploop = None
@@ -672,7 +871,10 @@ class DWDMapData:
         return await self._hass.async_add_executor_job(self._update)
 
     def _update(self):
-        if self._config[CONF_MAP_FOREGROUND_TYPE] == CONF_MAP_FOREGROUND_PRECIPITATION:
+        if (
+            self._configdata[CONF_MAP_FOREGROUND_TYPE]
+            == CONF_MAP_FOREGROUND_PRECIPITATION
+        ):
             self._update_loop()
         else:
             self._update_single()
@@ -691,27 +893,38 @@ class DWDMapData:
             self._maploop
             and self._width == self._cachedwidth
             and self._height == self._cachedheight
+            and self.last_config_change == self._configentry.modified_at
         ):
             _LOGGER.debug("Map _update: Map update with cache possible")
             self._maploop.update()
         else:
             _LOGGER.debug(" Map _update: No direct map update possible. Reconfiguring")
+            self.last_config_change = self._configentry.modified_at
             # prevent distortion of map
-            if (
-                self._height
-                and self._width
-                and self._foreground_type
-                and self._background_type
-            ):
+            if self._height and self._width:
                 width = round(self._height / 1.115)
-                if self._map_type == CONF_MAP_TYPE_GERMANY:
+                markers = []
+                if self._configdata[CONF_MAP_HOMEMARKER]:
+                    markers.append(
+                        dwdmap.Marker(
+                            latitude=self._hass.config.latitude,
+                            longitude=self._hass.config.longitude,
+                            shape=conversion_table_map_homemarker_shape[
+                                self._configdata[CONF_MAP_HOMEMARKER_SHAPE]
+                            ],
+                            size=self._configdata[CONF_MAP_HOMEMARKER_SIZE],
+                            colorRGB=tuple(self._configdata[CONF_MAP_HOMEMARKER_COLOR]),
+                        )
+                    )
+                if self._configdata[CONF_MAP_TYPE] == CONF_MAP_TYPE_GERMANY:
                     _LOGGER.debug(
-                        "map async_update get_germany map_type:{} background_type:{} width:{} height:{} steps:{}".format(
-                            self._map_type,
-                            self._background_type,
+                        "map async_update get_germany map_type:{} background_type:{} width:{} height:{} steps:{} markers:{}".format(
+                            self._configdata[CONF_MAP_FOREGROUND_TYPE],
+                            self._configdata[CONF_MAP_BACKGROUND_TYPE],
                             width,
                             self._height,
-                            self._config[CONF_MAP_LOOP_COUNT],
+                            self._configdata[CONF_MAP_LOOP_COUNT],
+                            len(markers),
                         )
                     )
                     maploop = dwdmap.ImageLoop(
@@ -719,39 +932,56 @@ class DWDMapData:
                         dwdmap.germany_boundaries.miny,
                         dwdmap.germany_boundaries.maxx,
                         dwdmap.germany_boundaries.maxy,
-                        map_type=self._foreground_type,
-                        background_type=self._background_type,
-                        steps=self._config[CONF_MAP_LOOP_COUNT],
+                        map_type=self.map_maptype(
+                            self._configdata[CONF_MAP_FOREGROUND_TYPE]
+                        ),  # type: ignore
+                        background_type=self.map_maptype(
+                            self._configdata[CONF_MAP_BACKGROUND_TYPE]
+                        ),  # type: ignore
+                        steps=self._configdata[CONF_MAP_LOOP_COUNT],
                         image_width=width,
                         image_height=self._height,
+                        markers=markers,
+                        dark_mode=self._configdata[CONF_MAP_DARK_MODE],
                     )
                 else:
                     _LOGGER.debug(
-                        "map async_update get_from_location lon: {}, lat:{}, radius:{}, map_type:{} background_type:{} width:{} height:{}".format(
-                            self._longitude,
-                            self._latitude,
-                            self._radius_km,
-                            self._map_type,
-                            self._background_type,
+                        "map async_update get_from_location lat: {}, lon:{}, radius:{}, map_type:{} background_type:{} width:{} height:{} markers:{}".format(
+                            self._configdata[CONF_MAP_WINDOW]["latitude"],
+                            self._configdata[CONF_MAP_WINDOW]["longitude"],
+                            self._configdata[CONF_MAP_WINDOW]["radius"],
+                            self._configdata[CONF_MAP_FOREGROUND_TYPE],
+                            self._configdata[CONF_MAP_BACKGROUND_TYPE],
                             width,
                             self._height,
+                            len(markers),
                         )
                     )
 
                     radius = math.fabs(
-                        self._radius_km / (111.3 * math.cos(self._latitude))  # type: ignore
+                        self._configdata[CONF_MAP_WINDOW]["radius"]
+                        / (
+                            111.3
+                            * math.cos(self._configdata[CONF_MAP_WINDOW]["latitude"])
+                        )  # type: ignore
                     )
 
                     maploop = dwdmap.ImageLoop(
-                        self._latitude - radius,  # type: ignore
-                        self._longitude - radius,  # type: ignore
-                        self._latitude + radius,  # type: ignore
-                        self._longitude + radius,  # type: ignore
-                        map_type=self._foreground_type,
-                        background_type=self._background_type,
-                        steps=self._config[CONF_MAP_LOOP_COUNT],
+                        self._configdata[CONF_MAP_WINDOW]["longitude"] - radius,  # type: ignore
+                        self._configdata[CONF_MAP_WINDOW]["latitude"] - radius,  # type: ignore
+                        self._configdata[CONF_MAP_WINDOW]["longitude"] + radius,  # type: ignore
+                        self._configdata[CONF_MAP_WINDOW]["latitude"] + radius,  # type: ignore
+                        map_type=self.map_maptype(
+                            self._configdata[CONF_MAP_FOREGROUND_TYPE]
+                        ),  # type: ignore
+                        background_type=self.map_maptype(
+                            self._configdata[CONF_MAP_BACKGROUND_TYPE]
+                        ),  # type: ignore
+                        steps=self._configdata[CONF_MAP_LOOP_COUNT],
                         image_width=width,
                         image_height=self._height,
+                        markers=markers,
+                        dark_mode=self._configdata[CONF_MAP_DARK_MODE],
                     )
                     _LOGGER.debug(
                         "map async_update maploop: {}".format(maploop.get_images())
@@ -764,57 +994,84 @@ class DWDMapData:
 
     def _update_single(self):
         # prevent distortion of map
-        if (
-            self._height
-            and self._width
-            and self._foreground_type
-            and self._background_type
-        ):
+        if self._height and self._width:
             width = round(self._height / 1.115)
-            if self._map_type == CONF_MAP_TYPE_GERMANY:
+            markers = []
+            if self._configdata[CONF_MAP_HOMEMARKER]:
+                markers.append(
+                    dwdmap.Marker(
+                        latitude=self._hass.config.latitude,
+                        longitude=self._hass.config.longitude,
+                        shape=conversion_table_map_homemarker_shape[
+                            self._configdata[CONF_MAP_HOMEMARKER_SHAPE]
+                        ],
+                        size=self._configdata[CONF_MAP_HOMEMARKER_SIZE],
+                        colorRGB=tuple(self._configdata[CONF_MAP_HOMEMARKER_COLOR]),
+                    )
+                )
+            if self._configdata[CONF_MAP_TYPE] == CONF_MAP_TYPE_GERMANY:
                 _LOGGER.debug(
-                    "map async_update get_germany map_type:{} background_type:{} width:{} height:{}".format(
-                        self._map_type, self._background_type, width, self._height
+                    "map async_update get_germany map_type:{} background_type:{} width:{} height:{} markers:{}".format(
+                        self._configdata[CONF_MAP_FOREGROUND_TYPE],
+                        self._configdata[CONF_MAP_BACKGROUND_TYPE],
+                        width,
+                        self._height,
+                        len(markers),
                     )
                 )
                 self._image = dwdmap.get_germany(
-                    map_type=self._foreground_type,
-                    background_type=self._background_type,
+                    map_type=self.map_maptype(
+                        self._configdata[CONF_MAP_FOREGROUND_TYPE]
+                    ),  # type: ignore
+                    background_type=self.map_maptype(
+                        self._configdata[CONF_MAP_BACKGROUND_TYPE]
+                    ),  # type: ignore
                     image_width=width,
                     image_height=self._height,
+                    markers=markers,
+                    dark_mode=self._configdata[CONF_MAP_DARK_MODE],
                 )
             else:
                 _LOGGER.debug(
-                    "map async_update get_from_location lon: {}, lat:{}, radius:{}, map_type:{} background_type:{} width:{} height:{}".format(
-                        self._longitude,
-                        self._latitude,
-                        self._radius_km,
-                        self._map_type,
-                        self._background_type,
+                    "map async_update get_from_location lat: {}, lon:{}, radius:{}, map_type:{} background_type:{} width:{} height:{} markers:{}".format(
+                        self._configdata[CONF_MAP_WINDOW]["latitude"],
+                        self._configdata[CONF_MAP_WINDOW]["longitude"],
+                        self._configdata[CONF_MAP_WINDOW]["radius"],
+                        self._configdata[CONF_MAP_FOREGROUND_TYPE],
+                        self._configdata[CONF_MAP_BACKGROUND_TYPE],
                         width,
                         self._height,
+                        len(markers),
                     )
                 )
                 self._image = dwdmap.get_from_location(
-                    longitude=self._longitude,
-                    latitude=self._latitude,
-                    radius_km=self._radius_km,
-                    map_type=self._foreground_type,
-                    background_type=self._background_type,
+                    latitude=self._configdata[CONF_MAP_WINDOW]["latitude"],
+                    longitude=self._configdata[CONF_MAP_WINDOW]["longitude"],
+                    radius_km=self._configdata[CONF_MAP_WINDOW]["radius"],
+                    map_type=self.map_maptype(
+                        self._configdata[CONF_MAP_FOREGROUND_TYPE]
+                    ),  # type: ignore
+                    background_type=self.map_maptype(
+                        self._configdata[CONF_MAP_BACKGROUND_TYPE]
+                    ),  # type: ignore
                     image_width=self._width,
                     image_height=self._height,
+                    markers=markers,
                 )
 
     def get_image(self):
         buf = BytesIO()
-        if self._config[CONF_MAP_FOREGROUND_TYPE] == CONF_MAP_FOREGROUND_PRECIPITATION:
+        if (
+            self._configdata[CONF_MAP_FOREGROUND_TYPE]
+            == CONF_MAP_FOREGROUND_PRECIPITATION
+        ):
             _LOGGER.debug(
                 " Map get_image: map_loop_count {}".format(
-                    self._config[CONF_MAP_LOOP_COUNT]
+                    self._configdata[CONF_MAP_LOOP_COUNT]
                 )
             )
 
-            if self._image_nr == self._config[CONF_MAP_LOOP_COUNT] - 1:
+            if self._image_nr == self._configdata[CONF_MAP_LOOP_COUNT] - 1:
                 self._image_nr = 0
             else:
                 self._image_nr += 1
@@ -825,7 +1082,7 @@ class DWDMapData:
 
         if image:
             draw = PIL.ImageDraw.ImageDraw(image)
-            if self._config[CONF_MAP_MARKER]:
+            if self._configdata[CONF_MAP_CENTERMARKER]:
                 center = (image.size[0] / 2, image.size[1] / 2)
                 length = 7.0
                 draw.line(
@@ -837,63 +1094,62 @@ class DWDMapData:
                     fill=(255, 0, 0),
                 )
             if (
-                CONF_MAP_TIMESTAMP in self._config
-                and self._config[CONF_MAP_TIMESTAMP]
+                CONF_MAP_TIMESTAMP in self._configdata
+                and self._configdata[CONF_MAP_TIMESTAMP]
                 and self._maploop
             ):
                 timestamp = self._maploop._last_update - timedelta(minutes=5) * (
-                    self._config[CONF_MAP_LOOP_COUNT] - self._image_nr - 1
+                    self._configdata[CONF_MAP_LOOP_COUNT] - self._image_nr - 1
                 )
-                draw.rectangle((8, 13, 175, 32), fill=(0, 0, 0))
+                boxcolor = (0, 0, 0)
+                textcolor = (255, 255, 255)
+                if (
+                    CONF_MAP_DARK_MODE in self._configdata
+                    and self._configdata[CONF_MAP_DARK_MODE]
+                ):
+                    boxcolor = (255, 255, 255)
+                    textcolor = (0, 0, 0)
+
+                draw.rectangle((8, 13, 175, 32), fill=boxcolor)
                 draw.text(
                     (10, 10),
                     timestamp.astimezone().strftime("%d.%m.%Y %H:%M"),
-                    fill=(255, 255, 255),
+                    fill=textcolor,
                     font_size=20,
                 )
 
             image.save(buf, format="PNG")  # type: ignore()
         return buf.getvalue()
 
-    def set_type(self, map_type):
-        self._map_type = map_type
-
-    def set_location(self, longitude, latitude, radius_km):
-        self._longitude = longitude
-        self._latitude = latitude
-        self._radius_km = radius_km
-
-    def set_map_style(
-        self,
-        foreground_type,
-        background_type,
-    ):
-        if foreground_type == CONF_MAP_FOREGROUND_PRECIPITATION:
-            self._foreground_type = dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR
-        elif foreground_type == CONF_MAP_FOREGROUND_MAXTEMP:
-            self._foreground_type = dwdmap.WeatherMapType.MAXTEMP
-        elif foreground_type == CONF_MAP_FOREGROUND_UVINDEX:
-            self._foreground_type = dwdmap.WeatherMapType.UVINDEX
-        elif foreground_type == CONF_MAP_FOREGROUND_POLLENFLUG:
-            self._foreground_type = dwdmap.WeatherMapType.POLLENFLUG
-        elif foreground_type == CONF_MAP_FOREGROUND_SATELLITE_RGB:
-            self._foreground_type = dwdmap.WeatherMapType.SATELLITE_RGB
-        elif foreground_type == CONF_MAP_FOREGROUND_SATELLITE_IR:
-            self._foreground_type = dwdmap.WeatherMapType.SATELLITE_IR
-        elif foreground_type == CONF_MAP_FOREGROUND_WARNUNGEN_GEMEINDEN:
-            self._foreground_type = dwdmap.WeatherMapType.WARNUNGEN_GEMEINDEN
-        elif foreground_type == CONF_MAP_FOREGROUND_WARNUNGEN_KREISE:
-            self._foreground_type = dwdmap.WeatherMapType.WARNUNGEN_KREISE
-        if background_type == CONF_MAP_BACKGROUND_LAENDER:
-            self._background_type = dwdmap.WeatherBackgroundMapType.LAENDER
-        elif background_type == CONF_MAP_BACKGROUND_BUNDESLAENDER:
-            self._background_type = dwdmap.WeatherBackgroundMapType.BUNDESLAENDER
-        elif background_type == CONF_MAP_BACKGROUND_KREISE:
-            self._background_type = dwdmap.WeatherBackgroundMapType.KREISE
-        elif background_type == CONF_MAP_BACKGROUND_GEMEINDEN:
-            self._background_type = dwdmap.WeatherBackgroundMapType.GEMEINDEN
-        elif background_type == CONF_MAP_BACKGROUND_SATELLIT:
-            self._background_type = dwdmap.WeatherBackgroundMapType.SATELLIT
+    def map_maptype(
+        self, map_type
+    ) -> dwdmap.WeatherMapType | dwdmap.WeatherBackgroundMapType | None:
+        if map_type == CONF_MAP_FOREGROUND_PRECIPITATION:
+            return dwdmap.WeatherMapType.NIEDERSCHLAGSRADAR
+        elif map_type == CONF_MAP_FOREGROUND_MAXTEMP:
+            return dwdmap.WeatherMapType.MAXTEMP
+        elif map_type == CONF_MAP_FOREGROUND_UVINDEX:
+            return dwdmap.WeatherMapType.UVINDEX
+        elif map_type == CONF_MAP_FOREGROUND_POLLENFLUG:
+            return dwdmap.WeatherMapType.POLLENFLUG
+        elif map_type == CONF_MAP_FOREGROUND_SATELLITE_RGB:
+            return dwdmap.WeatherMapType.SATELLITE_RGB
+        elif map_type == CONF_MAP_FOREGROUND_SATELLITE_IR:
+            return dwdmap.WeatherMapType.SATELLITE_IR
+        elif map_type == CONF_MAP_FOREGROUND_WARNUNGEN_GEMEINDEN:
+            return dwdmap.WeatherMapType.WARNUNGEN_GEMEINDEN
+        elif map_type == CONF_MAP_FOREGROUND_WARNUNGEN_KREISE:
+            return dwdmap.WeatherMapType.WARNUNGEN_KREISE
+        elif map_type == CONF_MAP_BACKGROUND_LAENDER:
+            return dwdmap.WeatherBackgroundMapType.LAENDER
+        elif map_type == CONF_MAP_BACKGROUND_BUNDESLAENDER:
+            return dwdmap.WeatherBackgroundMapType.BUNDESLAENDER
+        elif map_type == CONF_MAP_BACKGROUND_KREISE:
+            return dwdmap.WeatherBackgroundMapType.KREISE
+        elif map_type == CONF_MAP_BACKGROUND_GEMEINDEN:
+            return dwdmap.WeatherBackgroundMapType.GEMEINDEN
+        elif map_type == CONF_MAP_BACKGROUND_SATELLIT:
+            return dwdmap.WeatherBackgroundMapType.SATELLIT
 
     def set_size(
         self,
