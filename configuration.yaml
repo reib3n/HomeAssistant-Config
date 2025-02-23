@@ -38,9 +38,9 @@ http:
 
 # ADS Config
 ads:
-  ip_address: "192.168.40.2"
-  device: "5.87.70.110.1.1"
-  port: 851
+  ip_address: !secret beckhoff_ip
+  device: !secret beckhoff_ads_device
+  port: !secret beckhoff_ads_port
 
 #------------------ Other Includes ----------------------
 light: !include_dir_merge_list custom_light

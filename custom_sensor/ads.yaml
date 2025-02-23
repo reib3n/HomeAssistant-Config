@@ -4,11 +4,13 @@
   unit_of_measurement: "°C"
   adstype: word
   factor: 10
+  state_class: measurement
 - platform: ads
   name: "Wetterstation_relHum"
   adsvar: gvl_mb.Output_Registers[27]
   unit_of_measurement: "%"
   adstype: word
+  state_class: measurement
 - platform: ads
   name: "Wetterstation_Regenmenge"
   adsvar: gvl_mb.Output_Registers[28]
@@ -21,14 +23,17 @@
   unit_of_measurement: "m/s"
   adstype: word
   factor: 10
+  state_class: measurement
 - platform: ads
   name: "WindspeedKMH"
   adsvar: gvl_mb.Output_Registers[30]
   unit_of_measurement: "km/h"
   adstype: word
   factor: 10
+  state_class: measurement
 - platform: ads
   name: "WindDirectionDegree"
   adsvar: gvl_mb.Output_Registers[31]
   unit_of_measurement: "°"
   adstype: word
+  state_class: measurement
