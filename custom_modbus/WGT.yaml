@@ -14,7 +14,7 @@
   port: !secret wgt_port
 
   sensors:
-    - name: "Außentemperatur"
+    - name: "mb_temp_wgt_aussen"
       unit_of_measurement: "°C"
       slave: 1
       device_class: temperature
@@ -23,7 +23,7 @@
       scale: 0.1
       precision: 1
       data_type: int16
-      unique_id: "Außentemperatur"
+      unique_id: "mb_temp_wgt_aussen"
 
     - name: "Temperatur Schlafzimmer"
       unit_of_measurement: "°C"

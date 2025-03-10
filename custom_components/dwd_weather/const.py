@@ -7,14 +7,14 @@ from homeassistant.const import Platform
 # Base component constants
 NAME = "DWD Weather"
 DOMAIN = "dwd_weather"
-CONF_VERSION = 10
+CONF_VERSION = 11
 ATTRIBUTION = "Data provided by Deutscher Wetterdienst (DWD)"
 # Platforms
 PLATFORMS = [
     Platform.SENSOR,
     Platform.WEATHER,
 ]
-INTEGRATION_VERSION = "2.1.28"
+INTEGRATION_VERSION = "2.2.2"
 MIN_REQUIRED_HA_VERSION = "2024.10"
 
 ATTR_LATEST_UPDATE = "latest_update_utc"
@@ -31,6 +31,7 @@ ATTR_FORECAST_VISIBILITY = "visibility"
 ATTR_FORECAST_SUN_IRRADIANCE = "sun_irradiance"
 ATTR_FORECAST_FOG_PROBABILITY = "fog_probability"
 ATTR_FORECAST_EVAPORATION = "evaporation"
+ATTR_FORECAST_HUMIDITY = "humidity"
 
 DEFAULT_SCAN_INTERVAL = timedelta(minutes=1)
 DEFAULT_MAP_INTERVAL = timedelta(minutes=1)
@@ -57,6 +58,7 @@ CONF_WIND_DIRECTION_TYPE = "wind_direction_type"
 CONF_INTERPOLATE = "interpolate"
 CONF_HOURLY_UPDATE = "hourly_update"
 CONF_ADDITIONAL_FORECAST_ATTRIBUTES = "additional_forecast_attributes"
+CONF_SENSOR_FORECAST_STEPS = "sensor_forecast_steps"
 
 CONF_MAP_TYPE = "map_type"
 CONF_MAP_TYPE_GERMANY = "map_germany"
