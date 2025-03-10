@@ -696,6 +696,9 @@
       entity_id: cover.my_evb_pro_io
       attribute: current_position
       below: 100
+  - condition: numeric_state
+    entity_id: sensor.ads_wetterwinddir
+    above: 170
   actions:
   - action: notify.notification_group_all_devices
     metadata: {}
