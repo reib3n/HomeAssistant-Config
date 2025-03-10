@@ -1,0 +1,4 @@
+- platform: ads
+  name: "ads_WetterRain"
+  adsvar: gvl_ha.bWetterRAIN
+  device_class: moisture

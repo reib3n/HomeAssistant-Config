@@ -2,7 +2,7 @@
   platform: group
   services:
     - service: mobile_app_riphone15
-    - service: mobile_app_babsisiphone12
+    - service: mobile_app_babsisiphone15
     - service: mobile_app_ipad
 - name: notification_group_ben
   platform: group
@@ -11,4 +11,4 @@
 - name: notification_group_babsi
   platform: group
   services:
-    - service: mobile_app_babsisiphone12
+    - service: mobile_app_babsisiphone15

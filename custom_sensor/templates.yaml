@@ -191,7 +191,7 @@
       attribute_templates:
         Leistung: "{{ states('sensor.luftleistung_zuluft_wgt') + '%'}}"
         Drehzahl: "{{ states('sensor.drehzahl_zuluft_wgt') + ' rpm'}}"
-        Temperatur: "{{ states('sensor.aussentemperatur') + '°C'}}"
+        Temperatur: "{{ states('sensor.temp_aussen_low') + '°C'}}"
 
     wgt_abluft_total:
       friendly_name: "WGT Abluft total"

@@ -341,7 +341,7 @@
       address: 1025
       write_type: coil
       verify:
-    - name: "mb_Werkstatt_Heizung"
+    - name: "mb_Werkstatt_Entfeuchter"
       address: 1027
       write_type: coil
       verify:
