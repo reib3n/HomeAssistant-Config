@@ -212,6 +212,11 @@
       unit_of_measurement: "l"
       value_template: "{{ ((states.sensor.zisternenentnahme_heute.state | float * 1000)) | round(0) }}"
 
+    #    water_today:
+    #      friendly_name: "Trinkwasser Entnahme heute"
+    #      unit_of_measurement: "l"
+    #      value_template: "{{ ((states.sensor.zisternenentnahme_heute.state | float * 1000)) | round(0) }}"
+
     #------------------------SOLAR EDGE---------------------------------------
     mb_solaredge_garage_status_text:
       friendly_name: "SolarEdge Wechselrichter Garage Status"
@@ -439,3 +444,22 @@
         {% endif %}
       attribute_templates:
         Leistung: "{{ (states('sensor.waschmaschine_power') | round(1))}} W"
+
+    #---------------------------- Rolladen -----------------------------------------
+    cover_buro_optimistic:
+      friendly_name: "Rolladen Büro optimistic Positiom"
+      value_template: >-
+        {% if 100 >= (states('sensor.buro_target_closure') | int(-1)) >= 0 %}
+          {{ ( 100 | int) - (states('sensor.buro_target_closure') | int(0)) }}
+        {% else %}
+          {{ 100 | int }}
+        {% endif %}
+
+    cover_linus_sud_optimistic:
+      friendly_name: "Rolladen Linus Süd optimistic Positiom"
+      value_template: >-
+        {% if 100 >= (states('sensor.linus_sud_target_closure') | int(-1)) >= 0 %}
+          {{ ( 100 | int) - (states('sensor.linus_sud_target_closure') | int(0)) }}
+        {% else %}
+          {{ 100 | int }}
+        {% endif %}

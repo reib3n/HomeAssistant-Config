@@ -1,0 +1,32 @@
+esphome:
+  name: esp-btproxy01
+  friendly_name: esp-btproxy01
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "zrB3kHyBEGcpPTyHuurQkfFxAeYD3fcjt/xox6+u0zw="
+
+ota:
+  - platform: esphome
+    password: "44984a98a868d7c35b3f4252b1b4aaf0"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp-Btproxy01 Fallback Hotspot"
+    password: "tGuZ6DGbtLIu"
+
+captive_portal:
+bluetooth_proxy:

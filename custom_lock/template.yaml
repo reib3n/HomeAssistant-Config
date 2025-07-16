@@ -3,23 +3,31 @@
   value_template: "{{ is_state('switch.mb_haustur_dauer', 'off') and is_state('switch.mb_haustur_impuls', 'off') }}"
   optimistic: true
   lock:
-    service: switch.turn_off
+    action: switch.turn_off
     target:
       entity_id: switch.mb_haustur_dauer
   unlock:
-    service: switch.turn_on
+    action: switch.turn_on
     target:
       entity_id: switch.mb_haustur_dauer
+  open:
+    action: switch.turn_on
+    target:
+      entity_id: switch.mb_haustur_impuls
 - platform: template
   name: Garage Haus
   value_template: "{{ is_state('switch.mb_turoffner_garage_haus', 'off') }}"
   optimistic: true
   lock:
-    service: switch.turn_off
+    action: switch.turn_off
     target:
       entity_id: switch.mb_turoffner_garage_haus
   unlock:
-    service: switch.turn_on
+    action: switch.turn_on
+    target:
+      entity_id: switch.mb_turoffner_garage_haus
+  open:
+    action: switch.turn_on
     target:
       entity_id: switch.mb_turoffner_garage_haus
 - platform: template
@@ -27,11 +35,15 @@
   value_template: "{{ is_state('switch.mb_turoffner_garage_strasse', 'off') }}"
   optimistic: true
   lock:
-    service: switch.turn_off
+    action: switch.turn_off
     target:
       entity_id: switch.mb_turoffner_garage_strasse
   unlock:
-    service: switch.turn_on
+    action: switch.turn_on
+    target:
+      entity_id: switch.mb_turoffner_garage_strasse
+  open:
+    action: switch.turn_on
     target:
       entity_id: switch.mb_turoffner_garage_strasse
 - platform: template
@@ -39,10 +51,14 @@
   value_template: "{{ is_state('switch.mb_turoffner_werkstatt', 'off') }}"
   optimistic: true
   lock:
-    service: switch.turn_off
+    action: switch.turn_off
     target:
       entity_id: switch.mb_turoffner_werkstatt
   unlock:
-    service: switch.turn_on
+    action: switch.turn_on
+    target:
+      entity_id: switch.mb_turoffner_werkstatt
+  open:
+    action: switch.turn_on
     target:
       entity_id: switch.mb_turoffner_werkstatt

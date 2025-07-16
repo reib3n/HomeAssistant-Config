@@ -218,7 +218,7 @@
       unit_of_measurement: "m³"
       device_class: water
       scale: 0.01
-      precision: 2
+      precision: 3
       state_class: total_increasing
       data_type: int16
     - name: "Zisterne"
@@ -279,13 +279,10 @@
       address: 1254
       write_type: coil
       verify:
-    - name: "mb_ENV_NoDaylight"
-      address: 1019
-      write_type: coil
-      verify:
     - name: "mb_powersocket_Fernseher"
       address: 1018
       write_type: coil
+      unique_id: "mb_powersocket_Fernseher"
       verify:
     - name: "mb_powersocket_Werkstatt"
       address: 1012
@@ -294,6 +291,7 @@
     - name: "mb_vitramo_OG_Bad"
       address: 1015
       write_type: coil
+      unique_id: "mb_vitramo_OG_Bad"
       verify:
     - name: "mb_Garagentor"
       address: 1013
@@ -314,10 +312,12 @@
     - name: "mb_powersocket_Uhr"
       address: 1011
       write_type: coil
+      unique_id: "mb_powersocket_Uhr"
       verify:
     - name: "mb_powersocket_Esszimmer"
       address: 1020
       write_type: coil
+      unique_id: "mb_powersocket_Esszimmer"
       verify:
     - name: "mb_powersocket_aussen_haustür"
       address: 1021
@@ -327,6 +327,7 @@
     - name: "mb_powersocket_aussen_balkon"
       address: 1022
       write_type: coil
+      unique_id: "mb_powersocket_aussen_balkon"
       verify:
     - name: "mb_power_zisterne"
       address: 1023
@@ -342,7 +343,7 @@
       write_type: coil
       verify:
     - name: "mb_Werkstatt_Entfeuchter"
-      address: 1027
+      address: 1042
       write_type: coil
       verify:
     - name: "mb_Türöffner_Garage_Strasse"
@@ -373,15 +374,32 @@
       address: 1041
       write_type: coil
       verify:
+    - name: "mb_power_LadeWerkstatt"
+      unique_id: "mb_power_LadeWerkstatt"
+      address: 1027
+      write_type: coil
+      verify:
+    - name: "mb_power_LadeGarage"
+      unique_id: "mb_power_LadeGarage"
+      address: 1043
+      write_type: coil
+      verify:
+    - name: "mb_power_Garagendach"
+      unique_id: "mb_power_Garagendach"
+      address: 1044
+      write_type: coil
+      verify:
 
   lights:
     - name: "mb_Küche"
       address: 1000
       write_type: coil
+      unique_id: "mb_küche"
       verify:
     - name: "mb_Hausgang"
       address: 1001
       write_type: coil
+      unique_id: "mb_hausgang"
       verify:
     - name: "mb_Aussen_OST"
       address: 1002

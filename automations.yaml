@@ -252,58 +252,25 @@
     target:
       entity_id: cover.balkontur
   mode: single
-- id: '1643189899102'
-  alias: SET - VAR - NoDaylight
-  description: ''
-  trigger:
-  - platform: sun
-    event: sunrise
-    offset: '0'
-    id: Sonnenaufgang
-  - platform: sun
-    event: sunset
-    offset: '0'
-    id: Sonnenuntergang
-  condition: []
-  action:
-  - choose:
-    - conditions:
-      - condition: trigger
-        id: Sonnenaufgang
-      sequence:
-      - service: switch.turn_off
-        data: {}
-        target:
-          entity_id: switch.mb_env_nodaylight
-    - conditions:
-      - condition: trigger
-        id: Sonnenuntergang
-      sequence:
-      - service: switch.turn_on
-        data: {}
-        target:
-          entity_id: switch.mb_env_nodaylight
-    default: []
-  mode: single
 - id: '1643808353305'
   alias: Close - EG - Buro
   description: ''
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - binary_sensor.fenster_buro_eg
     to: 'off'
     for:
       hours: 0
       minutes: 0
       seconds: 5
-  - platform: sun
-    event: sunset
-    offset: '3600'
-  condition:
+    trigger: state
+  - event: sunset
+    offset: '1800'
+    trigger: sun
+  conditions:
   - condition: sun
     after: sunset
-    after_offset: '3600'
+    after_offset: '1200'
   - condition: state
     entity_id: binary_sensor.fenster_buro_eg
     state: 'off'
@@ -311,141 +278,73 @@
       hours: 0
       minutes: 0
       seconds: 5
-  action:
-  - service: cover.close_cover
-    data: {}
+  actions:
+  - data: {}
     target:
       entity_id: cover.buro
+    action: cover.close_cover
   mode: single
 - id: '1718780262317'
-  alias: Prevent Power Fridge OFF
+  alias: Monitoring - Gefrierschrank Prevent from OFF
   description: ''
-  trigger:
-  - platform: time_pattern
-    seconds: '30'
-  condition:
+  triggers:
+  - seconds: '30'
+    trigger: time_pattern
+  conditions:
   - condition: device
     type: is_off
     device_id: fdb7d62111ba59cfeadd758cd1ea4b35
     entity_id: 0cd9d297a3128c925fcc0be941e3c3a4
     domain: switch
-  action:
+  actions:
   - type: turn_on
     device_id: fdb7d62111ba59cfeadd758cd1ea4b35
     entity_id: 0cd9d297a3128c925fcc0be941e3c3a4
     domain: switch
+  - action: notify.notification_group_all_devices
+    metadata: {}
+    data:
+      message: Gefrierschrank musste wieder eingeschaltet werden!
   mode: parallel
   max: 10
 - id: '1719771764641'
-  alias: Smart Mirror Power
+  alias: EnergySave - Smart Mirror
   description: ''
-  trigger:
-  - platform: time
-    at: 06:00:00
+  triggers:
+  - at: 06:00:00
     id: Ein
-  - platform: time
-    at: '22:00:00'
+    trigger: time
+  - at: '22:00:00'
     id: Aus
-  condition:
+    trigger: time
+  conditions:
   - condition: state
     entity_id: input_boolean.urlaubsmodus
     state: 'off'
-  action:
+  actions:
   - if:
     - condition: trigger
       id:
       - Ein
     then:
-    - service: switch.turn_on
-      metadata: {}
+    - metadata: {}
       data: {}
       target:
         entity_id:
         - switch.mb_power_smartmirror
         - switch.usw_main_smartmirror_poe
+      action: switch.turn_on
   - if:
     - condition: trigger
       id:
       - Aus
     then:
-    - service: switch.turn_off
-      target:
+    - target:
         entity_id:
         - switch.mb_power_smartmirror
         - switch.usw_main_smartmirror_poe
       data: {}
-  mode: single
-- id: '1719777380572'
-  alias: Urlaubsmodus
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - input_boolean.urlaubsmodus
-    from: 'off'
-    to: 'on'
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 5
-  condition: []
-  action:
-  - service: switch.turn_off
-    metadata: {}
-    data: {}
-    target:
-      label_id: urlaubsmodus
-  mode: single
-- id: '1720557606127'
-  alias: WGT - Sommersteuerung Temp
-  description: ''
-  trigger:
-  - platform: template
-    value_template: '{{ states(''sensor.temp_aussen_low'') | float < states(''sensor.temperatur_wohnzimmer'')
-      | float }}'
-    id: Lüftung an
-    for:
-      hours: 0
-      minutes: 5
-      seconds: 0
-  - platform: template
-    value_template: '{{ states(''sensor.temp_aussen_low'') | float > states(''sensor.temperatur_wohnzimmer'')
-      | float }}'
-    id: Lüftung aus
-    for:
-      hours: 0
-      minutes: 5
-      seconds: 0
-  condition:
-  - condition: state
-    entity_id: input_boolean.sommersteuerung_luftung
-    state: 'on'
-  - condition: template
-    value_template: '{{ states(''climate.wgtmode_template'') == "fan_only" or states(''climate.wgtmode_template'')
-      == "off" or states(''climate.wgtmode_template'') == "heat" }}'
-  action:
-  - if:
-    - condition: trigger
-      id:
-      - Lüftung an
-    then:
-    - service: climate.set_hvac_mode
-      metadata: {}
-      data:
-        hvac_mode: fan_only
-      target:
-        entity_id: climate.wgtmode_template
-  - if:
-    - condition: trigger
-      id:
-      - Lüftung aus
-    then:
-    - service: climate.set_hvac_mode
-      metadata: {}
-      data:
-        hvac_mode: 'off'
-      target:
-        entity_id: climate.wgtmode_template
+      action: switch.turn_off
   mode: single
 - id: '1722603963360'
   alias: WGT - Set Fan Level Dropdown
@@ -598,7 +497,7 @@
         entity_id: climate.wgtmode_template
   mode: single
 - id: '1733170085023'
-  alias: Prevent Kühlschrank from OFF
+  alias: Monitoring - Kühlschrank Prevent from OFF
   description: ''
   triggers:
   - seconds: '30'
@@ -614,10 +513,14 @@
     device_id: bc2325c10edce6d5480fca12778e70e4
     entity_id: 9864ad8023597e71d21b0dfb0ca31ed4
     domain: switch
+  - action: notify.notification_group_all_devices
+    metadata: {}
+    data:
+      message: Kühlschrank musste wieder eingeschaltet werden!
   mode: parallel
   max: 10
 - id: '1735476152143'
-  alias: Waschmaschine
+  alias: Monitoring - Waschmaschine
   description: Monitoring der Waschmaschine
   use_blueprint:
     path: leofabri/appliance-status-monitor.yaml
@@ -638,14 +541,14 @@
       appliance_job_cycle: input_boolean.waschmaschine_job_cycle
       appliance_state_machine: input_select.waschmaschine_state_machine
 - id: '1735744081129'
-  alias: Spülmaschine
+  alias: Monitoring - Spülmaschine
   description: ''
   use_blueprint:
     path: leofabri/appliance-status-monitor.yaml
     input:
       automation_self_trigger: input_boolean.spulmschine_automation_self_trigger
       appliance_socket: switch.std_spulmaschine
-      appliance_power_sensor: sensor.std_spulmaschine_leistung
+      appliance_power_sensor: sensor.std_spulmaschine_leistung_2
       appliance_starting_power_threshold: 10
       appliance_state_machine: input_select.spulmaschine_state_machine
       appliance_job_cycle: input_boolean.spulmaschine_job_cycle
@@ -657,7 +560,7 @@
         data:
           message: Spülmaschine ist fertig.
 - id: '1741591278307'
-  alias: Wetterwarnung - Regen
+  alias: Monitoring - Wetterwarnung - Regen
   description: ''
   triggers:
   - trigger: state
@@ -669,7 +572,10 @@
       hours: 0
       minutes: 0
       seconds: 5
-  conditions: []
+  conditions:
+  - condition: template
+    value_template: '{{ now() - state_attr(''automation.meldung_regen'', ''last_triggered'')
+      > timedelta(minutes=15) }}'
   actions:
   - action: notify.notification_group_all_devices
     metadata: {}
@@ -678,7 +584,7 @@
       title: WETTERWARNUNG
   mode: single
 - id: '1741598129274'
-  alias: Wetterwarnung - Windböen
+  alias: Monitoring - Wetterwarnung - Windböen
   description: ''
   triggers:
   - trigger: numeric_state
@@ -689,11 +595,11 @@
   - condition: or
     conditions:
     - condition: numeric_state
-      entity_id: cover.my_evb_pro_io_2
+      entity_id: cover.jalousie_esszimmer
       attribute: current_position
       below: 100
     - condition: numeric_state
-      entity_id: cover.my_evb_pro_io
+      entity_id: cover.wohnzimmer_jalousie
       attribute: current_position
       below: 100
   - condition: numeric_state
@@ -710,6 +616,1246 @@
     data: {}
     target:
       entity_id:
-      - cover.my_evb_pro_io
-      - cover.my_evb_pro_io_2
+      - cover.jalousie_esszimmer
+      - cover.wohnzimmer_jalousie
+  mode: single
+- id: '1742067131896'
+  alias: SET - DateTime LetzterNiederschlag
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - sensor.ads_wetterrain
+  conditions: []
+  actions:
+  - target:
+      entity_id: input_datetime.letzterniederschlag
+    data:
+      timestamp: '{{ now().timestamp() }}'
+    action: input_datetime.set_datetime
+  mode: single
+- id: '1743429970101'
+  alias: Voice - Radiosteuerung
+  description: ''
+  triggers:
+  - trigger: conversation
+    command:
+    - Spiele SWR 1
+    - Radio an
+    - Radio anschalten
+    - Radio einschalten
+    id: SWR1
+  - trigger: conversation
+    command:
+    - Radio aus
+    - Musik aus
+    - Musik ausschalten
+    - 'Radio ausschalten '
+    id: Radio Aus
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - SWR1
+    then:
+    - action: music_assistant.play_media
+      metadata: {}
+      data:
+        media_id: library://radio/1
+      target:
+        entity_id: media_player.home_assistant_voice_09d11a_media_player_2
+    - set_conversation_response: .
+  - if:
+    - condition: trigger
+      id:
+      - Radio Aus
+    then:
+    - action: media_player.media_stop
+      metadata: {}
+      data: {}
+      target:
+        entity_id: media_player.home_assistant_voice_09d11a_media_player_2
+    - set_conversation_response: .
+  mode: single
+- id: '1743439871259'
+  alias: Voice - Modi
+  description: ''
+  triggers:
+  - trigger: conversation
+    command: Guten Morgen
+    id: GutenMorgen
+  - trigger: conversation
+    command:
+    - Rollläden schließen
+    id: Rollläden Nachtmodus
+  - trigger: conversation
+    command:
+    - Gute Nacht
+    id: GuteNacht
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - GutenMorgen
+    then:
+    - action: script.guten_morgen
+      metadata: {}
+      data: {}
+    - sequence:
+      - set_conversation_response: Guten Morgen liebe Familie! Es hat aktuell {{ states('sensor.temp_aussen_low')
+          | round }}°C draußen. Ich wünsche einen schönen Tag!
+      - action: script.radio_auf_voice_starten
+        metadata: {}
+        data: {}
+  - if:
+    - condition: and
+      conditions:
+      - condition: trigger
+        id:
+        - Rollläden Nachtmodus
+      - condition: state
+        entity_id: sun.sun
+        state: below_horizon
+    then:
+    - action: cover.close_cover
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - cover.esszimmer_sud
+        - cover.kuche
+        - cover.wohnzimmer_jalousie
+    - set_conversation_response: .
+  - if:
+    - condition: trigger
+      id:
+      - GuteNacht
+    then:
+    - action: script.gute_nacht
+      metadata: {}
+      data: {}
+    - sequence:
+      - set_conversation_response: Guten Nacht. Schlaf gut!
+      - action: media_player.media_pause
+        metadata: {}
+        data: {}
+        target:
+          entity_id: media_player.home_assistant_voice_09d11a_media_player_2
+  mode: single
+- id: '1744315603499'
+  alias: EnergySave - 3D Print
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.std_3dprinter_leistung_2
+    for:
+      hours: 0
+      minutes: 15
+      seconds: 0
+    below: 30
+  conditions:
+  - condition: time
+    after: '22:00:00'
+    before: 08:00:00
+  actions:
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      device_id: fdc1b7310e457c44af4023a9006bc8a4
+  mode: single
+- id: '1746252009778'
+  alias: Open - BY SUN
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.wetterluxtotal
+    above: 100
+  conditions:
+  - condition: state
+    entity_id: sun.sun
+    attribute: rising
+    state: true
+  - condition: state
+    entity_id: input_boolean.urlaubsmodus
+    state: 'off'
+  actions:
+  - action: button.press
+    metadata: {}
+    data: {}
+    target:
+      entity_id: button.hausgang_og_my_position
+  - action: cover.open_cover
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - cover.bad_og
+      - cover.esszimmer_sud_low_speed
+      - cover.wohnzimmer_jalousie
+      - cover.kuche_low_speed
+  - action: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.mb_powersocket_fernseher
+  - if:
+    - condition: state
+      entity_id: binary_sensor.balkontur
+      state: 'off'
+    then:
+    - action: cover.open_cover
+      metadata: {}
+      data: {}
+      target:
+        entity_id: cover.jalousie_esszimmer
+  mode: single
+- id: '1746342563586'
+  alias: Open - OG - Hausgang
+  description: ''
+  triggers:
+  - trigger: time
+    at: '13:00:00'
+  conditions: []
+  actions:
+  - action: cover.open_cover
+    metadata: {}
+    data: {}
+    target:
+      entity_id: cover.hausgang_og_low_speed
+  mode: single
+- id: '1746376437539'
+  alias: Monitoring - ALARM - Wasser Zuhause
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.zisternenentnahme_heute
+    above: 0.5
+  - trigger: numeric_state
+    entity_id:
+    - sensor.trinkwasserentnahme_heute
+    above: 0.5
+    enabled: true
+  conditions:
+  - condition: state
+    entity_id: input_boolean.urlaubsmodus
+    state: 'off'
+  actions:
+  - action: notify.notification_group_all_devices
+    metadata: {}
+    data:
+      message: "Trinkwasser: {{ ((states.sensor.trinkwasserentnahme_heute.state |
+        float * 1000)) | round(0) }} Liter \nZisternenwasser: {{ ((states.sensor.zisternenentnahme_heute.state
+        | float * 1000)) | round(0) }} Liter"
+      title: '!!! WASSERALARM !!!'
+  mode: single
+- id: '1746381984743'
+  alias: Urlaub - ALARM - Wasser Urlaub
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.zisternenentnahme_heute
+    above: 0.2
+  - trigger: numeric_state
+    entity_id:
+    - sensor.trinkwasserentnahme_heute
+    above: 0.01
+    enabled: true
+  conditions:
+  - condition: state
+    entity_id: input_boolean.urlaubsmodus
+    state: 'on'
+  actions:
+  - action: notify.notification_group_all_devices
+    metadata: {}
+    data:
+      message: "Trinkwasser: {{ ((states.sensor.trinkwasserentnahme_heute.state |
+        float * 1000)) | round(0) }} Liter \nZisternenwasser: {{ ((states.sensor.zisternenentnahme_heute.state
+        | float * 1000)) | round(0) }} Liter"
+      title: '!!! WASSERALARM !!!'
+  mode: single
+- id: '1747503467142'
+  alias: EnergySave - Entfeuchter Werkstatt
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.werkstatttur
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 10
+      seconds: 0
+    id: Aus
+  - trigger: state
+    entity_id:
+    - binary_sensor.werkstatttur
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 10
+      seconds: 0
+    id: An
+  - trigger: state
+    entity_id:
+    - input_boolean.entfeuchter_werkstatt
+    to: 'off'
+    id: Aus
+  - trigger: state
+    entity_id:
+    - input_boolean.entfeuchter_werkstatt
+    to: 'on'
+    id: Eingeschaltet
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - Aus
+    then:
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.mb_werkstatt_entfeuchter
+  - if:
+    - condition: and
+      conditions:
+      - condition: trigger
+        id:
+        - An
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        above: 1000
+      - condition: state
+        entity_id: input_boolean.entfeuchter_werkstatt
+        state: 'on'
+    then:
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.mb_werkstatt_entfeuchter
+  - if:
+    - condition: trigger
+      id:
+      - Eingeschaltet
+    then:
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.mb_werkstatt_entfeuchter
+  mode: single
+- id: '1747548529506'
+  alias: Close - OG - Bad
+  description: ''
+  triggers:
+  - event: sunset
+    offset: '900'
+    trigger: sun
+  conditions: []
+  actions:
+  - data: {}
+    action: cover.close_cover
+    target:
+      entity_id: cover.bad_og_low_speed
+  mode: single
+- id: '1749362747767'
+  alias: Urlaub - Gerätesteuerung Strom
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.urlaubsmodus
+    from: 'off'
+    to: 'on'
+    id: Urlaub Ein
+  - trigger: state
+    entity_id:
+    - input_boolean.urlaubsmodus
+    from: 'on'
+    to: 'off'
+    id: Urlaub Aus
+  conditions: []
+  actions:
+  - alias: Urlaub Ein
+    if:
+    - condition: trigger
+      id:
+      - Urlaub Ein
+    then:
+    - alias: Accesspoints aus
+      action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - switch.usw_main_port_20_poe
+        - switch.usw_main_port_23_poe
+        - switch.usw_main_port_5_poe
+        - switch.usw_office_port_8_poe
+    - alias: Steckdosen ausschalten
+      action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - switch.mb_powersocket_fernseher
+        - switch.mb_powersocket_uhr
+        - switch.mb_powersocket_aussen_haustur
+        - switch.mb_powersocket_aussen_balkon
+        - switch.mb_power_ladegarage
+        - switch.mb_power_ladewerkstatt
+        - switch.mb_powersocket_werkstatt
+  - alias: Urlaub Aus
+    if:
+    - condition: trigger
+      id:
+      - Urlaub Aus
+    then:
+    - alias: Accesspoints ein
+      action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - switch.usw_main_port_20_poe
+        - switch.usw_main_port_23_poe
+        - switch.usw_main_port_5_poe
+        - switch.usw_office_port_8_poe
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.mb_powersocket_uhr
+      alias: Steckdose einschalten
+  mode: single
+- id: '1749364384372'
+  alias: Urlaub - Gerätesteuerung WGT
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.urlaubsmodus
+    from: 'off'
+    to: 'on'
+    id: Urlaub Ein
+  conditions: []
+  actions:
+  - alias: Urlaub Ein
+    if:
+    - condition: trigger
+      id:
+      - Urlaub Ein
+    then:
+    - action: climate.set_hvac_mode
+      metadata: {}
+      data:
+        hvac_mode: fan_only
+      target:
+        entity_id: climate.wgtmode_template
+  mode: single
+- id: '1749365112915'
+  alias: Urlaub - Lichtsteuerung
+  description: ''
+  triggers:
+  - trigger: sun
+    event: sunset
+    offset: 0
+    id: Sonnenuntergang
+  - trigger: time
+    at: '23:00:00'
+    id: Ausschalten
+  conditions:
+  - condition: state
+    entity_id: input_boolean.urlaubsmodus
+    state: 'on'
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - Sonnenuntergang
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        brightness_pct: 50
+      target:
+        entity_id: light.mb_esszimmertisch
+    alias: Licht einschalten
+  - alias: Licht ausschalten
+    if:
+    - condition: trigger
+      id:
+      - Ausschalten
+    then:
+    - delay: '{{ range(0, 31)|random|multiply(60) }}'
+    - action: light.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: light.mb_esszimmertisch
+  mode: single
+- id: '1749365944823'
+  alias: Urlaub - Rollladen Nachtsteuerung
+  description: ''
+  triggers:
+  - trigger: sun
+    event: sunset
+    offset: 00:43:00
+    id: Sonnenuntergang
+  - trigger: sun
+    event: sunrise
+    offset: 00:30:00
+    id: Sonnenaufgang
+  conditions:
+  - condition: state
+    entity_id: input_boolean.urlaubsmodus
+    state: 'on'
+  actions:
+  - alias: Rollladen zu
+    if:
+    - condition: trigger
+      id:
+      - Sonnenuntergang
+    then:
+    - action: cover.close_cover
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - cover.schlafzimmer
+        - cover.erik_nord
+        - cover.erik_west
+        - cover.linus_west
+        - cover.linus_sud_custom
+        - cover.kuche
+        - cover.esszimmer_sud
+        - cover.wohnzimmer_jalousie
+  - alias: Rollladen auf
+    if:
+    - condition: trigger
+      id:
+      - Sonnenaufgang
+    then:
+    - action: cover.open_cover
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - cover.schlafzimmer
+        - cover.erik_nord
+        - cover.erik_west
+        - cover.linus_west
+        - cover.linus_sud_custom
+        - cover.kuche
+        - cover.esszimmer_sud
+        - cover.wohnzimmer_jalousie
+  mode: single
+- id: '1749367056107'
+  alias: Urlaub - ALARM - Öffnungsalarm
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.hue_secure_contact_sensor_1_offnet
+    - binary_sensor.werkstatttur
+    - binary_sensor.tur_garage_haus
+    - binary_sensor.tur_garage_strasse
+    - binary_sensor.fenster_garage
+    - binary_sensor.fenster_keller
+    - binary_sensor.fenster_technikraum
+    - binary_sensor.fenster_werkstatt
+    - binary_sensor.fenster_bad_eg
+    - binary_sensor.fenster_buro_eg
+    - binary_sensor.fenster_hobbyraum_sud
+    - binary_sensor.fenster_hobbyraum_west
+    from: 'off'
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 1
+  conditions:
+  - condition: state
+    entity_id: input_boolean.urlaubsmodus
+    state: 'on'
+    enabled: true
+  actions:
+  - action: notify.notification_group_all_devices
+    metadata: {}
+    data:
+      message: Eine Tür oder ein Fenster wurde geöffnet!
+      title: '!!! Öffnungsalarm !!!'
+  mode: single
+- id: '1749890412696'
+  alias: WGT - Sommersteuerung
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /15
+  conditions:
+  - condition: state
+    entity_id: input_boolean.sommersteuerung_luftung
+    state: 'on'
+    alias: Wenn Sommersteuerung aktiv ist
+  actions:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ states(''sensor.temp_aussen_low'') | float | round(0)
+          < states(''sensor.temperatur_wohnzimmer'') | float | round(0)}}'
+        alias: Wenn aussen KÄLTER
+      sequence:
+      - action: climate.set_hvac_mode
+        metadata: {}
+        data:
+          hvac_mode: fan_only
+        target:
+          entity_id: climate.wgtmode_template
+        alias: Nur Lüften
+    - conditions:
+      - condition: and
+        conditions:
+        - alias: Wenn aussen WÄRMER
+          condition: template
+          value_template: '{{ states(''sensor.temp_aussen_low'') | float | round(0)
+            > states(''sensor.temperatur_wohnzimmer'') | float | round(0)}}'
+        - condition: numeric_state
+          entity_id: sensor.mb_solaredge_m1_ac_power_final
+          above: 500
+        - condition: state
+          entity_id: input_boolean.urlaubsmodus
+          state: 'off'
+      sequence:
+      - action: climate.set_hvac_mode
+        metadata: {}
+        data:
+          hvac_mode: cool
+        target:
+          entity_id: climate.wgtmode_template
+        alias: Kühlen
+      alias: Wenn aussen WÄRMER + PV
+    - conditions:
+      - alias: Wenn aussen WÄRMER
+        condition: template
+        value_template: '{{ states(''sensor.temp_aussen_low'') | float | round(0)
+          > states(''sensor.temperatur_wohnzimmer'') | float | round(0)}}'
+      sequence:
+      - action: climate.set_hvac_mode
+        metadata: {}
+        data:
+          hvac_mode: 'off'
+        target:
+          entity_id: climate.wgtmode_template
+        alias: Lüftung ausschalten
+  mode: single
+- id: '1749996238572'
+  alias: EnergySave - Accesspoints
+  description: ''
+  triggers:
+  - trigger: time
+    at: 07:00:00
+    id: ein
+  - trigger: time_pattern
+    minutes: /10
+    id: aus
+  conditions:
+  - condition: state
+    entity_id: input_boolean.urlaubsmodus
+    state: 'off'
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - aus
+    - condition: sun
+      before: sunrise
+      after: sunset
+      after_offset: 01:00:00
+    - condition: state
+      entity_id: binary_sensor.terassentur
+      state: 'off'
+      for:
+        hours: 0
+        minutes: 10
+        seconds: 0
+    then:
+    - action: switch.turn_off
+      data: {}
+      target:
+        entity_id: switch.usw_main_port_5_poe
+      alias: UAP-Garage OFF
+    - action: switch.turn_off
+      data: {}
+      target:
+        entity_id: switch.usw_office_port_8_poe
+      alias: UAP-Garten OFF
+    - action: switch.turn_off
+      data: {}
+      target:
+        entity_id: switch.usw_main_port_20_poe
+      alias: UAP-Werkstatt OFF
+    else:
+    - if:
+      - condition: trigger
+        id:
+        - ein
+      then:
+      - action: switch.turn_on
+        data: {}
+        target:
+          entity_id: switch.usw_main_port_5_poe
+        alias: UAP-Garage ON
+      - action: switch.turn_on
+        target:
+          entity_id:
+          - switch.usw_office_port_8_poe
+        data: {}
+        alias: UAP-Garten ON
+      - action: switch.turn_on
+        target:
+          entity_id:
+          - switch.usw_main_port_20_poe
+        data: {}
+        alias: UAP-Werkstatt ON
+  mode: single
+- id: '1750792174376'
+  alias: Beschattung - EG - Esszimmer Süd
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: cover.esszimmer_sud
+      state: closed
+    alias: Wenn Fenster nicht geschlossen ist
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: binary_sensor.beschattung_suden_close
+        state: 'on'
+      sequence:
+      - action: button.press
+        metadata: {}
+        data: {}
+        target:
+          entity_id: button.esszimmer_sud_my_position
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.esszimmer_sud
+        attribute: current_position
+        above: 0
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.esszimmer_sud_low_speed
+      alias: Öffnen
+  mode: single
+- id: '1750846982773'
+  alias: Beschattung - EG - Küche
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: cover.kuche
+      state: closed
+    alias: Wenn Fenster nicht geschlossen ist
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: binary_sensor.beschattung_suden_close
+        state: 'on'
+      sequence:
+      - action: button.press
+        metadata: {}
+        data: {}
+        target:
+          entity_id: button.kuche_my_position
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.kuche
+        attribute: current_position
+        above: 0
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.kuche_low_speed
+      alias: Öffnen
+  mode: single
+- id: '1750848661424'
+  alias: Beschattung - OG - Bad
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: cover.bad_og
+      state: closed
+    alias: Wenn Fenster nicht geschlossen ist
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: binary_sensor.beschattung_suden_close
+        state: 'on'
+      sequence:
+      - action: button.press
+        metadata: {}
+        data: {}
+        target:
+          entity_id: button.bad_og_my_position
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.bad_og
+        attribute: current_position
+        above: 0
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.bad_og_low_speed
+      alias: Öffnen
+  mode: single
+- id: '1750848812381'
+  alias: Beschattung - OG - LiHe Süd
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: cover.linus_sud_custom
+      state: closed
+    alias: Wenn Fenster nicht geschlossen ist
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: binary_sensor.beschattung_suden_close
+        state: 'on'
+      sequence:
+      - action: cover.set_cover_position
+        metadata: {}
+        data:
+          position: 58
+        target:
+          entity_id: cover.linus_sud_custom
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.linus_sud_custom
+        attribute: current_position
+        above: 0
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.linus_sud_custom
+      alias: Öffnen
+  mode: restart
+- id: '1750848963671'
+  alias: Beschattung - UG - Technikraum
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: cover.technikraum
+      state: closed
+    alias: Wenn Fenster nicht geschlossen ist
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: state
+          entity_id: binary_sensor.fenster_technikraum
+          state: 'off'
+        - condition: state
+          entity_id: binary_sensor.beschattung_suden_close
+          state: 'on'
+      sequence:
+      - action: button.press
+        metadata: {}
+        data: {}
+        target:
+          entity_id: button.technikraum_my_position
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.technikraum
+        attribute: current_position
+        above: 0
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.technikraum_low_speed
+      alias: Öffnen
+  mode: single
+- id: '1750850796546'
+  alias: Beschattung - UG - Hobby Süd
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: cover.hobby_sud
+      state: closed
+    alias: Wenn Fenster nicht geschlossen ist
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: state
+          entity_id: binary_sensor.fenster_hobbyraum_sud
+          state: 'off'
+        - condition: state
+          entity_id: binary_sensor.beschattung_suden_close
+          state: 'on'
+      sequence:
+      - action: button.press
+        metadata: {}
+        data: {}
+        target:
+          entity_id: button.hobby_sud_my_position
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.hobby_sud
+        attribute: current_position
+        above: 0
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.hobby_sud_low_speed
+      alias: Öffnen
+  mode: single
+- id: '1750852273564'
+  alias: Beschattung - EG - Esszimmer Jalousie
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: state
+          entity_id: binary_sensor.balkontur
+          state: 'off'
+        - condition: state
+          entity_id: binary_sensor.beschattung_westen_close
+          state: 'on'
+        - condition: state
+          entity_id: binary_sensor.beschattung_zeitfenster
+          state: 'on'
+      sequence:
+      - action: button.press
+        metadata: {}
+        data: {}
+        target:
+          entity_id: button.esszimmer_jalousie_my_position
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.jalousie_esszimmer
+        attribute: current_tilt_position
+        above: 0
+      - condition: state
+        entity_id: binary_sensor.beschattung_zeitfenster
+        state: 'on'
+      - condition: state
+        entity_id: binary_sensor.beschattung_westen_close
+        state: 'off'
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.jalousie_esszimmer
+      alias: Öffnen Beschattung
+    - conditions:
+      - condition: state
+        entity_id: binary_sensor.beschattung_zeitfenster
+        state: 'off'
+        for:
+          hours: 0
+          minutes: 1
+          seconds: 0
+      - condition: state
+        entity_id: cover.jalousie_esszimmer
+        state: closed
+      - condition: numeric_state
+        entity_id: cover.jalousie_esszimmer
+        attribute: current_tilt_position
+        above: 0
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.jalousie_esszimmer
+      alias: Öffnen wenn Beschattung vorbei
+  mode: restart
+- id: '1750856088782'
+  alias: Beschattung - EG - Wohnzimmer Jalousie
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: binary_sensor.beschattung_westen_close
+        state: 'on'
+      sequence:
+      - action: button.press
+        metadata: {}
+        data: {}
+        target:
+          entity_id: button.wohnzimmer_jalousie_my_position
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.wohnzimmer_jalousie
+        attribute: current_tilt_position
+        above: 0
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 10000
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.wohnzimmer_jalousie
+      alias: Öffnen
+  mode: single
+- id: '1750864984348'
+  alias: Beschattung - UG - Hobby West
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: cover.hobby_west
+      state: closed
+    alias: Wenn Fenster nicht geschlossen ist
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: state
+          entity_id: binary_sensor.fenster_hobbyraum_west
+          state: 'off'
+        - condition: state
+          entity_id: binary_sensor.beschattung_westen_close
+          state: 'on'
+      sequence:
+      - action: button.press
+        metadata: {}
+        data: {}
+        target:
+          entity_id: button.hobby_west_my_position
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.hobby_west
+        attribute: current_position
+        above: 0
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 1000
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.hobby_west_low_speed
+      alias: Öffnen
+  mode: single
+- id: '1750865074285'
+  alias: Beschattung - OG - Erik West
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: cover.erik_west
+      state: closed
+    alias: Wenn Fenster nicht geschlossen ist
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: binary_sensor.beschattung_westen_close
+        state: 'on'
+      sequence:
+      - action: button.press
+        metadata: {}
+        data: {}
+        target:
+          entity_id: button.erik_west_my_position
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.erik_west
+        attribute: current_position
+        above: 0
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 1000
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.erik_west_low_speed
+      alias: Öffnen
+  mode: single
+- id: '1750865139579'
+  alias: Beschattung - OG - LiHe West
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: cover.linus_west
+      state: closed
+    alias: Wenn Fenster nicht geschlossen ist
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: binary_sensor.beschattung_westen_close
+        state: 'on'
+      sequence:
+      - action: button.press
+        metadata: {}
+        data: {}
+        target:
+          entity_id: button.linus_west_my_position
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.linus_west
+        attribute: current_position
+        above: 0
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 1000
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.linus_west_low_speed
+      alias: Öffnen
+  mode: single
+- id: '1752162128760'
+  alias: Monitoring - Briefkasten
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.ads_briefkasten_full
+    from: 'off'
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+  conditions: []
+  actions:
+  - action: notify.notification_group_all_devices
+    metadata: {}
+    data:
+      message: Brief erhalten!
+      title: POST
   mode: single

@@ -21,35 +21,3 @@
   state_characteristic: value_max
   max_age:
     hours: 4
-
-#-------------------------- Gardena -------------------------
-- platform: statistics
-  name: "Hochbeet 1 (Temp)"
-  entity_id: sensor.hochbeet_1_soil_temperature
-  state_characteristic: average_linear
-  sampling_size: 20
-- platform: statistics
-  name: "Hochbeet 2 (Temp)"
-  entity_id: sensor.hochbeet_2_soil_temperature
-  state_characteristic: average_linear
-  sampling_size: 20
-- platform: statistics
-  name: "Hochbeet 3 (Temp)"
-  entity_id: sensor.hochbeet_3_soil_temperature
-  state_characteristic: average_linear
-  sampling_size: 20
-- platform: statistics
-  name: "Hochbeet 1 (Hum)"
-  entity_id: sensor.hochbeet_1_soil_humidity
-  state_characteristic: average_linear
-  sampling_size: 20
-- platform: statistics
-  name: "Hochbeet 2 (Hum)"
-  entity_id: sensor.hochbeet_2_soil_humidity
-  state_characteristic: average_linear
-  sampling_size: 20
-- platform: statistics
-  name: "Hochbeet 3 (Hum)"
-  entity_id: sensor.hochbeet_3_soil_humidity
-  state_characteristic: average_linear
-  sampling_size: 20

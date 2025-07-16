@@ -1,0 +1,51 @@
+- id: '1742843242303'
+  name: Abendbeleuchtung
+  entities:
+    light.std_lavalampe:
+      supported_color_modes:
+      - onoff
+      color_mode: onoff
+      friendly_name: Lavalampe
+      supported_features: 0
+      state: 'on'
+    light.marmorlampe:
+      min_color_temp_kelvin: 2127
+      max_color_temp_kelvin: 6535
+      min_mireds: 153
+      max_mireds: 470
+      supported_color_modes:
+      - color_temp
+      - hs
+      - xy
+      color_mode: color_temp
+      brightness: 156
+      color_temp_kelvin: 2127
+      color_temp: 470
+      hs_color:
+      - 30.069
+      - 88.053
+      rgb_color:
+      - 255
+      - 143
+      - 30
+      xy_color:
+      - 0.586
+      - 0.387
+      friendly_name: Marmorlampe
+      supported_features: 32
+      state: 'on'
+    light.mb_esszimmertisch:
+      supported_color_modes:
+      - brightness
+      color_mode: brightness
+      brightness: 51
+      friendly_name: Esszimmertisch
+      supported_features: 0
+      state: 'on'
+  metadata:
+    light.std_lavalampe:
+      entity_only: true
+    light.marmorlampe:
+      entity_only: true
+    light.mb_esszimmertisch:
+      entity_only: true
