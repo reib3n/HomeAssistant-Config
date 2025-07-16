@@ -2,24 +2,25 @@
   lights:
     mb_esszimmertisch:
       friendly_name: "Esszimmertisch"
+      unique_id: "mb_esszimmertisch"
       value_template: "{{ (states('binary_sensor.mb_light_esszimmertisch_status')) }}"
       level_template: "{{ (states('sensor.mb_light_esszimmertisch_bright') | int(0) ) }}"
       turn_on:
-        - service: modbus.write_coil
+        - action: modbus.write_coil
           data_template:
             hub: "Beckhoff"
             unit: 1
             address: 1007
             state: TRUE
       turn_off:
-        - service: modbus.write_coil
+        - action: modbus.write_coil
           data_template:
             hub: "Beckhoff"
             unit: 1
             address: 1007
             state: FALSE
       set_level:
-        - service: modbus.write_register
+        - action: modbus.write_register
           data_template:
             hub: "Beckhoff"
             unit: 1
@@ -27,24 +28,25 @@
             value: "{{ brightness }}"
     mb_esszimmer:
       friendly_name: "Esszimmer"
+      unique_id: "mb_esszimmer"
       value_template: "{{ (states('binary_sensor.mb_light_esszimmer_status')) }}"
       level_template: "{{ (states('sensor.mb_light_esszimmer_bright') | int(0) ) }}"
       turn_on:
-        - service: modbus.write_coil
+        - action: modbus.write_coil
           data_template:
             hub: "Beckhoff"
             unit: 1
             address: 1008
             state: TRUE
       turn_off:
-        - service: modbus.write_coil
+        - action: modbus.write_coil
           data_template:
             hub: "Beckhoff"
             unit: 1
             address: 1008
             state: FALSE
       set_level:
-        - service: modbus.write_register
+        - action: modbus.write_register
           data_template:
             hub: "Beckhoff"
             unit: 1
@@ -52,24 +54,25 @@
             value: "{{ brightness }}"
     mb_wohnzimmer:
       friendly_name: "Wohnzimmer"
+      unique_id: "mb_wohnzimmer"
       value_template: "{{ (states('binary_sensor.mb_light_wohnzimmer_status')) }}"
       level_template: "{{ (states('sensor.mb_light_wohnzimmer_bright') | int(0) ) }}"
       turn_on:
-        - service: modbus.write_coil
+        - action: modbus.write_coil
           data_template:
             hub: "Beckhoff"
             unit: 1
             address: 1009
             state: TRUE
       turn_off:
-        - service: modbus.write_coil
+        - action: modbus.write_coil
           data_template:
             hub: "Beckhoff"
             unit: 1
             address: 1009
             state: FALSE
       set_level:
-        - service: modbus.write_register
+        - action: modbus.write_register
           data_template:
             hub: "Beckhoff"
             unit: 1
@@ -77,24 +80,25 @@
             value: "{{ brightness }}"
     mb_balkon:
       friendly_name: "Balkon"
+      unique_id: "mb_balkon"
       value_template: "{{ (states('binary_sensor.mb_light_balkon_status')) }}"
       level_template: "{{ (states('sensor.mb_light_balkon_bright') | int(0) ) }}"
       turn_on:
-        - service: modbus.write_coil
+        - action: modbus.write_coil
           data_template:
             hub: "Beckhoff"
             unit: 1
             address: 1010
             state: TRUE
       turn_off:
-        - service: modbus.write_coil
+        - action: modbus.write_coil
           data_template:
             hub: "Beckhoff"
             unit: 1
             address: 1010
             state: FALSE
       set_level:
-        - service: modbus.write_register
+        - action: modbus.write_register
           data_template:
             hub: "Beckhoff"
             unit: 1
