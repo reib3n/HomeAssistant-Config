@@ -750,7 +750,7 @@
   triggers:
   - trigger: numeric_state
     entity_id:
-    - sensor.std_3dprinter_leistung_2
+    - sensor.std_3dprinter_leistung
     for:
       hours: 0
       minutes: 15
@@ -1858,4 +1858,27 @@
     data:
       message: Brief erhalten!
       title: POST
+  mode: single
+- id: '1752686838076'
+  alias: EnergySave - Schreibtisch
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.std_schreibtisch_leistung
+    for:
+      hours: 0
+      minutes: 15
+      seconds: 0
+    below: 5
+  conditions:
+  - condition: time
+    after: '20:00:00'
+    before: 06:00:00
+  actions:
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.std_schreibtisch
   mode: single

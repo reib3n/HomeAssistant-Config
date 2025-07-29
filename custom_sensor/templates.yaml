@@ -463,3 +463,14 @@
         {% else %}
           {{ 100 | int }}
         {% endif %}
+
+    weekday_german:
+      value_template: >-
+        {% set wochentage = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"] %}
+        {{ wochentage[now().weekday()] }}
+
+    date_german:
+      value_template: >-
+        {% set monat = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"] %}
+        {% set monat = monat[now().month - 1] %}
+        {{ now().day }}. {{ monat }} {{now().year}}
