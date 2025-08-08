@@ -424,7 +424,7 @@
           ausgesteckt
         {% endif %}
       attribute_templates:
-        Leistung: "{{ (states('sensor.std_spulmaschine_leistung') | round(1))}} W"
+        Leistung: "{{ (states('sensor.std_spulmaschine_leistung') | round(1) | default(0))}} W"
 
     status_waschmaschine:
       friendly_name: "Waschmaschine"
@@ -443,7 +443,7 @@
           ausgesteckt
         {% endif %}
       attribute_templates:
-        Leistung: "{{ (states('sensor.waschmaschine_power') | round(1))}} W"
+        Leistung: "{{ (states('sensor.waschmaschine_power') | round(1) | default(0))}} W"
 
     #---------------------------- Rolladen -----------------------------------------
     cover_buro_optimistic:

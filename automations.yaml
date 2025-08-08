@@ -1851,13 +1851,42 @@
       hours: 0
       minutes: 0
       seconds: 0
+    id: Belegt
+  - trigger: state
+    entity_id:
+    - binary_sensor.ads_briefkasten_full
+    from: 'on'
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+    id: Frei
   conditions: []
   actions:
-  - action: notify.notification_group_all_devices
-    metadata: {}
-    data:
-      message: Brief erhalten!
-      title: POST
+  - if:
+    - condition: trigger
+      id:
+      - Belegt
+    then:
+    - action: notify.notification_group_all_devices
+      metadata: {}
+      data:
+        message: Brief erhalten!
+        title: POST
+    - action: script.eink_display_eg_diele_licht
+      metadata: {}
+      data:
+        modus: Briefkasten
+  - if:
+    - condition: trigger
+      id:
+      - Frei
+    then:
+    - action: script.eink_display_eg_diele_licht
+      metadata: {}
+      data:
+        modus: aus
   mode: single
 - id: '1752686838076'
   alias: EnergySave - Schreibtisch

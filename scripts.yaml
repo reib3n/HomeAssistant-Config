@@ -194,3 +194,40 @@ gute_nacht:
       - light.mb_kuche
   alias: Gute Nacht
   description: ''
+eink_display_eg_diele_licht:
+  sequence:
+  - alias: Briefkasten
+    if:
+    - condition: template
+      value_template: '{{modus == "Briefkasten"}}'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        rgb_color:
+        - 255
+        - 180
+        - 63
+        effect: Running
+        brightness_pct: 50
+      target:
+        entity_id: light.wled_eg_diele
+  - alias: Ausschalten
+    if:
+    - condition: template
+      value_template: '{{modus == "aus"}}'
+    then:
+    - action: light.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: light.wled_eg_diele
+  alias: eInk-Display-EG-Diele-Licht
+  description: ''
+  icon: mdi:alarm-light
+  fields:
+    modus:
+      selector:
+        text:
+      name: Modus
+      required: true
