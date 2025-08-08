@@ -17,7 +17,6 @@
   name: "ads_WetterRAIN"
   adsvar: gvl_ha.wWetterRAIN
   unit_of_measurement: "mm"
-  device_class: water
   state_class: TOTAL_INCREASING
   adstype: word
   factor: 10

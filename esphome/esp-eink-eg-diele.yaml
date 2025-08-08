@@ -5,7 +5,7 @@ esphome:
     priority: 200.0
     then:
       - delay: 10s
-      - component.update: eink_display
+      - script.execute: refresh_display
 
 esp32:
   board: esp32dev
@@ -34,7 +34,6 @@ wifi:
     password: "EZbTvo3CaHuz"
 
 captive_portal:
-#bluetooth_proxy:
 
 #------------------------------------------------------------------
 button:
@@ -51,19 +50,63 @@ button:
 time:
   - platform: homeassistant
     id: homeassistant_time
-    on_time:
-      - seconds: 0
-        minutes: 2
-        then:
-           - component.update: eink_display
-      - seconds: 0
-        minutes: 32
-        then:
-           - component.update: eink_display
+#    on_time:
+#      - seconds: 0
+#        minutes: 2
+#        then:
+#           - component.update: eink_display
+#      - seconds: 0
+#        minutes: 32
+#        then:
+#           - component.update: eink_display
 
+# Interval trigger for every 30 minutes
+interval:
+  - interval: 30min
+    then:
+      - script.execute: refresh_display
+
+# Script to refresh the display
+script:
+  - id: refresh_display
+    mode: queued
+    then:
+      - lambda: |-
+          int hour = id(homeassistant_time).now().hour;
+          if (hour >= 6 && hour <= 23) {
+            id(set_display_color_by_time).execute();
+            id(eink_display).update();
+          }
+  - id: set_display_color_by_time
+    mode: restart
+    then:
+      - lambda: |-
+          int hour = id(homeassistant_time).now().hour;
+          if (hour >= 6 && hour < 12) {
+            id(COLOR_TEXT) = Color(0, 0, 0, 0);     // White
+            id(COLOR_BG) = Color(255, 0, 0, 0);     // Red
+          } else if (hour >= 12 && hour < 20) {
+            id(COLOR_TEXT) = Color(0, 0, 0, 0);     // White
+            id(COLOR_BG) = Color(0, 0, 0, 255);     // Black
+          } else {
+            id(COLOR_TEXT) = Color(0, 0, 0, 255);   // Black
+            id(COLOR_BG) = Color(0, 0, 0, 0);       // White
+          }
 sun:
   latitude: 48.4706479°
   longitude: 8.4824076°
+
+color:
+  - id: COLOR_TEXT
+    red: 0%
+    green: 0%
+    blue: 0%
+    white: 0%
+  - id: COLOR_BG
+    red: 0%
+    green: 0%
+    blue: 0%
+    white: 100%
 
 # Include custom fonts
 font:
@@ -73,9 +116,6 @@ font:
   - file: 'fonts/GothamRnd-Book.ttf'
     id: font_16_book
     size: 16
-  - file: 'fonts/GothamRnd-Book.ttf'
-    id: font_18_book
-    size: 18
   - file: 'fonts/GothamRnd-Book.ttf'
     id: font_30_book
     size: 30
@@ -281,13 +321,13 @@ display:
     dc_pin: GPIO27
     busy_pin: GPIO25
     reset_pin: GPIO26
-    model: 7.50inV2
+    model: 7.50in-bv3-bwr
     reset_duration: 2ms
     update_interval: never
     rotation: 90°
     lambda: |-
 
-      it.fill(COLOR_ON);
+      it.fill(COLOR_BG);
 
       // Map weather states to MDI characters.
       std::map<std::string, std::string> weather_icon_map
@@ -301,7 +341,7 @@ display:
           {"hurricane", "\U000F0898"},
           {"lightning", "\U000F0593"},
           {"lightning-rainy", "\U000F067E"},
-          {"night", "\U000F0594"},
+          {"clear-night", "\U000F0594"},
           {"night-partly-cloudy", "\U000F0F31"},
           {"partlycloudy", "\U000F0595"},
           {"partly-lightning", "\U000F0F32"},
@@ -325,94 +365,94 @@ display:
         };
       
         //Date
-        it.printf(240, 30, id(font_medium_bold), COLOR_OFF , TextAlign::TOP_CENTER, id(date).state.c_str());
-        it.printf(240, 60, id(font_large_bold), COLOR_OFF , TextAlign::TOP_CENTER, id(weekday).state.c_str());
+        it.printf(240, 30, id(font_medium_bold), COLOR_TEXT , TextAlign::TOP_CENTER, id(date).state.c_str());
+        it.printf(240, 60, id(font_large_bold), COLOR_TEXT , TextAlign::TOP_CENTER, id(weekday).state.c_str());
 
         //it.rectangle(35, 140, 150, 150);
-        it.printf(35, 140, id(font_150_mdi), COLOR_OFF , "%s", weather_icon_map[id(weather_condition_now).state.c_str()].c_str());
+        it.printf(35, 140, id(font_150_mdi), COLOR_TEXT , "%s", weather_icon_map[id(weather_condition_now).state.c_str()].c_str());
         
         //Temperatur
-        it.printf(250, 155, id(font_54_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F050F");
-        it.printf(280, 155, id(font_large_bold), COLOR_OFF , "%2.0f°C", id(out_temp).state);
+        it.printf(250, 155, id(font_54_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F050F");
+        it.printf(280, 155, id(font_large_bold), COLOR_TEXT , "%2.0f°C", id(out_temp).state);
         //Feuchtigkeit
-        it.printf(250, 225, id(font_54_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F058E");
-        it.printf(280, 225, id(font_54_book), COLOR_OFF , "%2.0f%%", id(out_hum).state);
+        it.printf(250, 225, id(font_54_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F058E");
+        it.printf(280, 225, id(font_54_book), COLOR_TEXT , "%2.0f%%", id(out_hum).state);
 
         //UV Index
-        it.printf(80, 290, id(font_18_book), COLOR_OFF , "UV: %2.0f", id(out_uv).state);
+        it.printf(80, 290, id(font_16_book), COLOR_TEXT , "UV: %2.0f", id(out_uv).state);
 
         //Sunrise & Sunset
-        it.printf(250, 287, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F059C");
-        it.printf(263, 290, id(font_18_book), COLOR_OFF , id(next_sunrise).state.substr(0,5).c_str());
+        it.printf(250, 287, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F059C");
+        it.printf(263, 290, id(font_16_book), COLOR_TEXT , id(next_sunrise).state.substr(0,5).c_str());
 
-        it.printf(345, 287, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F059B");
-        it.printf(357, 290, id(font_18_book), COLOR_OFF , id(next_sunset).state.substr(0,5).c_str());
+        it.printf(345, 287, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F059B");
+        it.printf(357, 290, id(font_16_book), COLOR_TEXT , id(next_sunset).state.substr(0,5).c_str());
 
         //Spacer
-        it.line(20,320,460,320, COLOR_OFF);
+        it.line(25,320,460,320, COLOR_TEXT);
 
-        it.printf(240, 340, id(font_30_book), COLOR_OFF , TextAlign::TOP_CENTER, "Vorhersage");
+        it.printf(240, 340, id(font_30_book), COLOR_TEXT , TextAlign::TOP_CENTER, "Vorhersage");
 
 
 
         //4h Ahead Weather
-        it.printf(105, 390, id(font_medium_bold), COLOR_OFF , TextAlign::TOP_CENTER, "%s Uhr", id(forecast_4h_timestamp).state.substr(11,2).c_str());
-        it.printf(105, 410, id(font_100_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "%s", weather_icon_map[id(forecast_4h_condition).state.c_str()].c_str());
+        it.printf(105, 390, id(font_medium_bold), COLOR_TEXT , TextAlign::TOP_CENTER, "%s Uhr", id(forecast_4h_timestamp).state.substr(11,2).c_str());
+        it.printf(105, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[id(forecast_4h_condition).state.c_str()].c_str());
 
-        it.printf(65, 518, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F050F");
-        it.printf(80, 522, id(font_16_book), COLOR_OFF , "%s°C", id(forecast_4h_temp).state.c_str());
+        it.printf(65, 518, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F050F");
+        it.printf(80, 522, id(font_16_book), COLOR_TEXT , "%s°C", id(forecast_4h_temp).state.c_str());
 
-        it.printf(65, 543, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F0596");
-        it.printf(80, 547, id(font_16_book), COLOR_OFF , "%s mm", id(forecast_4h_precipitation).state.c_str());
+        it.printf(65, 543, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0596");
+        it.printf(80, 547, id(font_16_book), COLOR_TEXT , "%s mm", id(forecast_4h_precipitation).state.c_str());
 
-        it.printf(65, 568, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F059D");
-        it.printf(80, 572, id(font_16_book), COLOR_OFF , "%s km/h", id(forecast_4h_wind_speed).state.c_str());
+        it.printf(65, 568, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F059D");
+        it.printf(80, 572, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_4h_wind_speed).state.c_str());
 
-        it.printf(65, 593, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F0F38");
-        it.printf(80, 597, id(font_16_book), COLOR_OFF , "%s km/h", id(forecast_4h_wind_gust_speed).state.c_str());
+        it.printf(65, 593, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0F38");
+        it.printf(80, 597, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_4h_wind_gust_speed).state.c_str());
 
 
 
         //8h Ahead Weather
-        it.printf(240, 390, id(font_medium_bold), COLOR_OFF , TextAlign::TOP_CENTER, "%s Uhr", id(forecast_8h_timestamp).state.substr(11,2).c_str());
-        it.printf(240, 410, id(font_100_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "%s", weather_icon_map[id(forecast_8h_condition).state.c_str()].c_str());
+        it.printf(240, 390, id(font_medium_bold), COLOR_TEXT , TextAlign::TOP_CENTER, "%s Uhr", id(forecast_8h_timestamp).state.substr(11,2).c_str());
+        it.printf(240, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[id(forecast_8h_condition).state.c_str()].c_str());
 
-        it.printf(200, 518, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F050F");
-        it.printf(215, 522, id(font_16_book), COLOR_OFF , "%s°C", id(forecast_8h_temp).state.c_str());
+        it.printf(200, 518, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F050F");
+        it.printf(215, 522, id(font_16_book), COLOR_TEXT , "%s°C", id(forecast_8h_temp).state.c_str());
 
-        it.printf(200, 543, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F0596");
-        it.printf(215, 547, id(font_16_book), COLOR_OFF , "%s mm", id(forecast_8h_precipitation).state.c_str());
+        it.printf(200, 543, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0596");
+        it.printf(215, 547, id(font_16_book), COLOR_TEXT , "%s mm", id(forecast_8h_precipitation).state.c_str());
 
-        it.printf(200, 568, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F059D");
-        it.printf(215, 572, id(font_16_book), COLOR_OFF , "%s km/h", id(forecast_8h_wind_speed).state.c_str());
+        it.printf(200, 568, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F059D");
+        it.printf(215, 572, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_8h_wind_speed).state.c_str());
 
-        it.printf(200, 593, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F0F38");
-        it.printf(215, 597, id(font_16_book), COLOR_OFF , "%s km/h", id(forecast_8h_wind_gust_speed).state.c_str());
+        it.printf(200, 593, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0F38");
+        it.printf(215, 597, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_8h_wind_gust_speed).state.c_str());
 
 
 
         //12h Ahead Weather
-        it.printf(375, 390, id(font_medium_bold), COLOR_OFF , TextAlign::TOP_CENTER, "%s Uhr", id(forecast_12h_timestamp).state.substr(11,2).c_str());
-        it.printf(375, 410, id(font_100_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "%s", weather_icon_map[id(forecast_12h_condition).state.c_str()].c_str());
+        it.printf(375, 390, id(font_medium_bold), COLOR_TEXT , TextAlign::TOP_CENTER, "%s Uhr", id(forecast_12h_timestamp).state.substr(11,2).c_str());
+        it.printf(375, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[id(forecast_12h_condition).state.c_str()].c_str());
 
-        it.printf(335, 518, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F050F");
-        it.printf(350, 522, id(font_16_book), COLOR_OFF , "%s°C", id(forecast_12h_temp).state.c_str());
+        it.printf(335, 518, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F050F");
+        it.printf(350, 522, id(font_16_book), COLOR_TEXT , "%s°C", id(forecast_12h_temp).state.c_str());
 
-        it.printf(335, 543, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F0596");
-        it.printf(350, 547, id(font_16_book), COLOR_OFF , "%s mm", id(forecast_12h_precipitation).state.c_str());
+        it.printf(335, 543, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0596");
+        it.printf(350, 547, id(font_16_book), COLOR_TEXT , "%s mm", id(forecast_12h_precipitation).state.c_str());
 
-        it.printf(335, 568, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F059D");
-        it.printf(350, 572, id(font_16_book), COLOR_OFF , "%s km/h", id(forecast_12h_wind_speed).state.c_str());
+        it.printf(335, 568, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F059D");
+        it.printf(350, 572, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_12h_wind_speed).state.c_str());
 
-        it.printf(335, 593, id(font_22_mdi), COLOR_OFF , TextAlign::TOP_CENTER, "\U000F0F38");
-        it.printf(350, 597, id(font_16_book), COLOR_OFF , "%s km/h", id(forecast_12h_wind_gust_speed).state.c_str());
+        it.printf(335, 593, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0F38");
+        it.printf(350, 597, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_12h_wind_gust_speed).state.c_str());
 
         //Spacer
-        it.line(20,635,460,635, COLOR_OFF);
+        it.line(25,635,460,635, COLOR_TEXT);
 
         // Refresh Timestamp
         // Code by EnsconcE from https://community.home-assistant.io/t/esphome-show-time/348903
         char str[17];
         time_t currTime = id(homeassistant_time).now().timestamp;
         strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
-        it.printf(240, 770, id(font_10_book), COLOR_OFF , TextAlign::TOP_CENTER, "Letzte Aktualisierung %s", str);
+        it.printf(240, 770, id(font_10_book), COLOR_TEXT , TextAlign::TOP_CENTER, "Letzte Aktualisierung %s", str);

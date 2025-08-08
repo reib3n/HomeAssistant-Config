@@ -42,6 +42,13 @@ ads:
   device: !secret beckhoff_ads_device
   port: !secret beckhoff_ads_port
 
+# Example configuration.yaml entry for iCloud, calendars will be found automatically
+calendar:
+  - platform: caldav
+    username: !secret userIcloud
+    password: !secret passIcloud
+    url: https://caldav.icloud.com
+
 #------------------ Other Includes ----------------------
 light: !include_dir_merge_list custom_light
 cover: !include_dir_merge_list custom_cover
@@ -144,3 +151,29 @@ template:
         unique_id: forecast_12h_timestamp
         state: >
           {{ forecast_data['weather.freudenst'].forecast[14].datetime }}
+
+  - sensor:
+      - name: "Termine Heute und Morgen"
+        unique_id: events_today_tomorrow
+        state: >
+          {% set calendar_entity = 'calendar.abfall' %}  {# <--- DEIN Kalender hier #}
+          {% set now_dt = now() %}
+          {% set today = now_dt.date() %}
+          {% set tomorrow = today + timedelta(days=1) %}
+          {% set day_after_tomorrow = today + timedelta(days=2) %}
+
+          {% set start = today %}
+          {% set end = day_after_tomorrow %}  {# Bis Ende morgen #}
+
+          {% set events = state_attr(calendar_entity, 'entries') | default([]) %}
+
+          {% set filtered = events
+            | selectattr('start', '>=', start.isoformat())
+            | selectattr('start', '<', end.isoformat())
+            | list %}
+
+          {% if filtered | length == 0 %}
+            Keine Termine
+          {% else %}
+            {{ filtered | map(attribute='summary') | list | join(', ') }}
+          {% endif %}
