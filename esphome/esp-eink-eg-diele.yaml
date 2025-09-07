@@ -2,9 +2,9 @@ esphome:
   name: "esp-eink-eg-diele"
   friendly_name: "esp-eink-eg-diele"
   on_boot:
-    priority: 200.0
+    priority: 800
     then:
-      - delay: 10s
+      - delay: 45s
       - script.execute: refresh_display
 
 esp32:
@@ -14,6 +14,8 @@ esp32:
 
 # Enable logging
 logger:
+  level: DEBUG
+#  baud_rate: 0   # deaktiviert serielle Logs → schnellerer Boot
 
 # Enable Home Assistant API
 api:
@@ -28,17 +30,8 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Tsp-Display-Eg Fallback Hotspot"
-    password: "EZbTvo3CaHuz"
-
-captive_portal:
-
 #------------------------------------------------------------------
 button:
-  - platform: shutdown
-    name: "eInk-EG-Diele - Shutdown"
   - platform: restart
     name: "eInk-EG-Diele - Restart"
   - platform: template
@@ -50,21 +43,24 @@ button:
 time:
   - platform: homeassistant
     id: homeassistant_time
-#    on_time:
-#      - seconds: 0
-#        minutes: 2
-#        then:
-#           - component.update: eink_display
-#      - seconds: 0
-#        minutes: 32
-#        then:
-#           - component.update: eink_display
 
 # Interval trigger for every 30 minutes
 interval:
   - interval: 30min
     then:
       - script.execute: refresh_display
+
+color:
+  - id: COLOR_TEXT
+    red: 0%
+    green: 0%
+    blue: 0%
+    white: 0%
+  - id: COLOR_BG
+    red: 0%
+    green: 0%
+    blue: 0%
+    white: 100%
 
 # Script to refresh the display
 script:
@@ -93,20 +89,8 @@ script:
             id(COLOR_BG) = Color(0, 0, 0, 0);       // White
           }
 sun:
-  latitude: 48.4706479°
-  longitude: 8.4824076°
-
-color:
-  - id: COLOR_TEXT
-    red: 0%
-    green: 0%
-    blue: 0%
-    white: 0%
-  - id: COLOR_BG
-    red: 0%
-    green: 0%
-    blue: 0%
-    white: 100%
+  latitude: 48.4706479
+  longitude: 8.4824076
 
 # Include custom fonts
 font:
@@ -133,7 +117,7 @@ font:
   # Thanks to https://community.home-assistant.io/t/display-materialdesign-icons-on-esphome-attached-to-screen/199790/16
   - file: 'fonts/materialdesignicons-webfont.ttf'
     id: font_150_mdi
-    size: 150
+    size: 140
     glyphs: &mdi-weather-glyphs
       - "\U000F0590" # mdi-weather-cloudy
       - "\U000F0F2F" # mdi-weather-cloudy-alert
@@ -175,6 +159,8 @@ font:
     glyphs:
       - "\U000F058E" # mdi-water-percent
       - "\U000F050F" # mdi-thermometer
+      - "\U000F1A5F" # mdi-pool-thermometer
+      - "\U000F06CC" # mdi-delete-empty
   - file: 'fonts/materialdesignicons-webfont.ttf'
     id: font_22_mdi
     size: 22
@@ -185,15 +171,10 @@ font:
       - "\U000F0596" # mdi-weather-pouring
       - "\U000F059D" # mdi-weather-windy
       - "\U000F0F38" # mdi-weather-tornado
+      - "\U000F0143" # mdi-chevron-up
+      - "\U000F0140" # mdi-chevron-down
 
 sensor:
-  # Create sensors for monitoring remotely.
-  - platform: template
-    name: "eInk-EG-Diele - Display Last Update"
-    device_class: timestamp
-    entity_category: "diagnostic"
-    id: display_last_update
-  
   - platform: wifi_signal
     name: "eInk-EG-Diele - WiFi Signal Strength"
     id: wifisignal
@@ -204,15 +185,21 @@ sensor:
   - platform: homeassistant
     entity_id: sensor.temp_aussen_low
     id: out_temp
-
   - platform: homeassistant
     entity_id: sensor.ads_wetterhum
     id: out_hum
-
   - platform: homeassistant
-    entity_id: sensor.freudenst_uv_index
+    entity_id: sensor.freudenstadt_uv_index
     id: out_uv
-
+  - platform: homeassistant
+    entity_id: sensor.forecast_weather_max_temp_today
+    id: temp_max_today
+  - platform: homeassistant
+    entity_id: sensor.forecast_weather_min_temp_today
+    id: temp_min_today
+  - platform: homeassistant
+    entity_id: sensor.ibs_th2_p01b_00f0_temperature
+    id: temp_pool
 
 text_sensor:
   - platform: homeassistant
@@ -221,92 +208,83 @@ text_sensor:
   - platform: homeassistant
     entity_id: sensor.date_german
     id: date
-
   - platform: homeassistant
-    entity_id: weather.freudenst
+    entity_id: weather.freudenstadt
     id: weather_condition_now
-
   - platform: sun
     id: next_sunrise
     type: sunrise
-
   - platform: sun
     id: next_sunset
     type: sunset
-
   - platform: homeassistant
     entity_id: sensor.forecast_4h_timestamp
     id: forecast_4h_timestamp
-
   - platform: homeassistant
     entity_id: sensor.forecast_4h_condition
     id: forecast_4h_condition
-
   - platform: homeassistant
     entity_id: sensor.forecast_4h_temperature
     id: forecast_4h_temp
-
   - platform: homeassistant
     entity_id: sensor.forecast_4h_precipitation
     id: forecast_4h_precipitation
-
   - platform: homeassistant
     entity_id: sensor.forecast_4h_wind_speed
     id: forecast_4h_wind_speed
-
   - platform: homeassistant
     entity_id: sensor.forecast_4h_wind_gust_speed
     id: forecast_4h_wind_gust_speed
-
-
   - platform: homeassistant
     entity_id: sensor.forecast_8h_timestamp
     id: forecast_8h_timestamp
-
   - platform: homeassistant
     entity_id: sensor.forecast_8h_condition
     id: forecast_8h_condition
-
   - platform: homeassistant
     entity_id: sensor.forecast_8h_temperature
     id: forecast_8h_temp
-
   - platform: homeassistant
     entity_id: sensor.forecast_8h_precipitation
     id: forecast_8h_precipitation
-
   - platform: homeassistant
     entity_id: sensor.forecast_8h_wind_speed
     id: forecast_8h_wind_speed
-
   - platform: homeassistant
     entity_id: sensor.forecast_8h_wind_gust_speed
     id: forecast_8h_wind_gust_speed
-
-
   - platform: homeassistant
     entity_id: sensor.forecast_12h_timestamp
     id: forecast_12h_timestamp
-
   - platform: homeassistant
     entity_id: sensor.forecast_12h_condition
     id: forecast_12h_condition
-
   - platform: homeassistant
     entity_id: sensor.forecast_12h_temperature
     id: forecast_12h_temp
-
   - platform: homeassistant
     entity_id: sensor.forecast_12h_precipitation
     id: forecast_12h_precipitation
-
   - platform: homeassistant
     entity_id: sensor.forecast_12h_wind_speed
     id: forecast_12h_wind_speed
-
   - platform: homeassistant
     entity_id: sensor.forecast_12h_wind_gust_speed
     id: forecast_12h_wind_gust_speed
+
+  - platform: homeassistant
+    entity_id: sensor.forecast_weather_wind_today
+    id: forecast_wind_today
+  - platform: homeassistant
+    entity_id: sensor.forecast_weather_regen_today
+    id: forecast_rain_today
+
+  - platform: homeassistant
+    entity_id: sensor.abfalltermine_heute
+    id: trash_today
+  - platform: homeassistant
+    entity_id: sensor.abfalltermine_morgen
+    id: trash_tomorrow
 
 # Pins for Waveshare ePaper ESP Board
 spi:
@@ -324,135 +302,206 @@ display:
     model: 7.50in-bv3-bwr
     reset_duration: 2ms
     update_interval: never
-    rotation: 90°
+    rotation: 90
     lambda: |-
 
       it.fill(COLOR_BG);
 
       // Map weather states to MDI characters.
       std::map<std::string, std::string> weather_icon_map
-        {
-          {"cloudy", "\U000F0590"},
-          {"cloudy-alert", "\U000F0F2F"},
-          {"cloudy-arrow-right", "\U000F0E6E"},
-          {"fog", "\U000F0591"},
-          {"hail", "\U000F0592"},
-          {"hazy", "\U000F0F30"},
-          {"hurricane", "\U000F0898"},
-          {"lightning", "\U000F0593"},
-          {"lightning-rainy", "\U000F067E"},
-          {"clear-night", "\U000F0594"},
-          {"night-partly-cloudy", "\U000F0F31"},
-          {"partlycloudy", "\U000F0595"},
-          {"partly-lightning", "\U000F0F32"},
-          {"partly-rainy", "\U000F0F33"},
-          {"partly-snowy", "\U000F0F34"},
-          {"partly-snowy-rainy", "\U000F0F35"},
-          {"pouring", "\U000F0596"},
-          {"rainy", "\U000F0597"},
-          {"snowy", "\U000F0598"},
-          {"snowy-heavy", "\U000F0F36"},
-          {"snowy-rainy", "\U000F067F"},
-          {"sunny", "\U000F0599"},
-          {"sunny-alert", "\U000F0F37"},
-          {"sunny-off", "\U000F14E4"},
-          {"sunset", "\U000F059A"},
-          {"sunset-down", "\U000F059B"},
-          {"sunset-up", "\U000F059C"},
-          {"tornado", "\U000F0F38"},
-          {"windy", "\U000F059D"},
-          {"windy-variant", "\U000F059E"},
-        };
+      {
+        {"cloudy", "\U000F0590"},
+        {"cloudy-alert", "\U000F0F2F"},
+        {"cloudy-arrow-right", "\U000F0E6E"},
+        {"fog", "\U000F0591"},
+        {"hail", "\U000F0592"},
+        {"hazy", "\U000F0F30"},
+        {"hurricane", "\U000F0898"},
+        {"lightning", "\U000F0593"},
+        {"lightning-rainy", "\U000F067E"},
+        {"clear-night", "\U000F0594"},
+        {"night-partly-cloudy", "\U000F0F31"},
+        {"partlycloudy", "\U000F0595"},
+        {"partly-lightning", "\U000F0F32"},
+        {"partly-rainy", "\U000F0F33"},
+        {"partly-snowy", "\U000F0F34"},
+        {"partly-snowy-rainy", "\U000F0F35"},
+        {"pouring", "\U000F0596"},
+        {"rainy", "\U000F0597"},
+        {"snowy", "\U000F0598"},
+        {"snowy-heavy", "\U000F0F36"},
+        {"snowy-rainy", "\U000F067F"},
+        {"sunny", "\U000F0599"},
+        {"sunny-alert", "\U000F0F37"},
+        {"sunny-off", "\U000F14E4"},
+        {"sunset", "\U000F059A"},
+        {"sunset-down", "\U000F059B"},
+        {"sunset-up", "\U000F059C"},
+        {"tornado", "\U000F0F38"},
+        {"windy", "\U000F059D"},
+        {"windy-variant", "\U000F059E"}
+      };
       
-        //Date
+      bool data_missing = false;
+
+      auto check_state = [&](auto id_ref, const char* sensor_name) {
+        if (!id_ref->has_state()) {
+          ESP_LOGW("display", "Sensorwert fehlt: %s", sensor_name);
+          data_missing = true;
+          return false;
+        }
+        return true;
+      };
+
+      // Datum
+      if (check_state(id(date), "date"))
         it.printf(240, 30, id(font_medium_bold), COLOR_TEXT , TextAlign::TOP_CENTER, id(date).state.c_str());
+
+      if (check_state(id(weekday), "weekday"))
         it.printf(240, 60, id(font_large_bold), COLOR_TEXT , TextAlign::TOP_CENTER, id(weekday).state.c_str());
 
-        //it.rectangle(35, 140, 150, 150);
-        it.printf(35, 140, id(font_150_mdi), COLOR_TEXT , "%s", weather_icon_map[id(weather_condition_now).state.c_str()].c_str());
-        
-        //Temperatur
-        it.printf(250, 155, id(font_54_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F050F");
+      // Wetter-Icon
+      std::string weather = check_state(id(weather_condition_now), "weather_condition_now") ? id(weather_condition_now).state : "cloudy";
+      it.printf(35, 150, id(font_150_mdi), COLOR_TEXT , "%s", weather_icon_map[weather].c_str());
+
+      // Temp MIN & MAX
+      if (check_state(id(temp_max_today), "temp_max_today"))
+        it.printf(283, 130, id(font_16_book), COLOR_TEXT , "%2.0f°C", id(temp_max_today).state);
+      else
+        it.printf(283, 130, id(font_16_book), COLOR_TEXT , "--°C");
+
+      if (check_state(id(temp_min_today), "temp_min_today"))
+        it.printf(357, 130, id(font_16_book), COLOR_TEXT , "%2.0f°C", id(temp_min_today).state);
+      else
+        it.printf(357, 130, id(font_16_book), COLOR_TEXT , "--°C");
+
+      // Außentemperatur
+      if (check_state(id(out_temp), "out_temp"))
         it.printf(280, 155, id(font_large_bold), COLOR_TEXT , "%2.0f°C", id(out_temp).state);
-        //Feuchtigkeit
-        it.printf(250, 225, id(font_54_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F058E");
+      else
+        it.printf(280, 155, id(font_large_bold), COLOR_TEXT , "--°C");
+
+      // Feuchtigkeit
+      if (check_state(id(out_hum), "out_hum"))
         it.printf(280, 225, id(font_54_book), COLOR_TEXT , "%2.0f%%", id(out_hum).state);
+      else
+        it.printf(280, 225, id(font_54_book), COLOR_TEXT , "--%%");
 
-        //UV Index
+      // UV-Index
+      if (check_state(id(out_uv), "out_uv"))
         it.printf(80, 290, id(font_16_book), COLOR_TEXT , "UV: %2.0f", id(out_uv).state);
+      else
+        it.printf(80, 290, id(font_16_book), COLOR_TEXT , "UV: --");
 
-        //Sunrise & Sunset
-        it.printf(250, 287, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F059C");
-        it.printf(263, 290, id(font_16_book), COLOR_TEXT , id(next_sunrise).state.substr(0,5).c_str());
+      // Sonnenaufgang / -untergang
+      auto sunrise = id(next_sunrise).state;
+      if (sunrise.length() >= 5)
+        it.printf(58, 130, id(font_16_book), COLOR_TEXT , sunrise.substr(0,5).c_str());
+      else {
+        it.printf(58, 130, id(font_16_book), COLOR_TEXT , "--:--");
+        ESP_LOGW("display", "Sensorwert fehlt: next_sunrise");
+        data_missing = true;
+      }
 
-        it.printf(345, 287, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F059B");
-        it.printf(357, 290, id(font_16_book), COLOR_TEXT , id(next_sunset).state.substr(0,5).c_str());
+      auto sunset = id(next_sunset).state;
+      if (sunset.length() >= 5)
+        it.printf(133, 130, id(font_16_book), COLOR_TEXT , sunset.substr(0,5).c_str());
+      else {
+        it.printf(133, 130, id(font_16_book), COLOR_TEXT , "--:--");
+        ESP_LOGW("display", "Sensorwert fehlt: next_sunset");
+        data_missing = true;
+      }
 
-        //Spacer
-        it.line(25,320,460,320, COLOR_TEXT);
+      // Regenmenge
+      if (check_state(id(forecast_rain_today), "forecast_rain_today"))
+        it.printf(268, 290, id(font_16_book), COLOR_TEXT , "%s mm", id(forecast_rain_today).state.c_str());
+      else
+        it.printf(268, 290, id(font_16_book), COLOR_TEXT , "-- mm");
 
-        it.printf(240, 340, id(font_30_book), COLOR_TEXT , TextAlign::TOP_CENTER, "Vorhersage");
+      // Windgeschwindigkeit
+      if (check_state(id(forecast_wind_today), "forecast_wind_today"))
+        it.printf(372, 290, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_wind_today).state.c_str());
+      else
+        it.printf(372, 290, id(font_16_book), COLOR_TEXT , "-- km/h");
 
+      // Vorhersage 4h
+      auto ts4 = id(forecast_4h_timestamp).state;
+      if (ts4.length() >= 13)
+        it.printf(105, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "%s Uhr", ts4.substr(11,2).c_str());
+      else {
+        it.printf(105, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "-- Uhr");
+        ESP_LOGW("display", "Sensorwert fehlt: forecast_4h_timestamp");
+        data_missing = true;
+      }
 
+      std::string icon4 = check_state(id(forecast_4h_condition), "forecast_4h_condition") ? id(forecast_4h_condition).state : "cloudy";
+      it.printf(105, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[icon4].c_str());
 
-        //4h Ahead Weather
-        it.printf(105, 390, id(font_medium_bold), COLOR_TEXT , TextAlign::TOP_CENTER, "%s Uhr", id(forecast_4h_timestamp).state.substr(11,2).c_str());
-        it.printf(105, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[id(forecast_4h_condition).state.c_str()].c_str());
+      check_state(id(forecast_4h_temp), "forecast_4h_temp");
+      check_state(id(forecast_4h_precipitation), "forecast_4h_precipitation");
+      check_state(id(forecast_4h_wind_speed), "forecast_4h_wind_speed");
+      check_state(id(forecast_4h_wind_gust_speed), "forecast_4h_wind_gust_speed");
 
-        it.printf(65, 518, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F050F");
-        it.printf(80, 522, id(font_16_book), COLOR_TEXT , "%s°C", id(forecast_4h_temp).state.c_str());
+      // Vorhersage 8h
+      auto ts8 = id(forecast_8h_timestamp).state;
+      if (ts8.length() >= 13)
+        it.printf(240, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "%s Uhr", ts8.substr(11,2).c_str());
+      else {
+        it.printf(240, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "-- Uhr");
+        ESP_LOGW("display", "Sensorwert fehlt: forecast_8h_timestamp");
+        data_missing = true;
+      }
 
-        it.printf(65, 543, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0596");
-        it.printf(80, 547, id(font_16_book), COLOR_TEXT , "%s mm", id(forecast_4h_precipitation).state.c_str());
+      std::string icon8 = check_state(id(forecast_8h_condition), "forecast_8h_condition") ? id(forecast_8h_condition).state : "cloudy";
+      it.printf(240, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[icon8].c_str());
 
-        it.printf(65, 568, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F059D");
-        it.printf(80, 572, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_4h_wind_speed).state.c_str());
+      check_state(id(forecast_8h_temp), "forecast_8h_temp");
+      check_state(id(forecast_8h_precipitation), "forecast_8h_precipitation");
+      check_state(id(forecast_8h_wind_speed), "forecast_8h_wind_speed");
+      check_state(id(forecast_8h_wind_gust_speed), "forecast_8h_wind_gust_speed");
 
-        it.printf(65, 593, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0F38");
-        it.printf(80, 597, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_4h_wind_gust_speed).state.c_str());
+      // Vorhersage 12h
+      auto ts12 = id(forecast_12h_timestamp).state;
+      if (ts12.length() >= 13)
+        it.printf(375, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "%s Uhr", ts12.substr(11,2).c_str());
+      else {
+        it.printf(375, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "-- Uhr");
+        ESP_LOGW("display", "Sensorwert fehlt: forecast_12h_timestamp");
+        data_missing = true;
+      }
 
+      std::string icon12 = check_state(id(forecast_12h_condition), "forecast_12h_condition") ? id(forecast_12h_condition).state : "cloudy";
+      it.printf(375, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[icon12].c_str());
 
+      check_state(id(forecast_12h_temp), "forecast_12h_temp");
+      check_state(id(forecast_12h_precipitation), "forecast_12h_precipitation");
+      check_state(id(forecast_12h_wind_speed), "forecast_12h_wind_speed");
+      check_state(id(forecast_12h_wind_gust_speed), "forecast_12h_wind_gust_speed");
 
-        //8h Ahead Weather
-        it.printf(240, 390, id(font_medium_bold), COLOR_TEXT , TextAlign::TOP_CENTER, "%s Uhr", id(forecast_8h_timestamp).state.substr(11,2).c_str());
-        it.printf(240, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[id(forecast_8h_condition).state.c_str()].c_str());
+      // Pooltemperatur
+      if (check_state(id(temp_pool), "temp_pool"))
+        it.printf(105, 690, id(font_30_book), COLOR_TEXT , "%2.0f°C", id(temp_pool).state);
+      else
+        it.printf(105, 690, id(font_30_book), COLOR_TEXT , "--°C");
 
-        it.printf(200, 518, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F050F");
-        it.printf(215, 522, id(font_16_book), COLOR_TEXT , "%s°C", id(forecast_8h_temp).state.c_str());
+      // Mülltermine
+      if (check_state(id(trash_today), "trash_today"))
+        it.printf(255, 685, id(font_16_book), COLOR_TEXT , "%s", id(trash_today).state.c_str());
+      else
+        it.printf(255, 685, id(font_16_book), COLOR_TEXT , "--");
 
-        it.printf(200, 543, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0596");
-        it.printf(215, 547, id(font_16_book), COLOR_TEXT , "%s mm", id(forecast_8h_precipitation).state.c_str());
+      if (check_state(id(trash_tomorrow), "trash_tomorrow"))
+        it.printf(255, 725, id(font_16_book), COLOR_TEXT , "%s", id(trash_tomorrow).state.c_str());
+      else
+        it.printf(255, 725, id(font_16_book), COLOR_TEXT , "--");
 
-        it.printf(200, 568, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F059D");
-        it.printf(215, 572, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_8h_wind_speed).state.c_str());
+      // Datenfehleranzeige
+      if (data_missing) {
+        it.printf(450, 20, id(font_16_book), COLOR_TEXT , "⚠️ Daten fehlen");
+      }
 
-        it.printf(200, 593, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0F38");
-        it.printf(215, 597, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_8h_wind_gust_speed).state.c_str());
-
-
-
-        //12h Ahead Weather
-        it.printf(375, 390, id(font_medium_bold), COLOR_TEXT , TextAlign::TOP_CENTER, "%s Uhr", id(forecast_12h_timestamp).state.substr(11,2).c_str());
-        it.printf(375, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[id(forecast_12h_condition).state.c_str()].c_str());
-
-        it.printf(335, 518, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F050F");
-        it.printf(350, 522, id(font_16_book), COLOR_TEXT , "%s°C", id(forecast_12h_temp).state.c_str());
-
-        it.printf(335, 543, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0596");
-        it.printf(350, 547, id(font_16_book), COLOR_TEXT , "%s mm", id(forecast_12h_precipitation).state.c_str());
-
-        it.printf(335, 568, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F059D");
-        it.printf(350, 572, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_12h_wind_speed).state.c_str());
-
-        it.printf(335, 593, id(font_22_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "\U000F0F38");
-        it.printf(350, 597, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_12h_wind_gust_speed).state.c_str());
-
-        //Spacer
-        it.line(25,635,460,635, COLOR_TEXT);
-
-        // Refresh Timestamp
-        // Code by EnsconcE from https://community.home-assistant.io/t/esphome-show-time/348903
-        char str[17];
-        time_t currTime = id(homeassistant_time).now().timestamp;
-        strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
-        it.printf(240, 770, id(font_10_book), COLOR_TEXT , TextAlign::TOP_CENTER, "Letzte Aktualisierung %s", str);
+      // Letzte Aktualisierung
+      char str[17];
+      time_t currTime = id(homeassistant_time).now().timestamp;
+      strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
+      it.printf(240, 770, id(font_10_book), COLOR_TEXT , TextAlign::TOP_CENTER, "Letzte Aktualisierung %s", str);

@@ -212,6 +212,18 @@ eink_display_eg_diele_licht:
         brightness_pct: 50
       target:
         entity_id: light.wled_eg_diele
+  - alias: Müll
+    if:
+    - condition: template
+      value_template: '{{modus == "Müll"}}'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        effect: Rainbow
+        brightness_pct: 50
+      target:
+        entity_id: light.wled_eg_diele
   - alias: Ausschalten
     if:
     - condition: template
@@ -222,7 +234,7 @@ eink_display_eg_diele_licht:
       data: {}
       target:
         entity_id: light.wled_eg_diele
-  alias: eInk-Display-EG-Diele-Licht
+  alias: LED - eInk-EG-Diele
   description: ''
   icon: mdi:alarm-light
   fields:
@@ -230,4 +242,15 @@ eink_display_eg_diele_licht:
       selector:
         text:
       name: Modus
+      required: true
+cover_sun_protection:
+  sequence: []
+  alias: cover - Sun Protection
+  description: ''
+  fields:
+    rollladen:
+      selector:
+        entity:
+          multiple: false
+      name: Rollladen
       required: true

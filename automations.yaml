@@ -61,19 +61,19 @@
 - id: '1641065185674'
   alias: Close - UG - Technikraum
   description: ''
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - binary_sensor.fenster_technikraum
     to: 'off'
     for:
       hours: 0
       minutes: 0
       seconds: 5
-  - platform: sun
-    event: sunset
+    trigger: state
+  - event: sunset
     offset: '1200'
-  condition:
+    trigger: sun
+  conditions:
   - condition: sun
     after: sunset
     after_offset: '1200'
@@ -84,28 +84,30 @@
       hours: 0
       minutes: 0
       seconds: 5
-  action:
-  - service: cover.close_cover
-    data: {}
+  actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
+  - data: {}
     target:
       entity_id: cover.technikraum_low_speed
+    action: cover.close_cover
   mode: single
 - id: '1641065185675'
   alias: Close - UG - Hobbyraum Süd
   description: ''
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - binary_sensor.fenster_hobbyraum_sud
     to: 'off'
     for:
       hours: 0
       minutes: 0
       seconds: 5
-  - platform: sun
-    event: sunset
+    trigger: state
+  - event: sunset
     offset: '1200'
-  condition:
+    trigger: sun
+  conditions:
   - condition: sun
     after: sunset
     after_offset: '1200'
@@ -116,28 +118,30 @@
       hours: 0
       minutes: 0
       seconds: 5
-  action:
-  - service: cover.close_cover
-    data: {}
+  actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
+  - data: {}
     target:
       entity_id: cover.hobby_sud_low_speed
+    action: cover.close_cover
   mode: single
 - id: '1641065185676'
   alias: Close - UG - Balkontür
   description: ''
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - binary_sensor.terassentur
     to: 'off'
     for:
       hours: 0
       minutes: 0
       seconds: 5
-  - platform: sun
-    event: sunset
+    trigger: state
+  - event: sunset
     offset: '1300'
-  condition:
+    trigger: sun
+  conditions:
   - condition: sun
     after: sunset
     after_offset: '1300'
@@ -148,28 +152,30 @@
       hours: 0
       minutes: 0
       seconds: 5
-  action:
-  - service: cover.close_cover
-    data: {}
+  actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
+  - data: {}
     target:
       entity_id: cover.balkontur_low_speed
+    action: cover.close_cover
   mode: single
 - id: '1641065185677'
   alias: Close - UG - Hobbyraum West
   description: ''
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - binary_sensor.fenster_hobbyraum_west
     to: 'off'
     for:
       hours: 0
       minutes: 0
       seconds: 5
-  - platform: sun
-    event: sunset
+    trigger: state
+  - event: sunset
     offset: '1200'
-  condition:
+    trigger: sun
+  conditions:
   - condition: sun
     after: sunset
     after_offset: '1200'
@@ -180,28 +186,30 @@
       hours: 0
       minutes: 0
       seconds: 5
-  action:
-  - service: cover.close_cover
-    data: {}
+  actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
+  - data: {}
     target:
       entity_id: cover.hobby_west_low_speed
+    action: cover.close_cover
   mode: single
 - id: '1641065185678'
   alias: Close - EG - WC
   description: ''
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - binary_sensor.fenster_bad_eg
     to: 'off'
     for:
       hours: 0
       minutes: 0
       seconds: 5
-  - platform: sun
-    event: sunset
+    trigger: state
+  - event: sunset
     offset: '1200'
-  condition:
+    trigger: sun
+  conditions:
   - condition: sun
     after: sunset
     after_offset: '1200'
@@ -212,25 +220,29 @@
       hours: 0
       minutes: 0
       seconds: 5
-  action:
-  - service: cover.close_cover
-    data: {}
+  actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
+  - data: {}
     target:
       entity_id: cover.bad_eg_low_speed
+    action: cover.close_cover
   mode: single
 - id: '1641320769609'
   alias: Close - OG - Hausgang
   description: ''
-  trigger:
-  - platform: sun
-    event: sunset
+  triggers:
+  - event: sunset
     offset: '1200'
-  condition: []
-  action:
-  - service: cover.close_cover
-    data: {}
+    trigger: sun
+  conditions: []
+  actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
+  - data: {}
     target:
       entity_id: cover.hausgang_og_low_speed
+    action: cover.close_cover
   mode: single
 - id: '1641320877843'
   alias: Open - UG - Balkontür
@@ -279,6 +291,8 @@
       minutes: 0
       seconds: 5
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - data: {}
     target:
       entity_id: cover.buro
@@ -962,6 +976,8 @@
     trigger: sun
   conditions: []
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - data: {}
     action: cover.close_cover
     target:
@@ -1341,9 +1357,11 @@
       state: closed
     alias: Wenn Fenster nicht geschlossen ist
   - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster
+    entity_id: binary_sensor.beschattung_zeitfenster_sw
     state: 'on'
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - choose:
     - conditions:
       - condition: state
@@ -1383,9 +1401,11 @@
       state: closed
     alias: Wenn Fenster nicht geschlossen ist
   - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster
+    entity_id: binary_sensor.beschattung_zeitfenster_sw
     state: 'on'
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - choose:
     - conditions:
       - condition: state
@@ -1425,9 +1445,11 @@
       state: closed
     alias: Wenn Fenster nicht geschlossen ist
   - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster
+    entity_id: binary_sensor.beschattung_zeitfenster_sw
     state: 'on'
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - choose:
     - conditions:
       - condition: state
@@ -1467,9 +1489,11 @@
       state: closed
     alias: Wenn Fenster nicht geschlossen ist
   - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster
+    entity_id: binary_sensor.beschattung_zeitfenster_sw
     state: 'on'
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - choose:
     - conditions:
       - condition: state
@@ -1510,9 +1534,11 @@
       state: closed
     alias: Wenn Fenster nicht geschlossen ist
   - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster
+    entity_id: binary_sensor.beschattung_zeitfenster_sw
     state: 'on'
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - choose:
     - conditions:
       - condition: and
@@ -1557,9 +1583,11 @@
       state: closed
     alias: Wenn Fenster nicht geschlossen ist
   - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster
+    entity_id: binary_sensor.beschattung_zeitfenster_sw
     state: 'on'
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - choose:
     - conditions:
       - condition: and
@@ -1596,8 +1624,13 @@
   triggers:
   - trigger: time_pattern
     minutes: /5
-  conditions: []
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster_sw
+    state: 'on'
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - choose:
     - conditions:
       - condition: and
@@ -1607,9 +1640,6 @@
           state: 'off'
         - condition: state
           entity_id: binary_sensor.beschattung_westen_close
-          state: 'on'
-        - condition: state
-          entity_id: binary_sensor.beschattung_zeitfenster
           state: 'on'
       sequence:
       - action: button.press
@@ -1623,12 +1653,9 @@
         entity_id: cover.jalousie_esszimmer
         attribute: current_tilt_position
         above: 0
-      - condition: state
-        entity_id: binary_sensor.beschattung_zeitfenster
-        state: 'on'
-      - condition: state
-        entity_id: binary_sensor.beschattung_westen_close
-        state: 'off'
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 1000
       sequence:
       - action: cover.open_cover
         metadata: {}
@@ -1636,28 +1663,6 @@
         target:
           entity_id: cover.jalousie_esszimmer
       alias: Öffnen Beschattung
-    - conditions:
-      - condition: state
-        entity_id: binary_sensor.beschattung_zeitfenster
-        state: 'off'
-        for:
-          hours: 0
-          minutes: 1
-          seconds: 0
-      - condition: state
-        entity_id: cover.jalousie_esszimmer
-        state: closed
-      - condition: numeric_state
-        entity_id: cover.jalousie_esszimmer
-        attribute: current_tilt_position
-        above: 0
-      sequence:
-      - action: cover.open_cover
-        metadata: {}
-        data: {}
-        target:
-          entity_id: cover.jalousie_esszimmer
-      alias: Öffnen wenn Beschattung vorbei
   mode: restart
 - id: '1750856088782'
   alias: Beschattung - EG - Wohnzimmer Jalousie
@@ -1667,9 +1672,11 @@
     minutes: /5
   conditions:
   - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster
+    entity_id: binary_sensor.beschattung_zeitfenster_sw
     state: 'on'
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - choose:
     - conditions:
       - condition: state
@@ -1689,7 +1696,7 @@
         above: 0
       - condition: numeric_state
         entity_id: sensor.wetterluxtotal
-        below: 10000
+        below: 1000
       sequence:
       - action: cover.open_cover
         metadata: {}
@@ -1712,9 +1719,11 @@
       state: closed
     alias: Wenn Fenster nicht geschlossen ist
   - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster
+    entity_id: binary_sensor.beschattung_zeitfenster_sw
     state: 'on'
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - choose:
     - conditions:
       - condition: and
@@ -1762,9 +1771,11 @@
       state: closed
     alias: Wenn Fenster nicht geschlossen ist
   - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster
+    entity_id: binary_sensor.beschattung_zeitfenster_sw
     state: 'on'
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - choose:
     - conditions:
       - condition: state
@@ -1807,9 +1818,11 @@
       state: closed
     alias: Wenn Fenster nicht geschlossen ist
   - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster
+    entity_id: binary_sensor.beschattung_zeitfenster_sw
     state: 'on'
   actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
   - choose:
     - conditions:
       - condition: state
@@ -1839,7 +1852,7 @@
       alias: Öffnen
   mode: single
 - id: '1752162128760'
-  alias: Monitoring - Briefkasten
+  alias: Monitoring - LED Weatherman
   description: ''
   triggers:
   - trigger: state
@@ -1862,8 +1875,71 @@
       minutes: 0
       seconds: 0
     id: Frei
+  - trigger: state
+    entity_id:
+    - input_boolean.mullmeldung
+    to: 'off'
+    from: 'on'
+    id: Müll aus
+  - trigger: time_pattern
+    minutes: /5
+    id: Time
+  - trigger: state
+    entity_id:
+    - input_boolean.mullmeldung
+    from:
+    to: 'on'
+    id: Müll einschalten
   conditions: []
   actions:
+  - alias: Zeitsteuerung Optionen
+    choose:
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: trigger
+          id:
+          - Time
+        - condition: state
+          entity_id: binary_sensor.ads_briefkasten_full
+          state: 'on'
+        alias: Briefkasten Zeitprüfung
+      sequence:
+      - action: script.eink_display_eg_diele_licht
+        metadata: {}
+        data:
+          modus: Briefkasten
+    - conditions:
+      - alias: Müll Zeitprüfung
+        condition: and
+        conditions:
+        - condition: trigger
+          id:
+          - Time
+        - condition: state
+          entity_id: input_boolean.mullmeldung
+          state: 'on'
+      sequence:
+      - action: script.eink_display_eg_diele_licht
+        metadata: {}
+        data:
+          modus: Müll
+    - conditions:
+      - condition: trigger
+        id:
+        - Time
+      - condition: state
+        entity_id: binary_sensor.ads_briefkasten_full
+        state: 'off'
+      - condition: state
+        entity_id: automation.monitoring_mullmeldung
+        state: 'off'
+      sequence:
+      - action: script.eink_display_eg_diele_licht
+        metadata: {}
+        data:
+          modus: aus
+      alias: Ausschalten
   - if:
     - condition: trigger
       id:
@@ -1878,15 +1954,56 @@
       metadata: {}
       data:
         modus: Briefkasten
-  - if:
+    alias: Briefkasten gefüllt
+  - alias: Briefkasten geleert
+    choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Frei
+      - condition: state
+        entity_id: input_boolean.mullmeldung
+        state: 'off'
+      sequence:
+      - action: script.eink_display_eg_diele_licht
+        metadata: {}
+        data:
+          modus: aus
+    - conditions:
+      - condition: trigger
+        id:
+        - Frei
+      - condition: state
+        entity_id: input_boolean.mullmeldung
+        state: 'on'
+      sequence:
+      - action: script.eink_display_eg_diele_licht
+        metadata: {}
+        data:
+          modus: Müll
+  - alias: Müllmeldung deaktivieren
+    if:
     - condition: trigger
       id:
-      - Frei
+      - Müll aus
     then:
     - action: script.eink_display_eg_diele_licht
       metadata: {}
       data:
         modus: aus
+  - if:
+    - condition: trigger
+      id:
+      - Müll einschalten
+    - condition: state
+      entity_id: binary_sensor.ads_briefkasten_full
+      state: 'off'
+    then:
+    - action: script.eink_display_eg_diele_licht
+      metadata: {}
+      data:
+        modus: Müll
+    alias: Müllmeldung direkt einschalten
   mode: single
 - id: '1752686838076'
   alias: EnergySave - Schreibtisch
@@ -1910,4 +2027,106 @@
     data: {}
     target:
       entity_id: switch.std_schreibtisch
+  mode: single
+- id: '1755248943961'
+  alias: Beschattung - EG - Büro
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: /5
+  conditions:
+  - alias: Wenn Fenster nicht geschlossen ist
+    condition: not
+    conditions:
+    - condition: state
+      entity_id: cover.buro_custom
+      state: closed
+  - condition: state
+    entity_id: binary_sensor.beschattung_zeitfenster_o
+    state: 'on'
+  actions:
+  - delay:
+      seconds: '{{ range(0, 20) | random }}'
+  - choose:
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: state
+          entity_id: binary_sensor.fenster_buro_eg
+          state: 'off'
+        - condition: state
+          entity_id: binary_sensor.beschattung_osten_close
+          state: 'on'
+      sequence:
+      - action: cover.set_cover_position
+        metadata: {}
+        data:
+          position: 35
+        target:
+          entity_id: cover.buro_custom
+      alias: Beschatten
+    - conditions:
+      - condition: numeric_state
+        entity_id: cover.buro_custom
+        attribute: current_position
+        above: 0
+      sequence:
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id: cover.buro_custom
+      alias: Öffnen
+  mode: single
+- id: '1755355490988'
+  alias: Pool Pumpe
+  description: ''
+  triggers:
+  - trigger: time
+    at: '10:00:00'
+    id: Einschalten
+  - trigger: time
+    at: '20:00:00'
+    id: Ausschalten
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - Einschalten
+    then:
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.std_pool
+    alias: Einschalten
+  - alias: Ausschalten
+    if:
+    - condition: trigger
+      id:
+      - Ausschalten
+    then:
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.std_pool
+  mode: single
+- id: '1755600534647'
+  alias: Monitoring - Müllmeldung
+  description: ''
+  triggers:
+  - trigger: time
+    at: '16:00:00'
+  conditions:
+  - condition: template
+    value_template: "{% if states('sensor.abfalltermine_morgen') == '-' %}\n  false\n{%
+      else %}\n  true\n{% endif %}"
+  actions:
+  - action: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.mullmeldung
   mode: single

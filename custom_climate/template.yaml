@@ -1,7 +1,7 @@
 - platform: climate_template
   name: "Büro_template"
   unique_id: "Büro_template"
-  hvac_modes:
+  modes:
     - "heat"
     - "off"
   min_temp: 17
@@ -27,7 +27,7 @@
 - platform: climate_template
   name: "Wohnzimmer_template"
   unique_id: "Wohnzimmer_template"
-  hvac_modes:
+  modes:
     - "heat"
     - "off"
   min_temp: 17
@@ -53,7 +53,7 @@
 - platform: climate_template
   name: "Diele_template"
   unique_id: "Diele_template"
-  hvac_modes:
+  modes:
     - "heat"
     - "off"
   min_temp: 17
@@ -79,7 +79,7 @@
 - platform: climate_template
   name: "WC_template"
   unique_id: "WC_template"
-  hvac_modes:
+  modes:
     - "heat"
     - "off"
   min_temp: 17
@@ -105,7 +105,7 @@
 - platform: climate_template
   name: "Schlafzimmer_template"
   unique_id: "Schlafzimmer_template"
-  hvac_modes:
+  modes:
     - "heat"
     - "off"
   min_temp: 17
@@ -131,7 +131,7 @@
 - platform: climate_template
   name: "Erik_template"
   unique_id: "Erik_template"
-  hvac_modes:
+  modes:
     - "heat"
     - "off"
   min_temp: 17
@@ -157,7 +157,7 @@
 - platform: climate_template
   name: "LiHe_template"
   unique_id: "LiHe_template"
-  hvac_modes:
+  modes:
     - "heat"
     - "off"
   min_temp: 17
@@ -183,7 +183,7 @@
 - platform: climate_template
   name: "Bad_template"
   unique_id: "Bad_template"
-  hvac_modes:
+  modes:
     - "heat"
     - "off"
   min_temp: 17
@@ -209,7 +209,7 @@
 - platform: climate_template
   name: "WGTMode_template"
   unique_id: "WGTMode_template"
-  hvac_modes:
+  modes:
     - "heat"
     - "cool"
     - "fan_only"
