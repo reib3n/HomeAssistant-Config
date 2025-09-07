@@ -210,7 +210,7 @@
     zistern_water_today:
       friendly_name: "Zisternenwasser Entnahme heute"
       unit_of_measurement: "l"
-      value_template: "{{ ((states.sensor.zisternenentnahme_heute.state | float * 1000)) | round(0) }}"
+      value_template: "{{ ((states.sensor.zisternenentnahme_heute.state | float(0) * 1000)) | round(0) }}"
 
     #    water_today:
     #      friendly_name: "Trinkwasser Entnahme heute"
@@ -424,7 +424,7 @@
           ausgesteckt
         {% endif %}
       attribute_templates:
-        Leistung: "{{ (states('sensor.std_spulmaschine_leistung') | round(1) | default(0))}} W"
+        Leistung: "{{ (states('sensor.std_spulmaschine_leistung') | float(0) | round(1))}} W"
 
     status_waschmaschine:
       friendly_name: "Waschmaschine"
@@ -443,7 +443,7 @@
           ausgesteckt
         {% endif %}
       attribute_templates:
-        Leistung: "{{ (states('sensor.waschmaschine_power') | round(1) | default(0))}} W"
+        Leistung: "{{ (states('sensor.waschmaschine_power') | float(0) | round(1))}} W"
 
     #---------------------------- Rolladen -----------------------------------------
     cover_buro_optimistic:
