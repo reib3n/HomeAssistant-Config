@@ -1,0 +1,283 @@
+modbus:
+  - name: Solaredge
+    type: tcp
+    host: !secret solaredge_ip
+    port: !secret solaredge_port
+
+    sensors:
+      #-------------------WECHSELRICHTER GARAGE-----------------------------
+      - name: "mb_solaredge_garage_status"
+        slave: 1
+        address: 40107
+        scan_interval: 30
+        data_type: uint16
+      - name: "mb_solaredge_garage_temp"
+        slave: 1
+        address: 40103
+        scan_interval: 30
+        data_type: int16
+      - name: "mb_solaredge_garage_AC_LifetimeEnergy"
+        slave: 1
+        address: 40093
+        scan_interval: 30
+        data_type: int32
+      - name: "mb_solaredge_garage_energy_now"
+        slave: 1
+        address: 40083
+        scan_interval: 10
+        data_type: int16
+        unit_of_measurement: "W"
+      - name: "mb_solaredge_garage_AC-Current"
+        slave: 1
+        address: 40071
+        data_type: uint16
+      - name: "mb_solaredge_garage_AC-Current-SF"
+        slave: 1
+        address: 40075
+        data_type: int16
+      - name: "mb_solaredge_garage_AC-Voltage"
+        slave: 1
+        address: 40079
+        data_type: uint16
+      - name: "mb_solaredge_garage_AC-Voltage-SF"
+        slave: 1
+        address: 40082
+        data_type: int16
+      - name: "mb_solaredge_garage_AC-Power-SF"
+        slave: 1
+        address: 40084
+        data_type: int16
+      - name: "mb_solaredge_garage_AC-Freq"
+        slave: 1
+        address: 40085
+        data_type: uint16
+      - name: "mb_solaredge_garage_AC-Freq-SF"
+        slave: 1
+        address: 40086
+        data_type: int16
+      - name: "mb_solaredge_garage_AC-VA"
+        slave: 1
+        address: 40087
+        data_type: int16
+      - name: "mb_solaredge_garage_AC-VA-SF"
+        slave: 1
+        address: 40088
+        data_type: int16
+      - name: "mb_solaredge_garage_AC-VAR"
+        slave: 1
+        address: 40089
+        data_type: int16
+      - name: "mb_solaredge_garage_AC-VAR-SF"
+        slave: 1
+        address: 40090
+        data_type: int16
+      - name: "mb_solaredge_garage_AC-PF"
+        slave: 1
+        address: 40091
+        data_type: int16
+      - name: "mb_solaredge_garage_AC-PF-SF"
+        slave: 1
+        address: 40092
+        data_type: int16
+      - name: "mb_solaredge_garage_AC_LifetimeEnergy-SF"
+        slave: 1
+        address: 40095
+        data_type: uint16
+      - name: "mb_solaredge_garage_DC-Current"
+        slave: 1
+        address: 40096
+        data_type: uint16
+      - name: "mb_solaredge_garage_DC-Current-SF"
+        slave: 1
+        address: 40097
+        data_type: int16
+      - name: "mb_solaredge_garage_DC-Voltage"
+        slave: 1
+        address: 40098
+        data_type: uint16
+      - name: "mb_solaredge_garage_DC-Voltage-SF"
+        slave: 1
+        address: 40099
+        data_type: int16
+      - name: "mb_solaredge_garage_DC-Power"
+        slave: 1
+        address: 40100
+        data_type: int16
+      - name: "mb_solaredge_garage_DC-Power-SF"
+        slave: 1
+        address: 40101
+        data_type: int16
+      - name: "mb_solaredge_garage_Temp-SF"
+        slave: 1
+        address: 40106
+        data_type: int16
+
+      #-------------------STROMMESSGERÄT 1-------------------------
+      - name: "mb_solaredge_m1_energy_w_import"
+        slave: 1
+        address: 40234
+        scan_interval: 5
+        data_type: uint32
+        device_class: energy
+        unit_of_measurement: Wh
+      - name: "mb_solaredge_m1_energy_w_export"
+        slave: 1
+        address: 40226
+        scan_interval: 5
+        data_type: uint32
+        device_class: energy
+        unit_of_measurement: Wh
+      - name: "mb_solaredge_m1_energy_w_SF"
+        slave: 1
+        address: 40242
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_power"
+        slave: 1
+        address: 40206
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_power_A"
+        slave: 1
+        address: 40207
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_power_B"
+        slave: 1
+        address: 40208
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_power_C"
+        slave: 1
+        address: 40209
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_power_SF"
+        slave: 1
+        address: 40210
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_current_A"
+        slave: 1
+        address: 40191
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_current_B"
+        slave: 1
+        address: 40192
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_current_C"
+        slave: 1
+        address: 40193
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_current_SF"
+        slave: 1
+        address: 40194
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_volt_A"
+        slave: 1
+        address: 40196
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_volt_B"
+        slave: 1
+        address: 40197
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_volt_C"
+        slave: 1
+        address: 40198
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_volt_SF"
+        slave: 1
+        address: 40203
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_freq"
+        slave: 1
+        address: 40204
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_ac_freq_SF"
+        slave: 1
+        address: 40205
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_app_sum"
+        slave: 1
+        address: 40211
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_app_A"
+        slave: 1
+        address: 40212
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_app_B"
+        slave: 1
+        address: 40213
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_app_C"
+        slave: 1
+        address: 40214
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_app_SF"
+        slave: 1
+        address: 40215
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_rea_sum"
+        slave: 1
+        address: 40216
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_rea_A"
+        slave: 1
+        address: 40217
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_rea_B"
+        slave: 1
+        address: 40218
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_rea_C"
+        slave: 1
+        address: 40219
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_rea_SF"
+        slave: 1
+        address: 40220
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_fac_avg"
+        slave: 1
+        address: 40221
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_fac_A"
+        slave: 1
+        address: 40222
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_fac_B"
+        slave: 1
+        address: 40223
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_fac_C"
+        slave: 1
+        address: 40224
+        scan_interval: 5
+        data_type: int16
+      - name: "mb_solaredge_m1_power_fac_SF"
+        slave: 1
+        address: 40225
+        scan_interval: 5
+        data_type: int16
