@@ -1,7 +1,7 @@
 - platform: template
   panels:
     alarm_panel_home:
-#      value_template: "{{ }}"
+      #      value_template: "{{ }}"
       arm_away:
         action: switch.turn_on
         target:
@@ -25,7 +25,7 @@
             code: !secret alarm_code
 
     alarm_panel_garage:
-#      value_template: "{{ }}"
+      #      value_template: "{{ }}"
       arm_away:
         action: switch.turn_on
         target:

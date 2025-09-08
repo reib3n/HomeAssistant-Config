@@ -20,6 +20,7 @@ homeassistant:
   country: DE
   unit_system: metric
   time_zone: "Europe/Berlin"
+  packages: !include_dir_named packages
 
   #Workaround for Custom Sensors for Energy Dashboard
   customize_glob:
@@ -64,122 +65,7 @@ script: !include scripts.yaml
 scene: !include scenes.yaml
 climate: !include_dir_merge_list custom_climate
 
-## Weather based template trigger to send esphome devices data
 template:
-  - trigger:
-      - trigger: time_pattern
-        minutes: "1"
-    action:
-      - action: weather.get_forecasts
-        data:
-          type: hourly
-        target:
-          entity_id: weather.freudenstadt
-        response_variable: forecast_data
-    sensor:
-      - name: "Forecast (4h) Temperature"
-        unique_id: forecast_4h_temperature
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].temperature }}
-      - name: "Forecast (4h) Condition"
-        unique_id: forecast_4h_condition
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].condition }}
-      - name: "Forecast (4h) Wind Speed"
-        unique_id: forecast_4h_wind_speed
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].wind_speed }}
-      - name: "Forecast (4h) Wind Gust Speed"
-        unique_id: forecast_4h_wind_gust_speed
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].wind_gust_speed }}
-      - name: "Forecast (4h) Precipitation"
-        unique_id: forecast_4h_precipitation
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].precipitation }}
-      - name: "Forecast (4h) Timestamp"
-        unique_id: forecast_4h_timestamp
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].datetime }}
-
-      - name: "Forecast (8h) Temperature"
-        unique_id: forecast_8h_temperature
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].temperature }}
-      - name: "Forecast (8h) Condition"
-        unique_id: forecast_8h_condition
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].condition }}
-      - name: "Forecast (8h) Wind Speed"
-        unique_id: forecast_8h_wind_speed
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].wind_speed }}
-      - name: "Forecast (8h) Wind Gust Speed"
-        unique_id: forecast_8h_wind_gust_speed
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].wind_gust_speed }}
-      - name: "Forecast (8h) Precipitation"
-        unique_id: forecast_8h_precipitation
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].precipitation }}
-      - name: "Forecast (8h) Timestamp"
-        unique_id: forecast_8h_timestamp
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].datetime }}
-
-      - name: "Forecast (12h) Temperature"
-        unique_id: forecast_12h_temperature
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].temperature }}
-      - name: "Forecast (12h) Condition"
-        unique_id: forecast_12h_condition
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].condition }}
-      - name: "Forecast (12h) Wind Speed"
-        unique_id: forecast_12h_wind_speed
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].wind_speed }}
-      - name: "Forecast (12h) Wind Gust Speed"
-        unique_id: forecast_12h_wind_gust_speed
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].wind_gust_speed }}
-      - name: "Forecast (12h) Precipitation"
-        unique_id: forecast_12h_precipitation
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].precipitation }}
-      - name: "Forecast (12h) Timestamp"
-        unique_id: forecast_12h_timestamp
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].datetime }}
-
-  - trigger:
-      - trigger: time_pattern
-        minutes: "5"
-    action:
-      - action: weather.get_forecasts
-        data:
-          type: daily
-        target:
-          entity_id: weather.freudenstadt
-        response_variable: forecast_data
-    sensor:
-      - name: "Forecast Weather Max Temp today"
-        unique_id: forecast_weather_max_temp_today
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[0].temperature }}
-      - name: "Forecast Weather Min Temp today"
-        unique_id: forecast_weather_min_temp_today
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[0].templow }}
-      - name: "Forecast Weather Wind today"
-        unique_id: forecast_weather_wind_today
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[0].wind_speed }}
-      - name: "Forecast Weather Regen today"
-        unique_id: forecast_weather_regen_today
-        state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[0].precipitation }}
-
   - trigger:
       trigger: time_pattern
       minutes: /30 # aktualisiert alle 30 Minuten
