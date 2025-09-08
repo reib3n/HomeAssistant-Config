@@ -1,211 +1,211 @@
 - platform: template
   sensors:
     #----------------------------------------------------------------------
-    zusatzheizung_aktiv_wohnzimmer_text:
-      friendly_name: "Wohnz."
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'Aktiv' } %}
-        {% set state =  states.sensor.zusatzheizung_aktiv_wohnzimmer.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    zusatzheizung_aktiv_wc_eg_text:
-      friendly_name: "WC"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'Aktiv' } %}
-        {% set state =  states.sensor.zusatzheizung_aktiv_wc_eg.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    zusatzheizung_aktiv_diele_text:
-      friendly_name: "Diele"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'Aktiv' } %}
-        {% set state =  states.sensor.zusatzheizung_aktiv_diele.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    zusatzheizung_aktiv_buro_text:
-      friendly_name: "Büro"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'Aktiv' } %}
-        {% set state =  states.sensor.zusatzheizung_aktiv_buro.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    zusatzheizung_aktiv_schlafzimmer_text:
-      friendly_name: "Schlafz."
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'Aktiv' } %}
-        {% set state =  states.sensor.zusatzheizung_aktiv_schlafzimmer.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    zusatzheizung_aktiv_erik_text:
-      friendly_name: "Erik"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'Aktiv' } %}
-        {% set state =  states.sensor.zusatzheizung_aktiv_erik.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    zusatzheizung_aktiv_linus_text:
-      friendly_name: "Linus"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'Aktiv' } %}
-        {% set state =  states.sensor.zusatzheizung_aktiv_linus.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    zusatzheizung_aktiv_bad_og_text:
-      friendly_name: "Bad"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'Aktiv' } %}
-        {% set state =  states.sensor.zusatzheizung_aktiv_bad_og.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    evu_sperre_wgt_text:
-      friendly_name: "EVU Sperre WGT Text"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Frei',
-            '1' : 'GESPERRT' } %}
-        {% set state =  states.sensor.evu_sperre_wgt.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    wgt_mode_text:
-      friendly_name: "Modus"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'Handbetrieb',
-            '2' : 'Winterbetrieb',
-            '3' : 'Sommerbetrieb',
-            '4' : 'Sommer Abluft' } %}
-        {% set state =  states.sensor.betriebsart_wgt.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    wgt_heizen_kuhlen_text:
-      friendly_name: "WGT Heizen Kühlen"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'Heizen',
-            '2' : 'Kühlen',
-            '3' : 'Auto T-Aussen',
-            '4' : 'Auto Digitaler Eingang' } %}
-        {% set state =  states.sensor.wgt_heizen_kuhlen.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    wgt_heizen_text:
-      friendly_name: "WGT Heizen"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'Heizen' } %}
-        {% set state =  states.sensor.wgt_heizen.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    wgt_kuhlen_text:
-      friendly_name: "WGT Kühlen"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '1' : 'kühlen' } %}
-        {% set state =  states.sensor.wgt_kuhlen.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    wgt_fehler_text:
-      friendly_name: "WGT Fehler"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Kein Fehler',
-            '257' : 'Drehzahl Zuluft fehlt',
-            '258' : 'Drehzahl Abluft fehlt',
-            '259' : 'Ventilator Zuluft Mindestdrehzahl nicht erreicht',
-            '260' : 'Ventilator Abluft Mindestdrehzahl nicht erreicht',
-            '261' : 'Ventilator Zuluft max. Drehzahl überschritten',
-            '262' : 'Ventilator Abluft max. Drehzahl überschritten',
-            '513' : 'Kommunikationsfehler zur BDE',
-            '514' : 'Kommunikationsfehler Nebenbedieneinheit',
-            '515' : 'Kommunikationsfehler Heizmodul',
-            '516' : 'Kommunikationsfehler Sensor',
-            '517' : 'Kommunikationsfehler Sensor-Adapter',
-            '518' : 'Kommunikation Empfänger',
-            '770' : 'Fehler Sensorelement T1-nach-Ewt',
-            '771' : 'Fehler Sensorelement T2-nachVhr',
-            '772' : 'Fehler Sensorelement T3-vorNhr',
-            '773' : 'Fehler Sensorelement T4-nachNhr',
-            '774' : 'Fehler Sensorelement T5-Abluft',
-            '775' : 'Fehler Sensorelement T6-imWT',
-            '776' : 'Fehler Sensorelement T7-Verdampfer',
-            '777' : 'Fehler Sensorelement T8-Kondensator',
-            '779' : 'Fehler Sensorelement T10-Außentemperatur',
-            '1025' : 'Fehler Parameterspeicher',
-            '1026' : 'Fehler System-Bus',
-            '1281' : 'Wärmepumpe Hochdruck',
-            '1282' : 'Wärmepumpe Niederdruck',
-            '1283' : 'Maximale Abtauzeit überschritten',
-            '1284' : 'Wärmepumpe Niederdruck im Kühlbetrieb' } %}
-        {% set state =  states.sensor.wgt_fehler.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    status_waermepumpe_wgt_text:
-      friendly_name: "WP"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Aus',
-            '5' : 'Heizen',
-            '49' : 'Kühlen' } %}
-        {% set state =  states.sensor.status_waermepumpe_wgt.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    wgt_nhr_zustand_text:
-      friendly_name: "WGT NHR Zustand"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Inaktiv',
-            '1' : 'Aktiv' } %}
-        {% set state =  states.sensor.wgt_nhr_zustand.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    wgt_status_zuluft_text:
-      friendly_name: "WGT Status Zuluft"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Deaktiviert',
-            '1' : 'Anlauf',
-            '2' : 'Aktiv',
-            '5' : 'Standby',
-            '6' : 'Fehler' } %}
-        {% set state =  states.sensor.wgt_status_zuluft.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
-    wgt_status_abluft_text:
-      friendly_name: "WGT Status Abluft"
-      value_template: >-
-        {% set mapper =  {
-            '0' : 'Deaktiviert',
-            '1' : 'Anlauf',
-            '2' : 'Aktiv',
-            '5' : 'Standby',
-            '6' : 'Fehler' } %}
-        {% set state =  states.sensor.wgt_status_abluft.state %}
-        {{ mapper[state] if state in mapper else 'Unknown' }}
+    # zusatzheizung_aktiv_wohnzimmer_text:
+    #   friendly_name: "Wohnz."
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'Aktiv' } %}
+    #     {% set state =  states.sensor.zusatzheizung_aktiv_wohnzimmer.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # zusatzheizung_aktiv_wc_eg_text:
+    #   friendly_name: "WC"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'Aktiv' } %}
+    #     {% set state =  states.sensor.zusatzheizung_aktiv_wc_eg.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # zusatzheizung_aktiv_diele_text:
+    #   friendly_name: "Diele"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'Aktiv' } %}
+    #     {% set state =  states.sensor.zusatzheizung_aktiv_diele.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # zusatzheizung_aktiv_buro_text:
+    #   friendly_name: "Büro"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'Aktiv' } %}
+    #     {% set state =  states.sensor.zusatzheizung_aktiv_buro.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # zusatzheizung_aktiv_schlafzimmer_text:
+    #   friendly_name: "Schlafz."
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'Aktiv' } %}
+    #     {% set state =  states.sensor.zusatzheizung_aktiv_schlafzimmer.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # zusatzheizung_aktiv_erik_text:
+    #   friendly_name: "Erik"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'Aktiv' } %}
+    #     {% set state =  states.sensor.zusatzheizung_aktiv_erik.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # zusatzheizung_aktiv_linus_text:
+    #   friendly_name: "Linus"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'Aktiv' } %}
+    #     {% set state =  states.sensor.zusatzheizung_aktiv_linus.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # zusatzheizung_aktiv_bad_og_text:
+    #   friendly_name: "Bad"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'Aktiv' } %}
+    #     {% set state =  states.sensor.zusatzheizung_aktiv_bad_og.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # evu_sperre_wgt_text:
+    #   friendly_name: "EVU Sperre WGT Text"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Frei',
+    #         '1' : 'GESPERRT' } %}
+    #     {% set state =  states.sensor.evu_sperre_wgt.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # wgt_mode_text:
+    #   friendly_name: "Modus"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'Handbetrieb',
+    #         '2' : 'Winterbetrieb',
+    #         '3' : 'Sommerbetrieb',
+    #         '4' : 'Sommer Abluft' } %}
+    #     {% set state =  states.sensor.betriebsart_wgt.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # wgt_heizen_kuhlen_text:
+    #   friendly_name: "WGT Heizen Kühlen"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'Heizen',
+    #         '2' : 'Kühlen',
+    #         '3' : 'Auto T-Aussen',
+    #         '4' : 'Auto Digitaler Eingang' } %}
+    #     {% set state =  states.sensor.wgt_heizen_kuhlen.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # wgt_heizen_text:
+    #   friendly_name: "WGT Heizen"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'Heizen' } %}
+    #     {% set state =  states.sensor.wgt_heizen.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # wgt_kuhlen_text:
+    #   friendly_name: "WGT Kühlen"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '1' : 'kühlen' } %}
+    #     {% set state =  states.sensor.wgt_kuhlen.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # wgt_fehler_text:
+    #   friendly_name: "WGT Fehler"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Kein Fehler',
+    #         '257' : 'Drehzahl Zuluft fehlt',
+    #         '258' : 'Drehzahl Abluft fehlt',
+    #         '259' : 'Ventilator Zuluft Mindestdrehzahl nicht erreicht',
+    #         '260' : 'Ventilator Abluft Mindestdrehzahl nicht erreicht',
+    #         '261' : 'Ventilator Zuluft max. Drehzahl überschritten',
+    #         '262' : 'Ventilator Abluft max. Drehzahl überschritten',
+    #         '513' : 'Kommunikationsfehler zur BDE',
+    #         '514' : 'Kommunikationsfehler Nebenbedieneinheit',
+    #         '515' : 'Kommunikationsfehler Heizmodul',
+    #         '516' : 'Kommunikationsfehler Sensor',
+    #         '517' : 'Kommunikationsfehler Sensor-Adapter',
+    #         '518' : 'Kommunikation Empfänger',
+    #         '770' : 'Fehler Sensorelement T1-nach-Ewt',
+    #         '771' : 'Fehler Sensorelement T2-nachVhr',
+    #         '772' : 'Fehler Sensorelement T3-vorNhr',
+    #         '773' : 'Fehler Sensorelement T4-nachNhr',
+    #         '774' : 'Fehler Sensorelement T5-Abluft',
+    #         '775' : 'Fehler Sensorelement T6-imWT',
+    #         '776' : 'Fehler Sensorelement T7-Verdampfer',
+    #         '777' : 'Fehler Sensorelement T8-Kondensator',
+    #         '779' : 'Fehler Sensorelement T10-Außentemperatur',
+    #         '1025' : 'Fehler Parameterspeicher',
+    #         '1026' : 'Fehler System-Bus',
+    #         '1281' : 'Wärmepumpe Hochdruck',
+    #         '1282' : 'Wärmepumpe Niederdruck',
+    #         '1283' : 'Maximale Abtauzeit überschritten',
+    #         '1284' : 'Wärmepumpe Niederdruck im Kühlbetrieb' } %}
+    #     {% set state =  states.sensor.wgt_fehler.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # status_waermepumpe_wgt_text:
+    #   friendly_name: "WP"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Aus',
+    #         '5' : 'Heizen',
+    #         '49' : 'Kühlen' } %}
+    #     {% set state =  states.sensor.status_waermepumpe_wgt.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # wgt_nhr_zustand_text:
+    #   friendly_name: "WGT NHR Zustand"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Inaktiv',
+    #         '1' : 'Aktiv' } %}
+    #     {% set state =  states.sensor.wgt_nhr_zustand.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # wgt_status_zuluft_text:
+    #   friendly_name: "WGT Status Zuluft"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Deaktiviert',
+    #         '1' : 'Anlauf',
+    #         '2' : 'Aktiv',
+    #         '5' : 'Standby',
+    #         '6' : 'Fehler' } %}
+    #     {% set state =  states.sensor.wgt_status_zuluft.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
+    # wgt_status_abluft_text:
+    #   friendly_name: "WGT Status Abluft"
+    #   value_template: >-
+    #     {% set mapper =  {
+    #         '0' : 'Deaktiviert',
+    #         '1' : 'Anlauf',
+    #         '2' : 'Aktiv',
+    #         '5' : 'Standby',
+    #         '6' : 'Fehler' } %}
+    #     {% set state =  states.sensor.wgt_status_abluft.state %}
+    #     {{ mapper[state] if state in mapper else 'Unknown' }}
 
-    wgt_zuluft_total:
-      friendly_name: "WGT Zuluft total"
-      value_template: "{{ states('sensor.wgt_status_zuluft_text') }}"
-      attribute_templates:
-        Leistung: "{{ states('sensor.luftleistung_zuluft_wgt') + '%'}}"
-        Drehzahl: "{{ states('sensor.drehzahl_zuluft_wgt') + ' rpm'}}"
-        Temperatur: "{{ states('sensor.temp_aussen_low') + '°C'}}"
+    # wgt_zuluft_total:
+    #   friendly_name: "WGT Zuluft total"
+    #   value_template: "{{ states('sensor.wgt_status_zuluft_text') }}"
+    #   attribute_templates:
+    #     Leistung: "{{ states('sensor.luftleistung_zuluft_wgt') + '%'}}"
+    #     Drehzahl: "{{ states('sensor.drehzahl_zuluft_wgt') + ' rpm'}}"
+    #     Temperatur: "{{ states('sensor.temp_aussen_low') + '°C'}}"
 
-    wgt_abluft_total:
-      friendly_name: "WGT Abluft total"
-      value_template: "{{ states('sensor.wgt_status_abluft_text') }}"
-      attribute_templates:
-        Leistung: "{{ states('sensor.luftleistung_abluft_wgt') + '%'}}"
-        Drehzahl: "{{ states('sensor.drehzahl_abluft_wgt') + ' rpm'}}"
-        Temperatur: "{{ states('sensor.temperatur_abluft') + '°C'}}"
+    # wgt_abluft_total:
+    #   friendly_name: "WGT Abluft total"
+    #   value_template: "{{ states('sensor.wgt_status_abluft_text') }}"
+    #   attribute_templates:
+    #     Leistung: "{{ states('sensor.luftleistung_abluft_wgt') + '%'}}"
+    #     Drehzahl: "{{ states('sensor.drehzahl_abluft_wgt') + ' rpm'}}"
+    #     Temperatur: "{{ states('sensor.temperatur_abluft') + '°C'}}"
 
-    wgt_heatpump_total:
-      friendly_name: "WGT Wärmepumpe total"
-      value_template: "{{ states('sensor.status_waermepumpe_wgt_text') }}"
-      attribute_templates:
-        Lufttemperatur: "{{ states('sensor.temperatur_nach_ne') + '°C'}}"
+    # wgt_heatpump_total:
+    #   friendly_name: "WGT Wärmepumpe total"
+    #   value_template: "{{ states('sensor.status_waermepumpe_wgt_text') }}"
+    #   attribute_templates:
+    #     Lufttemperatur: "{{ states('sensor.temperatur_nach_ne') + '°C'}}"
 
     zistern_water_today:
       friendly_name: "Zisternenwasser Entnahme heute"
