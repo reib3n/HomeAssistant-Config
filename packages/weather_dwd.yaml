@@ -1,7 +1,7 @@
-# packages/wetter.yaml
+# packages/weather_dwd.yaml
 # -------------------------------------------------------------------
 # Package: Wetter
-# Ziel: Struktur & Wartbarkeit verbessern – ohne Funktions- oder ID-Änderungen
+# Verarbeitet die Informationen der Integration des DWD
 # -------------------------------------------------------------------
 
 # 1) WEATHER-INTEGRATION

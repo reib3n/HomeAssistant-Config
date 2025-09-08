@@ -1,0 +1,614 @@
+# package/wgt.yaml
+# -------------------------------------------------------------------
+# Package: WGT
+# Anbindung der Schwörer WGT über MODBUS
+# -------------------------------------------------------------------
+# -------------------------------------------
+# Räume
+# 1 - Diele EG
+# 2 - Essen/Wohnen
+# 3 - Büro
+# 4 - Schlafen
+# 5 - Kind 1 - Linus
+# 6 - Kind 2 - Erik
+# 7 - WC/DU EG
+# 8 - Bad OG
+# -------------------------------------------
+# 1) MODBUS-INTEGRATION ----------------------------------------------------------------------
+modbus:
+  - name: WGT
+    type: tcp
+    host: !secret wgt_ip
+    port: !secret wgt_port
+
+    sensors:
+      # ---------- Defaults für °C-Temperaturen ----------
+      - <<: &TEMP_C
+          unit_of_measurement: "°C"
+          slave: 1
+          scale: 0.1
+          precision: 1
+          data_type: int16
+          device_class: temperature
+          state_class: measurement
+        name: "mb_temp_wgt_aussen"
+        address: 209
+        unique_id: "mb_temp_wgt_aussen"
+
+      # ---- Räume: Ist-/Soll ----
+      - <<: *TEMP_C
+        name: "Temperatur Schlafzimmer"
+        address: 363
+        unique_id: "Temperatur Schlafzimmer"
+      - <<: *TEMP_C
+        name: "Zieltemperatur Schlafzimmer"
+        address: 403
+        unique_id: "wgt_zieltemperatur_schlafzimmer"
+
+      - <<: *TEMP_C
+        name: "Temperatur Büro"
+        address: 362
+        unique_id: "Temperatur Büro"
+      - <<: *TEMP_C
+        name: "Zieltemperatur Büro"
+        address: 402
+        unique_id: "wgt_zieltemperatur_buero"
+
+      - <<: *TEMP_C
+        name: "Temperatur Diele"
+        address: 360
+        unique_id: "Temperatur Diele"
+      - <<: *TEMP_C
+        name: "Zieltemperatur Diele"
+        address: 400
+        unique_id: "wgt_zieltemperatur_diele"
+
+      - <<: *TEMP_C
+        name: "Temperatur Wohnzimmer"
+        address: 361
+        unique_id: "Temperatur Wohnzimmer"
+      - <<: *TEMP_C
+        name: "Zieltemperatur Wohnzimmer"
+        address: 401
+        unique_id: "wgt_zieltemperatur_wohnzimmer"
+
+      - <<: *TEMP_C
+        name: "Temperatur WC EG"
+        address: 366
+        unique_id: "Temperatur WC EG"
+      - <<: *TEMP_C
+        name: "Zieltemperatur WC EG"
+        address: 406
+        unique_id: "wgt_zieltemperatur_wc_eg"
+
+      - <<: *TEMP_C
+        name: "Temperatur Bad OG"
+        address: 367
+        unique_id: "Temperatur Bad OG"
+      - <<: *TEMP_C
+        name: "Zieltemperatur Bad OG"
+        address: 407
+        unique_id: "wgt_zieltemperatur_bad_og"
+
+      - <<: *TEMP_C
+        name: "Temperatur Erik"
+        address: 365
+        unique_id: "Temperatur Erik"
+      - <<: *TEMP_C
+        name: "Zieltemperatur Erik"
+        address: 405
+        unique_id: "wgt_zieltemperatur_erik"
+
+      - <<: *TEMP_C
+        name: "Temperatur Linus-Henry"
+        address: 364
+        unique_id: "Temperatur Linus-Henry"
+      - <<: *TEMP_C
+        name: "Zieltemperatur Linus-Henry"
+        address: 404
+        unique_id: "wgt_zieltemperatur_linus_henry"
+
+      # ---- Prozess-/Geräte-Temperaturen ----
+      - <<: *TEMP_C
+        name: "Temperatur nach EWT"
+        address: 200
+        unique_id: "wgt_temperatur_nach_ewt"
+      - <<: *TEMP_C
+        name: "Temperatur nach VHR"
+        address: 201
+        unique_id: "wgt_temperatur_nach_vhr"
+      - <<: *TEMP_C
+        name: "Temperatur vor NE"
+        address: 202
+        unique_id: "wgt_temperatur_vor_ne"
+      - <<: *TEMP_C
+        name: "Temperatur nach NE"
+        address: 203
+        unique_id: "wgt_temperatur_nach_ne"
+      - <<: *TEMP_C
+        name: "Temperatur Abluft"
+        address: 204
+        unique_id: "wgt_temperatur_abluft"
+      - <<: *TEMP_C
+        name: "Temperatur im WT"
+        address: 205
+        unique_id: "wgt_temperatur_im_wt"
+      - <<: *TEMP_C
+        name: "Temperatur Verdampfer"
+        address: 206
+        unique_id: "wgt_temperatur_verdampfer"
+      - <<: *TEMP_C
+        name: "Temperatur Kondensator"
+        address: 207
+        unique_id: "wgt_temperatur_kondensator"
+
+      # ---------- Defaults für nackte int16 ----------
+      - <<: &INT16
+          slave: 1
+          data_type: int16
+        name: "Betriebsart WGT"
+        address: 100
+        unique_id: "wgt_betriebsart_wgt"
+
+      - <<: *INT16
+        name: "Manuelle Luftstufe WGT"
+        address: 101
+        unique_id: "wgt_manuelle_luftstufe_wgt"
+      - <<: *INT16
+        name: "Aktuelle Luftstufe WGT"
+        address: 102
+        unique_id: "wgt_aktuelle_luftstufe_wgt"
+
+      - <<: *INT16
+        name: "Luftleistung Zuluft WGT"
+        address: 142
+        unit_of_measurement: "%"
+        unique_id: "wgt_luftleistung_zuluft_wgt"
+      - <<: *INT16
+        name: "Luftleistung Abluft WGT"
+        address: 143
+        unit_of_measurement: "%"
+        unique_id: "wgt_luftleistung_abluft_wgt"
+
+      - <<: *INT16
+        name: "Drehzahl Zuluft WGT"
+        address: 144
+        unit_of_measurement: "rpm"
+        unique_id: "wgt_drehzahl_zuluft_wgt"
+      - <<: *INT16
+        name: "Drehzahl Abluft WGT"
+        address: 145
+        unit_of_measurement: "rpm"
+        unique_id: "wgt_drehzahl_abluft_wgt"
+
+      - <<: *INT16
+        name: "Gerätefilter WGT reinigen"
+        address: 245
+        unique_id: "wgt_geraetefilter_wgt_reinigen"
+      - <<: *INT16
+        name: "Gerätefilter WGT Restlaufzeit"
+        address: 265
+        unit_of_measurement: "Tage"
+        unique_id: "wgt_geraetefilter_wgt_restlaufzeit"
+      - <<: *INT16
+        name: "Vorgelagerter Filter WGT reinigen"
+        address: 246
+        unique_id: "wgt_vorgelagerter_filter_wgt_reinigen"
+      - <<: *INT16
+        name: "Vorgelagerter Filter WGT Restlaufzeit"
+        address: 263
+        unit_of_measurement: "Tage"
+        unique_id: "wgt_vorgelagerter_filter_wgt_restlaufzeit"
+
+      - <<: *INT16
+        name: "Stoßlüften Restlaufzeit"
+        address: 112
+        unit_of_measurement: "Min"
+        unique_id: "wgt_stosslueften_restlaufzeit"
+
+      - <<: *INT16
+        name: "Zusatzheizung aktiv Diele"
+        address: 460
+        unique_id: "wgt_zusatzheizung_aktiv_diele"
+      - <<: *INT16
+        name: "Zusatzheizung aktiv Wohnzimmer"
+        address: 461
+        unique_id: "wgt_zusatzheizung_aktiv_wohnzimmer"
+      - <<: *INT16
+        name: "Zusatzheizung aktiv Büro"
+        address: 462
+        unique_id: "wgt_zusatzheizung_aktiv_buero"
+      - <<: *INT16
+        name: "Zusatzheizung aktiv Schlafzimmer"
+        address: 463
+        unique_id: "wgt_zusatzheizung_aktiv_schlafzimmer"
+      - <<: *INT16
+        name: "Zusatzheizung aktiv Linus"
+        address: 464
+        unique_id: "wgt_zusatzheizung_aktiv_linus"
+      - <<: *INT16
+        name: "Zusatzheizung aktiv Erik"
+        address: 465
+        unique_id: "wgt_zusatzheizung_aktiv_erik"
+      - <<: *INT16
+        name: "Zusatzheizung aktiv WC EG"
+        address: 466
+        unique_id: "wgt_zusatzheizung_aktiv_wc_eg"
+      - <<: *INT16
+        name: "Zusatzheizung aktiv Bad OG"
+        address: 467
+        unique_id: "wgt_zusatzheizung_aktiv_bad_og"
+
+      - <<: *INT16
+        name: "Status Waermepumpe WGT"
+        address: 114
+        unique_id: "wgt_status_waermepumpe_wgt"
+      - <<: *INT16
+        name: "EVU-Sperre WGT"
+        address: 251
+        unique_id: "wgt_evu_sperre_wgt"
+      - <<: *INT16
+        name: "WGT Heizen_Kühlen"
+        address: 230
+        unique_id: "wgt_wgt_heizen_kuehlen"
+      - <<: *INT16
+        name: "WGT Heizen"
+        address: 231
+        unique_id: "wgt_wgt_heizen"
+      - <<: *INT16
+        name: "WGT Kühlen"
+        address: 232
+        unique_id: "wgt_wgt_kuehlen"
+      - <<: *INT16
+        name: "WGT Fehler"
+        address: 240
+        unique_id: "wgt_wgt_fehler"
+      - <<: *INT16
+        name: "WGT NHR Zustand"
+        address: 116
+        unique_id: "wgt_wgt_nhr_zustand"
+      - <<: *INT16
+        name: "WGT Status Zuluft"
+        address: 117
+        unique_id: "wgt_wgt_status_zuluft"
+      - <<: *INT16
+        name: "WGT Status Abluft"
+        address: 118
+        unique_id: "wgt_wgt_status_abluft"
+
+    switches:
+      # Basis-Defaults via Anchor (&SW_HOLD). Der erste Eintrag ist real + dient als Vorlage.
+      - &SW_HOLD
+        name: "Stoßlüften aktivieren"
+        address: 111
+        slave: 1
+        write_type: holding # korrigiert (vorher: holdings)
+        command_on: 1
+        command_off: 0
+        verify:
+          delay: 5
+        unique_id: "switch_wgt_stosslueften_aktivieren"
+
+      - <<: *SW_HOLD
+        name: "Zusatzheizungen aktiv"
+        address: 234
+        unique_id: "switch_wgt_zusatzheizungen_aktiv"
+
+      - <<: *SW_HOLD
+        name: "Zusatzheizungen Diele EG"
+        address: 440
+        unique_id: "switch_wgt_zusatzheizungen_diele_eg"
+
+      - <<: *SW_HOLD
+        name: "Zusatzheizungen Wohnzimmer"
+        address: 441
+        unique_id: "switch_wgt_zusatzheizungen_wohnzimmer"
+
+      - <<: *SW_HOLD
+        name: "Zusatzheizungen Büro"
+        address: 442
+        verify:
+          delay: 10
+        unique_id: "switch_wgt_zusatzheizungen_buero"
+
+      - <<: *SW_HOLD
+        name: "Zusatzheizungen Schlafzimmer"
+        address: 443
+        unique_id: "switch_wgt_zusatzheizungen_schlafzimmer"
+
+      - <<: *SW_HOLD
+        name: "Zusatzheizungen Linus"
+        address: 444
+        unique_id: "switch_wgt_zusatzheizungen_linus"
+
+      - <<: *SW_HOLD
+        name: "Zusatzheizungen Erik"
+        address: 445
+        unique_id: "switch_wgt_zusatzheizungen_erik"
+
+      - <<: *SW_HOLD
+        name: "Zusatzheizungen WC EG"
+        address: 446
+        unique_id: "switch_wgt_zusatzheizungen_wc_eg"
+
+      - <<: *SW_HOLD
+        name: "Zusatzheizungen Bad OG"
+        address: 447
+        unique_id: "switch_wgt_zusatzheizungen_bad_og"
+################################################################################################
+#
+# 2) TEMPLATE-SENSOREN
+#
+################################################################################################
+################################################################################################
+# 2) TEMPLATE-SENSOREN – optimiert (neue template:-Integration, gleiche unique_id)
+################################################################################################
+template:
+  - sensor:
+      # -------------------------------------------------------------------
+      # Zusatzheizungen (0/1 -> Aus/Aktiv)
+      # -------------------------------------------------------------------
+      - name: "Wohnz."
+        unique_id: "zusatzheizung_aktiv_wohnzimmer_text"
+        state: >-
+          {% set raw = states('sensor.zusatzheizung_aktiv_wohnzimmer') %}
+          {% if is_number(raw) %}
+            {{ {0:'Aus',1:'Aktiv'}[raw|int] if (raw|int) in [0,1] else 'Unknown' }}
+          {% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.zusatzheizung_aktiv_wohnzimmer')|int(-1) %}
+          {{ 'mdi:radiator-off' if v==0 else 'mdi:radiator' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.zusatzheizung_aktiv_wohnzimmer')) }}"
+
+      - name: "WC"
+        unique_id: "zusatzheizung_aktiv_wc_eg_text"
+        state: >-
+          {% set raw = states('sensor.zusatzheizung_aktiv_wc_eg') %}
+          {% if is_number(raw) %}{{ {0:'Aus',1:'Aktiv'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.zusatzheizung_aktiv_wc_eg')|int(-1) %}
+          {{ 'mdi:radiator-off' if v==0 else 'mdi:radiator' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.zusatzheizung_aktiv_wc_eg')) }}"
+
+      - name: "Diele"
+        unique_id: "zusatzheizung_aktiv_diele_text"
+        state: >-
+          {% set raw = states('sensor.zusatzheizung_aktiv_diele') %}
+          {% if is_number(raw) %}{{ {0:'Aus',1:'Aktiv'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.zusatzheizung_aktiv_diele')|int(-1) %}
+          {{ 'mdi:radiator-off' if v==0 else 'mdi:radiator' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.zusatzheizung_aktiv_diele')) }}"
+
+      - name: "Büro"
+        unique_id: "zusatzheizung_aktiv_buro_text"
+        state: >-
+          {% set raw = states('sensor.zusatzheizung_aktiv_buro') %}
+          {% if is_number(raw) %}{{ {0:'Aus',1:'Aktiv'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.zusatzheizung_aktiv_buro')|int(-1) %}
+          {{ 'mdi:radiator-off' if v==0 else 'mdi:radiator' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.zusatzheizung_aktiv_buro')) }}"
+
+      - name: "Schlafz."
+        unique_id: "zusatzheizung_aktiv_schlafzimmer_text"
+        state: >-
+          {% set raw = states('sensor.zusatzheizung_aktiv_schlafzimmer') %}
+          {% if is_number(raw) %}{{ {0:'Aus',1:'Aktiv'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.zusatzheizung_aktiv_schlafzimmer')|int(-1) %}
+          {{ 'mdi:radiator-off' if v==0 else 'mdi:radiator' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.zusatzheizung_aktiv_schlafzimmer')) }}"
+
+      - name: "Erik"
+        unique_id: "zusatzheizung_aktiv_erik_text"
+        state: >-
+          {% set raw = states('sensor.zusatzheizung_aktiv_erik') %}
+          {% if is_number(raw) %}{{ {0:'Aus',1:'Aktiv'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.zusatzheizung_aktiv_erik')|int(-1) %}
+          {{ 'mdi:radiator-off' if v==0 else 'mdi:radiator' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.zusatzheizung_aktiv_erik')) }}"
+
+      - name: "Linus"
+        unique_id: "zusatzheizung_aktiv_linus_text"
+        state: >-
+          {% set raw = states('sensor.zusatzheizung_aktiv_linus') %}
+          {% if is_number(raw) %}{{ {0:'Aus',1:'Aktiv'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.zusatzheizung_aktiv_linus')|int(-1) %}
+          {{ 'mdi:radiator-off' if v==0 else 'mdi:radiator' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.zusatzheizung_aktiv_linus')) }}"
+
+      - name: "Bad"
+        unique_id: "zusatzheizung_aktiv_bad_og_text"
+        state: >-
+          {% set raw = states('sensor.zusatzheizung_aktiv_bad_og') %}
+          {% if is_number(raw) %}{{ {0:'Aus',1:'Aktiv'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.zusatzheizung_aktiv_bad_og')|int(-1) %}
+          {{ 'mdi:radiator-off' if v==0 else 'mdi:radiator' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.zusatzheizung_aktiv_bad_og')) }}"
+
+      # -------------------------------------------------------------------
+      # EVU-Sperre & Betriebsarten / Status (Text)
+      # -------------------------------------------------------------------
+      - name: "EVU Sperre WGT Text"
+        unique_id: "evu_sperre_wgt_text"
+        state: >-
+          {% set raw = states('sensor.evu_sperre_wgt') %}
+          {% if is_number(raw) %}{{ {0:'Frei',1:'GESPERRT'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.evu_sperre_wgt')|int(-1) %}
+          {{ 'mdi:lock-open-variant' if v==0 else 'mdi:lock-alert' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.evu_sperre_wgt')) }}"
+
+      - name: "Modus"
+        unique_id: "wgt_mode_text"
+        state: >-
+          {% set raw = states('sensor.betriebsart_wgt') %}
+          {% if is_number(raw) %}
+            {{ {0:'Aus',1:'Handbetrieb',2:'Winterbetrieb',3:'Sommerbetrieb',4:'Sommer Abluft'}.get(raw|int,'Unknown') }}
+          {% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.betriebsart_wgt')|int(-1) %}
+          {{ 'mdi:power' if v==0 else
+             'mdi:gesture-tap-button' if v==1 else
+             'mdi:snowflake-thermometer' if v==2 else
+             'mdi:white-balance-sunny' if v in [3,4] else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.betriebsart_wgt')) }}"
+
+      - name: "WGT Heizen Kühlen"
+        unique_id: "wgt_heizen_kuhlen_text"
+        state: >-
+          {% set raw = states('sensor.wgt_heizen_kuehlen') %}
+          {% if is_number(raw) %}
+            {{ {0:'Aus',1:'Heizen',2:'Kühlen',3:'Auto T-Aussen',4:'Auto Digitaler Eingang'}.get(raw|int,'Unknown') }}
+          {% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.wgt_heizen_kuehlen')|int(-1) %}
+          {{ 'mdi:power' if v==0 else 'mdi:fire' if v==1 else 'mdi:snowflake' if v==2 else 'mdi:cached' if v in [3,4] else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.wgt_heizen_kuehlen')) }}"
+
+      - name: "WGT Heizen"
+        unique_id: "wgt_heizen_text"
+        state: >-
+          {% set raw = states('sensor.wgt_heizen') %}
+          {% if is_number(raw) %}{{ {0:'Aus',1:'Heizen'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.wgt_heizen')|int(-1) %}
+          {{ 'mdi:power' if v==0 else 'mdi:fire' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.wgt_heizen')) }}"
+
+      - name: "WGT Kühlen"
+        unique_id: "wgt_kuhlen_text"
+        state: >-
+          {% set raw = states('sensor.wgt_kuehlen') %}
+          {% if is_number(raw) %}{{ {0:'Aus',1:'kühlen'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.wgt_kuehlen')|int(-1) %}
+          {{ 'mdi:power' if v==0 else 'mdi:snowflake' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.wgt_kuehlen')) }}"
+
+      - name: "WGT Fehler"
+        unique_id: "wgt_fehler_text"
+        state: >-
+          {% set raw = states('sensor.wgt_fehler') %}
+          {% if is_number(raw) %}
+            {% set code = raw|int %}
+            {% set map = {
+              0:'Kein Fehler',
+              257:'Drehzahl Zuluft fehlt',
+              258:'Drehzahl Abluft fehlt',
+              259:'Ventilator Zuluft Mindestdrehzahl nicht erreicht',
+              260:'Ventilator Abluft Mindestdrehzahl nicht erreicht',
+              261:'Ventilator Zuluft max. Drehzahl überschritten',
+              262:'Ventilator Abluft max. Drehzahl überschritten',
+              513:'Kommunikationsfehler zur BDE',
+              514:'Kommunikationsfehler Nebenbedieneinheit',
+              515:'Kommunikationsfehler Heizmodul',
+              516:'Kommunikationsfehler Sensor',
+              517:'Kommunikationsfehler Sensor-Adapter',
+              518:'Kommunikation Empfänger',
+              770:'Fehler Sensorelement T1-nach-Ewt',
+              771:'Fehler Sensorelement T2-nachVhr',
+              772:'Fehler Sensorelement T3-vorNhr',
+              773:'Fehler Sensorelement T4-nachNhr',
+              774:'Fehler Sensorelement T5-Abluft',
+              775:'Fehler Sensorelement T6-imWT',
+              776:'Fehler Sensorelement T7-Verdampfer',
+              777:'Fehler Sensorelement T8-Kondensator',
+              779:'Fehler Sensorelement T10-Außentemperatur',
+              1025:'Fehler Parameterspeicher',
+              1026:'Fehler System-Bus',
+              1281:'Wärmepumpe Hochdruck',
+              1282:'Wärmepumpe Niederdruck',
+              1283:'Maximale Abtauzeit überschritten',
+              1284:'Wärmepumpe Niederdruck im Kühlbetrieb'
+            } %}
+            {{ map.get(code,'Unknown') }}
+          {% else %}Unknown{% endif %}
+        icon: >-
+          {{ 'mdi:shield-check' if is_state('sensor.wgt_fehler','0') else 'mdi:alert-circle' }}
+        availability: "{{ is_number(states('sensor.wgt_fehler')) }}"
+
+      - name: "WP"
+        unique_id: "status_waermepumpe_wgt_text"
+        state: >-
+          {% set raw = states('sensor.status_waermepumpe_wgt') %}
+          {% if is_number(raw) %}{{ {0:'Aus',5:'Heizen',49:'Kühlen'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.status_waermepumpe_wgt')|int(-1) %}
+          {{ 'mdi:power' if v==0 else 'mdi:fire' if v==5 else 'mdi:snowflake' if v==49 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.status_waermepumpe_wgt')) }}"
+
+      - name: "WGT NHR Zustand"
+        unique_id: "wgt_nhr_zustand_text"
+        state: >-
+          {% set raw = states('sensor.wgt_nhr_zustand') %}
+          {% if is_number(raw) %}{{ {0:'Inaktiv',1:'Aktiv'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.wgt_nhr_zustand')|int(-1) %}
+          {{ 'mdi:toggle-switch-off' if v==0 else 'mdi:toggle-switch' if v==1 else 'mdi:help' }}
+        availability: "{{ is_number(states('sensor.wgt_nhr_zustand')) }}"
+
+      - name: "WGT Status Zuluft"
+        unique_id: "wgt_status_zuluft_text"
+        state: >-
+          {% set raw = states('sensor.wgt_status_zuluft') %}
+          {% if is_number(raw) %}{{ {0:'Deaktiviert',1:'Anlauf',2:'Aktiv',5:'Standby',6:'Fehler'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.wgt_status_zuluft')|int(-1) %}
+          {{ 'mdi:fan-off' if v==0 else 'mdi:fan-alert' if v==6 else 'mdi:fan' }}
+        availability: "{{ is_number(states('sensor.wgt_status_zuluft')) }}"
+
+      - name: "WGT Status Abluft"
+        unique_id: "wgt_status_abluft_text"
+        state: >-
+          {% set raw = states('sensor.wgt_status_abluft') %}
+          {% if is_number(raw) %}{{ {0:'Deaktiviert',1:'Anlauf',2:'Aktiv',5:'Standby',6:'Fehler'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+        icon: >-
+          {% set v = states('sensor.wgt_status_abluft')|int(-1) %}
+          {{ 'mdi:fan-off' if v==0 else 'mdi:fan-alert' if v==6 else 'mdi:fan' }}
+        availability: "{{ is_number(states('sensor.wgt_status_abluft')) }}"
+
+      # -------------------------------------------------------------------
+      # „Total“-Textsensoren mit Attributen (für Chips/Badges)
+      # -------------------------------------------------------------------
+      - name: "WGT Zuluft total"
+        unique_id: "wgt_zuluft_total"
+        state: "{{ states('sensor.wgt_status_zuluft_text') }}"
+        attributes:
+          Leistung: >-
+            {% set v = states('sensor.luftleistung_zuluft_wgt') %}
+            {% if is_number(v) %}{{ v ~ '%' }}{% else %}-{% endif %}
+          Drehzahl: >-
+            {% set v = states('sensor.drehzahl_zuluft_wgt') %}
+            {% if is_number(v) %}{{ v ~ ' rpm' }}{% else %}-{% endif %}
+          Temperatur: >-
+            {# Original verweist auf sensor.temp_aussen_low (im Modbus-Block nicht vorhanden).
+               Ich ändere KEINE Referenz automatisch. Wenn gewünscht: auf sensor.mb_temp_wgt_aussen umstellen. #}
+            {% set v = states('sensor.temp_aussen_low') %}
+            {% if is_number(v) %}{{ v ~ '°C' }}{% else %}-{% endif %}
+
+      - name: "WGT Abluft total"
+        unique_id: "wgt_abluft_total"
+        state: "{{ states('sensor.wgt_status_abluft_text') }}"
+        attributes:
+          Leistung: >-
+            {% set v = states('sensor.luftleistung_abluft_wgt') %}
+            {% if is_number(v) %}{{ v ~ '%' }}{% else %}-{% endif %}
+          Drehzahl: >-
+            {% set v = states('sensor.drehzahl_abluft_wgt') %}
+            {% if is_number(v) %}{{ v ~ ' rpm' }}{% else %}-{% endif %}
+          Temperatur: >-
+            {% set v = states('sensor.temperatur_abluft') %}
+            {% if is_number(v) %}{{ v ~ '°C' }}{% else %}-{% endif %}
+
+      - name: "WGT Wärmepumpe total"
+        unique_id: "wgt_heatpump_total"
+        state: "{{ states('sensor.status_waermepumpe_wgt_text') }}"
+        attributes:
+          Lufttemperatur: >-
+            {% set v = states('sensor.temperatur_nach_ne') %}
+            {% if is_number(v) %}{{ v ~ '°C' }}{% else %}-{% endif %}
