@@ -1,44 +1,72 @@
-# packages/_template.yaml
+# packages/kalender.yaml
 # -------------------------------------------------------------------
-# Package: <THEMA>
-# Zweck:   Bündelt alle Konfigurationsbestandteile zu einem Thema
-# Hinweis:
-#   - Keine Funktion ändert sich durch die Auslagerung
-#   - Alles, was bisher in configuration.yaml stand, hier einfügen
-#   - Nur die benötigten Blöcke verwenden, Rest auskommentiert lassen
+# Package: Kalender
+# Zweck:   Ruft iCloud Kalender ab.
 # -------------------------------------------------------------------
 
 # 1) INTEGRATIONEN
-# Falls dieses Package eine Integration konfiguriert (z. B. weather:, light:, sensor:),
-# hier platzieren.
-#
-# Beispiel:
-# weather:
-#   - platform: demo
-#     name: Wetter Demo
+calendar:
+  - platform: caldav
+    username: !secret userIcloud
+    password: !secret passIcloud
+    url: https://caldav.icloud.com
 
 # >>> PASTE: BEGIN integration <<<
 # <Integration(en) hier einfügen>
 # >>> PASTE: END integration <<<
 
 # 2) TEMPLATE-SENSOREN UND BINARY-SENSOREN
-# Klassische Template-Platformen oder moderne template:-Integration
-#
-# Beispiel (modern):
-# template:
-#   - sensor:
-#       - name: "Beispiel Temperatur"
-#         unique_id: beispiel_temp
-#         state: "{{ states('sensor.aussen_temp') }}"
-#
-# Beispiel (klassisch):
-# sensor:
-#   - platform: template
-#     sensors:
-#       beispiel_temp:
-#         friendly_name: "Beispiel Temperatur"
-#         value_template: "{{ states('sensor.aussen_temp') }}"
-
+template:
+  - trigger:
+      trigger: time_pattern
+      minutes: /30 # aktualisiert alle 30 Minuten
+    action:
+      - action: calendar.get_events
+        target:
+          entity_id: calendar.abfall
+        data:
+          start_date_time: "{{ (now().date() + timedelta(days=0)).isoformat() }}T06:00:00"
+          duration:
+            hours: 18
+            minutes: 0
+            seconds: 0
+        response_variable: agenda
+      - variables:
+          events: "{{ agenda['calendar.abfall']['events'] }}"
+    sensor:
+      - name: "Abfalltermine Heute"
+        unique_id: trash_calendar_events_today
+        state: >
+          {%- set summaries = events | map(attribute='summary') | list -%}
+          {{ summaries | join(' + ') if summaries else '-' }}
+        attributes:
+          count: "{{ summaries | count }}"
+          titles: "{{ summaries }}"
+  - trigger:
+      trigger: time_pattern
+      minutes: /30 # alle 30 Minuten aktualisieren
+    action:
+      - action: calendar.get_events
+        target:
+          entity_id: calendar.abfall
+        data:
+          start_date_time: "{{ (now().date() + timedelta(days=1)).isoformat() }}T06:00:00"
+          duration:
+            hours: 18
+            minutes: 0
+            seconds: 0
+        response_variable: agenda
+      - variables:
+          events: "{{ agenda['calendar.abfall']['events'] }}"
+    sensor:
+      - name: "Abfalltermine Morgen"
+        unique_id: trash_calendar_events_tomorrow
+        state: >
+          {%- set summaries = events | map(attribute='summary') | list -%}
+          {{ summaries | join(' + ') if summaries else '-' }}
+        attributes:
+          count: "{{ summaries | count }}"
+          titles: "{{ summaries }}"
 # >>> PASTE: BEGIN templates <<<
 # <Templates hier einfügen>
 # >>> PASTE: END templates <<<
