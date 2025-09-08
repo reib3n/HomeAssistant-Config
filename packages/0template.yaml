@@ -1,0 +1,122 @@
+# packages/_template.yaml
+# -------------------------------------------------------------------
+# Package: <THEMA>
+# Zweck:   Bündelt alle Konfigurationsbestandteile zu einem Thema
+# Hinweis:
+#   - Keine Funktion ändert sich durch die Auslagerung
+#   - Alles, was bisher in configuration.yaml stand, hier einfügen
+#   - Nur die benötigten Blöcke verwenden, Rest auskommentiert lassen
+# -------------------------------------------------------------------
+
+# 1) INTEGRATIONEN
+# Falls dieses Package eine Integration konfiguriert (z. B. weather:, light:, sensor:),
+# hier platzieren.
+#
+# Beispiel:
+# weather:
+#   - platform: demo
+#     name: Wetter Demo
+
+# >>> PASTE: BEGIN integration <<<
+# <Integration(en) hier einfügen>
+# >>> PASTE: END integration <<<
+
+# 2) TEMPLATE-SENSOREN UND BINARY-SENSOREN
+# Klassische Template-Platformen oder moderne template:-Integration
+#
+# Beispiel (modern):
+# template:
+#   - sensor:
+#       - name: "Beispiel Temperatur"
+#         unique_id: beispiel_temp
+#         state: "{{ states('sensor.aussen_temp') }}"
+#
+# Beispiel (klassisch):
+# sensor:
+#   - platform: template
+#     sensors:
+#       beispiel_temp:
+#         friendly_name: "Beispiel Temperatur"
+#         value_template: "{{ states('sensor.aussen_temp') }}"
+
+# >>> PASTE: BEGIN templates <<<
+# <Templates hier einfügen>
+# >>> PASTE: END templates <<<
+
+# 3) AUTOMATIONEN
+# Alle themenspezifischen Automationen können hier direkt definiert werden.
+#
+# Beispiel:
+# automation:
+#   - id: <eindeutige_id>
+#     alias: "<Sprechender Name>"
+#     mode: single
+#     trigger:
+#       - platform: time
+#         at: "07:00:00"
+#     action:
+#       - action: light.turn_on
+#         target:
+#           entity_id: light.schlafzimmer
+
+# >>> PASTE: BEGIN automations <<<
+# <Automationen hier einfügen>
+# >>> PASTE: END automations <<<
+
+# 4) SCRIPTS
+# Falls es Skripte für dieses Thema gibt.
+#
+# Beispiel:
+# script:
+#   beispiel_script:
+#     alias: "Beispiel Script"
+#     sequence:
+#       - action: notify.mobile_app_handys
+#         data:
+#           message: "Script ausgeführt"
+
+# >>> PASTE: BEGIN scripts <<<
+# <Skripte hier einfügen>
+# >>> PASTE: END scripts <<<
+
+# 5) HELFER (input_boolean, input_number, input_select, input_datetime)
+# Hilfsobjekte, die nur für dieses Thema genutzt werden.
+#
+# Beispiel:
+# input_boolean:
+#   beispiel_schalter:
+#     name: "Beispiel Schalter"
+
+# >>> PASTE: BEGIN helpers <<<
+# <Helfer hier einfügen>
+# >>> PASTE: END helpers <<<
+
+# 6) SCENES
+# Szenen, die thematisch dazugehören.
+#
+# Beispiel:
+# scene:
+#   - id: beispiel_szene
+#     name: "Beispiel Szene"
+#     entities:
+#       light.schlafzimmer:
+#         state: "on"
+#         brightness: 200
+
+# >>> PASTE: BEGIN scenes <<<
+# <Szenen hier einfügen>
+# >>> PASTE: END scenes <<<
+
+# 7) CUSTOMIZE
+# Falls Entitäten angepasst werden müssen (Name, Icon, Attribute).
+# Dies ist nur innerhalb dieses Pakets wirksam.
+#
+# Beispiel:
+# homeassistant:
+#   customize:
+#     sensor.beispiel_temp:
+#       icon: mdi:thermometer
+
+# >>> PASTE: BEGIN customize <<<
+# <Customize hier einfügen>
+# >>> PASTE: END customize <<<
