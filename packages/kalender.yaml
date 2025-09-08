@@ -18,59 +18,62 @@ calendar:
 # 2) TEMPLATE-SENSOREN UND BINARY-SENSOREN
 template:
   - trigger:
-      trigger: time_pattern
-      minutes: /30 # aktualisiert alle 30 Minuten
+      - trigger: time_pattern
+        hours: "/1"
     action:
+      # Variablen für heute
+      - variables:
+          start_heute: "{{ now().replace(hour=6, minute=0, second=0, microsecond=0) }}"
+          end_heute: "{{ now().replace(hour=23, minute=59, second=59, microsecond=0) }}"
       - action: calendar.get_events
         target:
           entity_id: calendar.abfall
         data:
-          start_date_time: "{{ (now().date() + timedelta(days=0)).isoformat() }}T06:00:00"
-          duration:
-            hours: 18
-            minutes: 0
-            seconds: 0
-        response_variable: agenda
+          start_date_time: "{{ start_heute }}"
+          end_date_time: "{{ end_heute }}"
+        response_variable: agenda_heute
       - variables:
-          events: "{{ agenda['calendar.abfall']['events'] }}"
+          events_heute: >
+            {{ agenda_heute['calendar.abfall']['events']
+               if agenda_heute is defined and agenda_heute.get('calendar.abfall') is not none
+               else [] }}
+
+      # Variablen für morgen
+      - variables:
+          morgen: "{{ (now() + timedelta(days=1)).date() }}"
+          start_morgen: "{{ as_local(as_datetime(morgen | string + ' 06:00:00')) }}"
+          end_morgen: "{{ as_local(as_datetime(morgen | string + ' 23:59:59')) }}"
+      - action: calendar.get_events
+        target:
+          entity_id: calendar.abfall
+        data:
+          start_date_time: "{{ start_morgen }}"
+          end_date_time: "{{ end_morgen }}"
+        response_variable: agenda_morgen
+      - variables:
+          events_morgen: >
+            {{ agenda_morgen['calendar.abfall']['events']
+               if agenda_morgen is defined and agenda_morgen.get('calendar.abfall') is not none
+               else [] }}
+
     sensor:
       - name: "Abfalltermine Heute"
         unique_id: trash_calendar_events_today
         state: >
-          {%- set summaries = events | map(attribute='summary') | list -%}
+          {% set summaries = events_heute | map(attribute='summary') | list %}
           {{ summaries | join(' + ') if summaries else '-' }}
         attributes:
-          count: "{{ summaries | count }}"
-          titles: "{{ summaries }}"
-  - trigger:
-      trigger: time_pattern
-      minutes: /30 # alle 30 Minuten aktualisieren
-    action:
-      - action: calendar.get_events
-        target:
-          entity_id: calendar.abfall
-        data:
-          start_date_time: "{{ (now().date() + timedelta(days=1)).isoformat() }}T06:00:00"
-          duration:
-            hours: 18
-            minutes: 0
-            seconds: 0
-        response_variable: agenda
-      - variables:
-          events: "{{ agenda['calendar.abfall']['events'] }}"
-    sensor:
+          count: "{{ (events_heute | map(attribute='summary') | list) | count }}"
+          titles: "{{ events_heute | map(attribute='summary') | list }}"
+
       - name: "Abfalltermine Morgen"
         unique_id: trash_calendar_events_tomorrow
         state: >
-          {%- set summaries = events | map(attribute='summary') | list -%}
+          {% set summaries = events_morgen | map(attribute='summary') | list %}
           {{ summaries | join(' + ') if summaries else '-' }}
         attributes:
-          count: "{{ summaries | count }}"
-          titles: "{{ summaries }}"
-# >>> PASTE: BEGIN templates <<<
-# <Templates hier einfügen>
-# >>> PASTE: END templates <<<
-
+          count: "{{ (events_morgen | map(attribute='summary') | list) | count }}"
+          titles: "{{ events_morgen | map(attribute='summary') | list }}"
 # 3) AUTOMATIONEN
 # Alle themenspezifischen Automationen können hier direkt definiert werden.
 #
