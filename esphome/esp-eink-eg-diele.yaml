@@ -173,6 +173,7 @@ font:
       - "\U000F0F38" # mdi-weather-tornado
       - "\U000F0143" # mdi-chevron-up
       - "\U000F0140" # mdi-chevron-down
+      - "\U000F0026" # mdi-alert
 
 sensor:
   - platform: wifi_signal
@@ -308,43 +309,42 @@ display:
       it.fill(COLOR_BG);
 
       // Map weather states to MDI characters.
-      std::map<std::string, std::string> weather_icon_map
-      {
-        {"cloudy", "\U000F0590"},
-        {"cloudy-alert", "\U000F0F2F"},
-        {"cloudy-arrow-right", "\U000F0E6E"},
-        {"fog", "\U000F0591"},
-        {"hail", "\U000F0592"},
-        {"hazy", "\U000F0F30"},
-        {"hurricane", "\U000F0898"},
-        {"lightning", "\U000F0593"},
-        {"lightning-rainy", "\U000F067E"},
-        {"clear-night", "\U000F0594"},
-        {"night-partly-cloudy", "\U000F0F31"},
-        {"partlycloudy", "\U000F0595"},
-        {"partly-lightning", "\U000F0F32"},
-        {"partly-rainy", "\U000F0F33"},
-        {"partly-snowy", "\U000F0F34"},
-        {"partly-snowy-rainy", "\U000F0F35"},
-        {"pouring", "\U000F0596"},
-        {"rainy", "\U000F0597"},
-        {"snowy", "\U000F0598"},
-        {"snowy-heavy", "\U000F0F36"},
-        {"snowy-rainy", "\U000F067F"},
-        {"sunny", "\U000F0599"},
-        {"sunny-alert", "\U000F0F37"},
-        {"sunny-off", "\U000F14E4"},
-        {"sunset", "\U000F059A"},
-        {"sunset-down", "\U000F059B"},
-        {"sunset-up", "\U000F059C"},
-        {"tornado", "\U000F0F38"},
-        {"windy", "\U000F059D"},
-        {"windy-variant", "\U000F059E"}
+      std::map<std::string, std::string> weather_icon_map{
+          {"cloudy", "\U000F0590"},
+          {"cloudy-alert", "\U000F0F2F"},
+          {"cloudy-arrow-right", "\U000F0E6E"},
+          {"fog", "\U000F0591"},
+          {"hail", "\U000F0592"},
+          {"hazy", "\U000F0F30"},
+          {"hurricane", "\U000F0898"},
+          {"lightning", "\U000F0593"},
+          {"lightning-rainy", "\U000F067E"},
+          {"clear-night", "\U000F0594"},
+          {"night-partly-cloudy", "\U000F0F31"},
+          {"partlycloudy", "\U000F0595"},
+          {"partly-lightning", "\U000F0F32"},
+          {"partly-rainy", "\U000F0F33"},
+          {"partly-snowy", "\U000F0F34"},
+          {"partly-snowy-rainy", "\U000F0F35"},
+          {"pouring", "\U000F0596"},
+          {"rainy", "\U000F0597"},
+          {"snowy", "\U000F0598"},
+          {"snowy-heavy", "\U000F0F36"},
+          {"snowy-rainy", "\U000F067F"},
+          {"sunny", "\U000F0599"},
+          {"sunny-alert", "\U000F0F37"},
+          {"sunny-off", "\U000F14E4"},
+          {"sunset", "\U000F059A"},
+          {"sunset-down", "\U000F059B"},
+          {"sunset-up", "\U000F059C"},
+          {"tornado", "\U000F0F38"},
+          {"windy", "\U000F059D"},
+          {"windy-variant", "\U000F059E"},
       };
-      
+
       bool data_missing = false;
 
-      auto check_state = [&](auto id_ref, const char* sensor_name) {
+      auto check_state = [&](auto id_ref, const char *sensor_name) {
         if (!id_ref->has_state()) {
           ESP_LOGW("display", "Sensorwert fehlt: %s", sensor_name);
           data_missing = true;
@@ -355,153 +355,213 @@ display:
 
       // Datum
       if (check_state(id(date), "date"))
-        it.printf(240, 30, id(font_medium_bold), COLOR_TEXT , TextAlign::TOP_CENTER, id(date).state.c_str());
+        it.printf(240, 30, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, id(date).state.c_str());
 
       if (check_state(id(weekday), "weekday"))
-        it.printf(240, 60, id(font_large_bold), COLOR_TEXT , TextAlign::TOP_CENTER, id(weekday).state.c_str());
+        it.printf(240, 60, id(font_large_bold), COLOR_TEXT, TextAlign::TOP_CENTER, id(weekday).state.c_str());
 
       // Wetter-Icon
-      std::string weather = check_state(id(weather_condition_now), "weather_condition_now") ? id(weather_condition_now).state : "cloudy";
-      it.printf(35, 150, id(font_150_mdi), COLOR_TEXT , "%s", weather_icon_map[weather].c_str());
+      std::string weather = check_state(id(weather_condition_now), "weather_condition_now")
+                              ? id(weather_condition_now).state
+                              : "cloudy";
+      it.printf(35, 150, id(font_150_mdi), COLOR_TEXT, "%s", weather_icon_map[weather].c_str());
 
       // Temp MIN & MAX
+      it.printf(270, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0143");
       if (check_state(id(temp_max_today), "temp_max_today"))
-        it.printf(283, 130, id(font_16_book), COLOR_TEXT , "%2.0f°C", id(temp_max_today).state);
+        it.printf(283, 130, id(font_16_book), COLOR_TEXT, "%2.0f°C", id(temp_max_today).state);
       else
-        it.printf(283, 130, id(font_16_book), COLOR_TEXT , "--°C");
+        it.printf(283, 130, id(font_16_book), COLOR_TEXT, "--°C");
 
+      it.printf(345, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0140");
       if (check_state(id(temp_min_today), "temp_min_today"))
-        it.printf(357, 130, id(font_16_book), COLOR_TEXT , "%2.0f°C", id(temp_min_today).state);
+        it.printf(357, 130, id(font_16_book), COLOR_TEXT, "%2.0f°C", id(temp_min_today).state);
       else
-        it.printf(357, 130, id(font_16_book), COLOR_TEXT , "--°C");
+        it.printf(357, 130, id(font_16_book), COLOR_TEXT, "--°C");
 
       // Außentemperatur
+      it.printf(250, 155, id(font_54_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
       if (check_state(id(out_temp), "out_temp"))
-        it.printf(280, 155, id(font_large_bold), COLOR_TEXT , "%2.0f°C", id(out_temp).state);
+        it.printf(280, 155, id(font_large_bold), COLOR_TEXT, "%2.0f°C", id(out_temp).state);
       else
-        it.printf(280, 155, id(font_large_bold), COLOR_TEXT , "--°C");
+        it.printf(280, 155, id(font_large_bold), COLOR_TEXT, "--°C");
 
       // Feuchtigkeit
+      it.printf(250, 225, id(font_54_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F058E");
       if (check_state(id(out_hum), "out_hum"))
-        it.printf(280, 225, id(font_54_book), COLOR_TEXT , "%2.0f%%", id(out_hum).state);
+        it.printf(280, 225, id(font_54_book), COLOR_TEXT, "%2.0f%%", id(out_hum).state);
       else
-        it.printf(280, 225, id(font_54_book), COLOR_TEXT , "--%%");
+        it.printf(280, 225, id(font_54_book), COLOR_TEXT, "--%%");
 
       // UV-Index
       if (check_state(id(out_uv), "out_uv"))
-        it.printf(80, 290, id(font_16_book), COLOR_TEXT , "UV: %2.0f", id(out_uv).state);
+        it.printf(80, 290, id(font_16_book), COLOR_TEXT, "UV: %2.0f", id(out_uv).state);
       else
-        it.printf(80, 290, id(font_16_book), COLOR_TEXT , "UV: --");
+        it.printf(80, 290, id(font_16_book), COLOR_TEXT, "UV: --");
 
       // Sonnenaufgang / -untergang
+      it.printf(42, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059C");
       auto sunrise = id(next_sunrise).state;
       if (sunrise.length() >= 5)
-        it.printf(58, 130, id(font_16_book), COLOR_TEXT , sunrise.substr(0,5).c_str());
+        it.printf(58, 130, id(font_16_book), COLOR_TEXT, sunrise.substr(0, 5).c_str());
       else {
-        it.printf(58, 130, id(font_16_book), COLOR_TEXT , "--:--");
+        it.printf(58, 130, id(font_16_book), COLOR_TEXT, "--:--");
         ESP_LOGW("display", "Sensorwert fehlt: next_sunrise");
         data_missing = true;
       }
 
+      it.printf(117, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059B");
       auto sunset = id(next_sunset).state;
       if (sunset.length() >= 5)
-        it.printf(133, 130, id(font_16_book), COLOR_TEXT , sunset.substr(0,5).c_str());
+        it.printf(133, 130, id(font_16_book), COLOR_TEXT, sunset.substr(0, 5).c_str());
       else {
-        it.printf(133, 130, id(font_16_book), COLOR_TEXT , "--:--");
+        it.printf(133, 130, id(font_16_book), COLOR_TEXT, "--:--");
         ESP_LOGW("display", "Sensorwert fehlt: next_sunset");
         data_missing = true;
       }
 
       // Regenmenge
+      it.printf(250, 287, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
       if (check_state(id(forecast_rain_today), "forecast_rain_today"))
-        it.printf(268, 290, id(font_16_book), COLOR_TEXT , "%s mm", id(forecast_rain_today).state.c_str());
+        it.printf(268, 290, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_rain_today).state.c_str());
       else
-        it.printf(268, 290, id(font_16_book), COLOR_TEXT , "-- mm");
+        it.printf(268, 290, id(font_16_book), COLOR_TEXT, "-- mm");
 
       // Windgeschwindigkeit
+      it.printf(355, 287, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
       if (check_state(id(forecast_wind_today), "forecast_wind_today"))
-        it.printf(372, 290, id(font_16_book), COLOR_TEXT , "%s km/h", id(forecast_wind_today).state.c_str());
+        it.printf(372, 290, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_wind_today).state.c_str());
       else
-        it.printf(372, 290, id(font_16_book), COLOR_TEXT , "-- km/h");
+        it.printf(372, 290, id(font_16_book), COLOR_TEXT, "-- km/h");
 
-      // Vorhersage 4h
-      auto ts4 = id(forecast_4h_timestamp).state;
-      if (ts4.length() >= 13)
-        it.printf(105, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "%s Uhr", ts4.substr(11,2).c_str());
-      else {
-        it.printf(105, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "-- Uhr");
-        ESP_LOGW("display", "Sensorwert fehlt: forecast_4h_timestamp");
-        data_missing = true;
+      // Spacer
+      it.line(25, 320, 460, 320, COLOR_TEXT);
+      it.printf(240, 340, id(font_30_book), COLOR_TEXT, TextAlign::TOP_CENTER, "Vorhersage");
+
+      // ---- Helpers: gültige Text-States + Icon-Fallback ----
+      auto valid_text = [](const std::string &s) {
+        return !s.empty() && s != "unknown" && s != "unavailable";
+      };
+
+      // Erwartet POINTER (id(...) liefert *)
+      auto has_valid = [&](auto *ts) {
+        return ts != nullptr && ts->has_state() && valid_text(ts->state);
+      };
+
+      auto safe_icon = [&](auto *cond_ts) -> const char * {
+        const char *key = (cond_ts != nullptr && cond_ts->has_state() && valid_text(cond_ts->state))
+                            ? cond_ts->state.c_str()
+                           : "unknown";
+        // Fallback: wenn Key nicht existiert, nimm "cloudy"
+        return weather_icon_map.count(key) ? weather_icon_map[key].c_str()
+                                           : weather_icon_map["cloudy"].c_str();
+      };
+
+      // -------------------------------------------------------
+      // 4h Ahead Weather
+      if (has_valid(id(forecast_4h_timestamp)) && id(forecast_4h_timestamp).state.size() >= 13) {
+        it.printf(105, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER,
+                  "%s Uhr", id(forecast_4h_timestamp).state.substr(11, 2).c_str());
       }
+      // Icon IMMER
+      it.printf(105, 410, id(font_100_mdi), COLOR_TEXT, TextAlign::TOP_CENTER,
+                "%s", safe_icon(id(forecast_4h_condition)));
 
-      std::string icon4 = check_state(id(forecast_4h_condition), "forecast_4h_condition") ? id(forecast_4h_condition).state : "cloudy";
-      it.printf(105, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[icon4].c_str());
+      it.printf(65, 518, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
+      if (has_valid(id(forecast_4h_temp)))
+        it.printf(80, 522, id(font_16_book), COLOR_TEXT, "%s°C", id(forecast_4h_temp).state.c_str());
 
-      check_state(id(forecast_4h_temp), "forecast_4h_temp");
-      check_state(id(forecast_4h_precipitation), "forecast_4h_precipitation");
-      check_state(id(forecast_4h_wind_speed), "forecast_4h_wind_speed");
-      check_state(id(forecast_4h_wind_gust_speed), "forecast_4h_wind_gust_speed");
+      it.printf(65, 543, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
+      if (has_valid(id(forecast_4h_precipitation)))
+        it.printf(80, 547, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_4h_precipitation).state.c_str());
 
-      // Vorhersage 8h
-      auto ts8 = id(forecast_8h_timestamp).state;
-      if (ts8.length() >= 13)
-        it.printf(240, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "%s Uhr", ts8.substr(11,2).c_str());
-      else {
-        it.printf(240, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "-- Uhr");
-        ESP_LOGW("display", "Sensorwert fehlt: forecast_8h_timestamp");
-        data_missing = true;
+      it.printf(65, 568, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
+      if (has_valid(id(forecast_4h_wind_speed)))
+        it.printf(80, 572, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_4h_wind_speed).state.c_str());
+
+      it.printf(65, 593, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0F38");
+      if (has_valid(id(forecast_4h_wind_gust_speed)))
+        it.printf(80, 597, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_4h_wind_gust_speed).state.c_str());
+
+      // -------------------------------------------------------
+      // 8h Ahead Weather
+      if (has_valid(id(forecast_8h_timestamp)) && id(forecast_8h_timestamp).state.size() >= 13) {
+        it.printf(240, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER,
+                  "%s Uhr", id(forecast_8h_timestamp).state.substr(11, 2).c_str());
       }
+      // Icon IMMER
+      it.printf(240, 410, id(font_100_mdi), COLOR_TEXT, TextAlign::TOP_CENTER,
+                "%s", safe_icon(id(forecast_8h_condition)));
 
-      std::string icon8 = check_state(id(forecast_8h_condition), "forecast_8h_condition") ? id(forecast_8h_condition).state : "cloudy";
-      it.printf(240, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[icon8].c_str());
+      it.printf(200, 518, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
+      if (has_valid(id(forecast_8h_temp)))
+        it.printf(215, 522, id(font_16_book), COLOR_TEXT, "%s°C", id(forecast_8h_temp).state.c_str());
 
-      check_state(id(forecast_8h_temp), "forecast_8h_temp");
-      check_state(id(forecast_8h_precipitation), "forecast_8h_precipitation");
-      check_state(id(forecast_8h_wind_speed), "forecast_8h_wind_speed");
-      check_state(id(forecast_8h_wind_gust_speed), "forecast_8h_wind_gust_speed");
+      it.printf(200, 543, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
+      if (has_valid(id(forecast_8h_precipitation)))
+        it.printf(215, 547, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_8h_precipitation).state.c_str());
 
-      // Vorhersage 12h
-      auto ts12 = id(forecast_12h_timestamp).state;
-      if (ts12.length() >= 13)
-        it.printf(375, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "%s Uhr", ts12.substr(11,2).c_str());
-      else {
-        it.printf(375, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, "-- Uhr");
-        ESP_LOGW("display", "Sensorwert fehlt: forecast_12h_timestamp");
-        data_missing = true;
+      it.printf(200, 568, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
+      if (has_valid(id(forecast_8h_wind_speed)))
+        it.printf(215, 572, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_8h_wind_speed).state.c_str());
+
+      it.printf(200, 593, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0F38");
+      if (has_valid(id(forecast_8h_wind_gust_speed)))
+        it.printf(215, 597, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_8h_wind_gust_speed).state.c_str());
+
+      // -------------------------------------------------------
+      // 12h Ahead Weather
+      if (has_valid(id(forecast_12h_timestamp)) && id(forecast_12h_timestamp).state.size() >= 13) {
+        it.printf(375, 390, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER,
+                  "%s Uhr", id(forecast_12h_timestamp).state.substr(11, 2).c_str());
       }
+      // Icon IMMER
+      it.printf(375, 410, id(font_100_mdi), COLOR_TEXT, TextAlign::TOP_CENTER,
+                "%s", safe_icon(id(forecast_12h_condition)));
 
-      std::string icon12 = check_state(id(forecast_12h_condition), "forecast_12h_condition") ? id(forecast_12h_condition).state : "cloudy";
-      it.printf(375, 410, id(font_100_mdi), COLOR_TEXT , TextAlign::TOP_CENTER, "%s", weather_icon_map[icon12].c_str());
+      it.printf(335, 518, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
+      if (has_valid(id(forecast_12h_temp)))
+        it.printf(350, 522, id(font_16_book), COLOR_TEXT, "%s°C", id(forecast_12h_temp).state.c_str());
 
-      check_state(id(forecast_12h_temp), "forecast_12h_temp");
-      check_state(id(forecast_12h_precipitation), "forecast_12h_precipitation");
-      check_state(id(forecast_12h_wind_speed), "forecast_12h_wind_speed");
-      check_state(id(forecast_12h_wind_gust_speed), "forecast_12h_wind_gust_speed");
+      it.printf(335, 543, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
+      if (has_valid(id(forecast_12h_precipitation)))
+        it.printf(350, 547, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_12h_precipitation).state.c_str());
+
+      it.printf(335, 568, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
+      if (has_valid(id(forecast_12h_wind_speed)))
+        it.printf(350, 572, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_12h_wind_speed).state.c_str());
+
+      it.printf(335, 593, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0F38");
+      if (has_valid(id(forecast_12h_wind_gust_speed)))
+        it.printf(350, 597, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_12h_wind_gust_speed).state.c_str());
 
       // Pooltemperatur
-      if (check_state(id(temp_pool), "temp_pool"))
-        it.printf(105, 690, id(font_30_book), COLOR_TEXT , "%2.0f°C", id(temp_pool).state);
-      else
-        it.printf(105, 690, id(font_30_book), COLOR_TEXT , "--°C");
+      if (!isnan(id(temp_pool).state)) {
+        it.printf(70, 680, id(font_54_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F1A5F");
+        it.printf(105, 690, id(font_30_book), COLOR_TEXT, "%2.0f°C", id(temp_pool).state);
+      } else {
+        // nichts anzeigen
+      }
 
-      // Mülltermine
-      if (check_state(id(trash_today), "trash_today"))
-        it.printf(255, 685, id(font_16_book), COLOR_TEXT , "%s", id(trash_today).state.c_str());
-      else
-        it.printf(255, 685, id(font_16_book), COLOR_TEXT , "--");
+      // Müll
+      it.printf(225, 675, id(font_54_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F06CC");
 
-      if (check_state(id(trash_tomorrow), "trash_tomorrow"))
-        it.printf(255, 725, id(font_16_book), COLOR_TEXT , "%s", id(trash_tomorrow).state.c_str());
-      else
-        it.printf(255, 725, id(font_16_book), COLOR_TEXT , "--");
+      it.printf(255, 665, id(font_medium_bold), COLOR_TEXT, "Heute:");
+      it.printf(255, 685, id(font_16_book), COLOR_TEXT, "%s", id(trash_today).state.c_str());
+
+      it.printf(255, 705, id(font_medium_bold), COLOR_TEXT, "Morgen:");
+      it.printf(255, 725, id(font_16_book), COLOR_TEXT, "%s", id(trash_tomorrow).state.c_str());
 
       // Datenfehleranzeige
       if (data_missing) {
-        it.printf(450, 20, id(font_16_book), COLOR_TEXT , "⚠️ Daten fehlen");
+        it.printf(450, 20, id(font_22_mdi), COLOR_TEXT, "\U000F0026");
       }
+
+      // Spacer
+      it.line(25, 635, 460, 635, COLOR_TEXT);
 
       // Letzte Aktualisierung
       char str[17];
       time_t currTime = id(homeassistant_time).now().timestamp;
       strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
-      it.printf(240, 770, id(font_10_book), COLOR_TEXT , TextAlign::TOP_CENTER, "Letzte Aktualisierung %s", str);
+      it.printf(240, 770, id(font_10_book), COLOR_TEXT, TextAlign::TOP_CENTER, "Letzte Aktualisierung %s", str);
