@@ -1,30 +1,26 @@
-# packages/kalender.yaml
-# -------------------------------------------------------------------
-# Package: Kalender
-# Zweck:   Ruft iCloud Kalender ab.
-# -------------------------------------------------------------------
-
-# 1) INTEGRATIONEN
+### ---------------------------------------------------------------------------
+### Calendars
+### ---------------------------------------------------------------------------
 calendar:
   - platform: caldav
     username: !secret userIcloud
     password: !secret passIcloud
     url: https://caldav.icloud.com
 
-# >>> PASTE: BEGIN integration <<<
-# <Integration(en) hier einfügen>
-# >>> PASTE: END integration <<<
-
-# 2) TEMPLATE-SENSOREN UND BINARY-SENSOREN
+### ---------------------------------------------------------------------------
+### Triggered template: fetch events for today and tomorrow, expose sensors
+### ---------------------------------------------------------------------------
 template:
   - trigger:
       - trigger: time_pattern
         hours: "/1"
+
     action:
-      # Variablen für heute
+      # Variables for today
       - variables:
           start_heute: "{{ now().replace(hour=6, minute=0, second=0, microsecond=0) }}"
           end_heute: "{{ now().replace(hour=23, minute=59, second=59, microsecond=0) }}"
+
       - action: calendar.get_events
         target:
           entity_id: calendar.abfall
@@ -32,17 +28,19 @@ template:
           start_date_time: "{{ start_heute }}"
           end_date_time: "{{ end_heute }}"
         response_variable: agenda_heute
+
       - variables:
-          events_heute: >
+          events_heute: >-
             {{ agenda_heute['calendar.abfall']['events']
                if agenda_heute is defined and agenda_heute.get('calendar.abfall') is not none
                else [] }}
 
-      # Variablen für morgen
+      # Variables for tomorrow
       - variables:
           morgen: "{{ (now() + timedelta(days=1)).date() }}"
           start_morgen: "{{ as_local(as_datetime(morgen | string + ' 06:00:00')) }}"
           end_morgen: "{{ as_local(as_datetime(morgen | string + ' 23:59:59')) }}"
+
       - action: calendar.get_events
         target:
           entity_id: calendar.abfall
@@ -50,8 +48,9 @@ template:
           start_date_time: "{{ start_morgen }}"
           end_date_time: "{{ end_morgen }}"
         response_variable: agenda_morgen
+
       - variables:
-          events_morgen: >
+          events_morgen: >-
             {{ agenda_morgen['calendar.abfall']['events']
                if agenda_morgen is defined and agenda_morgen.get('calendar.abfall') is not none
                else [] }}
@@ -59,7 +58,7 @@ template:
     sensor:
       - name: "Abfalltermine Heute"
         unique_id: trash_calendar_events_today
-        state: >
+        state: >-
           {% set summaries = events_heute | map(attribute='summary') | list %}
           {{ summaries | join(' + ') if summaries else '-' }}
         attributes:
@@ -68,86 +67,9 @@ template:
 
       - name: "Abfalltermine Morgen"
         unique_id: trash_calendar_events_tomorrow
-        state: >
+        state: >-
           {% set summaries = events_morgen | map(attribute='summary') | list %}
           {{ summaries | join(' + ') if summaries else '-' }}
         attributes:
           count: "{{ (events_morgen | map(attribute='summary') | list) | count }}"
           titles: "{{ events_morgen | map(attribute='summary') | list }}"
-# 3) AUTOMATIONEN
-# Alle themenspezifischen Automationen können hier direkt definiert werden.
-#
-# Beispiel:
-# automation:
-#   - id: <eindeutige_id>
-#     alias: "<Sprechender Name>"
-#     mode: single
-#     trigger:
-#       - platform: time
-#         at: "07:00:00"
-#     action:
-#       - action: light.turn_on
-#         target:
-#           entity_id: light.schlafzimmer
-
-# >>> PASTE: BEGIN automations <<<
-# <Automationen hier einfügen>
-# >>> PASTE: END automations <<<
-
-# 4) SCRIPTS
-# Falls es Skripte für dieses Thema gibt.
-#
-# Beispiel:
-# script:
-#   beispiel_script:
-#     alias: "Beispiel Script"
-#     sequence:
-#       - action: notify.mobile_app_handys
-#         data:
-#           message: "Script ausgeführt"
-
-# >>> PASTE: BEGIN scripts <<<
-# <Skripte hier einfügen>
-# >>> PASTE: END scripts <<<
-
-# 5) HELFER (input_boolean, input_number, input_select, input_datetime)
-# Hilfsobjekte, die nur für dieses Thema genutzt werden.
-#
-# Beispiel:
-# input_boolean:
-#   beispiel_schalter:
-#     name: "Beispiel Schalter"
-
-# >>> PASTE: BEGIN helpers <<<
-# <Helfer hier einfügen>
-# >>> PASTE: END helpers <<<
-
-# 6) SCENES
-# Szenen, die thematisch dazugehören.
-#
-# Beispiel:
-# scene:
-#   - id: beispiel_szene
-#     name: "Beispiel Szene"
-#     entities:
-#       light.schlafzimmer:
-#         state: "on"
-#         brightness: 200
-
-# >>> PASTE: BEGIN scenes <<<
-# <Szenen hier einfügen>
-# >>> PASTE: END scenes <<<
-
-# 7) CUSTOMIZE
-# Falls Entitäten angepasst werden müssen (Name, Icon, Attribute).
-# Dies ist nur innerhalb dieses Pakets wirksam.
-#
-# Beispiel:
-# homeassistant:
-#   customize:
-#     sensor.beispiel_temp:
-#       icon: mdi:thermometer
-
-# >>> PASTE: BEGIN customize <<<
-# <Customize hier einfügen>
-# >>> PASTE: END customize <<<
