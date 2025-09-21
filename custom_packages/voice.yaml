@@ -1,0 +1,97 @@
+### ---------------------------------------------------------------------------
+### Groups
+### ---------------------------------------------------------------------------
+
+group:
+  y_voice:
+    name: "y_Voice"
+    icon: mdi:account-voice
+    entities:
+      - script.voice_out_wetter_now
+
+### ---------------------------------------------------------------------------
+### Scripts
+### ---------------------------------------------------------------------------
+script:
+  # Gibt das aktuelle Wetter aus
+  voice_wetterbericht_jetzt:
+    alias: "[Voice] Ausgabe - Wetterbericht (jetzt)"
+    icon: mdi:weather-cloudy
+    # mode controls concurrent runs; 'single' prevents overlapping executions
+    mode: single
+    # --- Parameter: ein einzelnes Ziel-Device (optional) ---
+    fields:
+      target_device:
+        name: Zielgerät (Device)
+        description: Wähle das Assist-/Satelliten-Gerät für die Ausgabe.
+        required: true
+        selector:
+          device:
+            multiple: false # exakt ein Gerät auswählen
+    sequence:
+      - action: assist_satellite.announce
+        metadata: {}
+        data:
+          message: >-
+            Die Außentemperatur beträgt aktuell {{ states('sensor.temp_aussen_low') | round }}°.
+            Maximal {{ states('sensor.forecast_weather_max_temp_today') | round }}° und minimal {{ states('sensor.forecast_weather_min_temp_today') | round }}° heute.
+
+            {% if is_state('binary_sensor.ads_wetterrain', 'on') %}
+            Es regnet.
+            {% endif %}
+
+            {% if states('sensor.forecast_weather_regen_today') | int(0) > 0 %}
+            Es sollen heute noch {{ states('sensor.forecast_weather_regen_today') | round(1) }} Liter Regen fallen.
+            {% else %}
+            Es ist kein Regen vorhergesagt.
+            {% endif %}
+
+            {% if states('sensor.dwd_weather_warnings_current_warning_level') | int(0) > 0 %}
+            Aktuell gibt es Wetterwarnungen des Deutschen Wetterdienstes.
+            {% endif %}
+          preannounce: false
+        target:
+          device_id: "{{ target_device }}"
+  ### ---------------------------------------------------------------------------
+  ### Automation
+  ### ---------------------------------------------------------------------------
+
+automation:
+  # Wetterbericht
+  - alias: "[Voice] Command - Wetterbericht"
+    mode: single
+    trigger:
+      - trigger: conversation
+        command:
+          - "Wie ist das Wetter"
+          - "Wie wird das Wetter"
+          - "Sag mir das Wetter"
+          - "Wie wird das Wetter heute"
+          - "Wie ist es draussen"
+          - "Brauche ich einen Regenschirm"
+    action:
+      - action: script.voice_wetterbericht_jetzt
+        data:
+          target_device: "{{ trigger.device_id }}"
+
+  # Guten Morgen
+  - alias: "[Voice] Command - Guten Morgen"
+    mode: single
+    trigger:
+      - trigger: conversation
+        command: "Guten Morgen"
+    action:
+      # 1. Begrüßung direkt auf deinem Gerät ausgeben
+      - action: assist_satellite.announce
+        data:
+          message: "Guten Morgen, liebe Familie."
+          preannounce: false
+        target:
+          device_id: "{{ trigger.device_id }}"
+
+      # 2. Danach das bestehende Wetter-Skript starten
+      - action: script.voice_wetterbericht_jetzt
+        data:
+          target_device: "{{ trigger.device_id }}"
+
+      # 3. Alle Geräte wieder einschalten.

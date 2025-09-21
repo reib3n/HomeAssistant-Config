@@ -693,7 +693,7 @@
     - set_conversation_response: .
   mode: single
 - id: '1743439871259'
-  alias: Voice - Modi
+  alias: Voice - Kommandos
   description: ''
   triggers:
   - trigger: conversation
@@ -720,9 +720,6 @@
     - sequence:
       - set_conversation_response: Guten Morgen liebe Familie! Es hat aktuell {{ states('sensor.temp_aussen_low')
           | round }}°C draußen. Ich wünsche einen schönen Tag!
-      - action: script.radio_auf_voice_starten
-        metadata: {}
-        data: {}
   - if:
     - condition: and
       conditions:
@@ -752,11 +749,6 @@
       data: {}
     - sequence:
       - set_conversation_response: Guten Nacht. Schlaf gut!
-      - action: media_player.media_pause
-        metadata: {}
-        data: {}
-        target:
-          entity_id: media_player.home_assistant_voice_09d11a_media_player_2
   mode: single
 - id: '1744315603499'
   alias: EnergySave - 3D Print

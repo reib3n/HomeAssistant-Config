@@ -36,9 +36,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 6 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 4 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].temperature
+          {{ forecast_data['weather.freudenstadt'].forecast[4].temperature
              | float(default=unknown) }}
         unit_of_measurement: "°C"
         device_class: temperature
@@ -49,18 +49,18 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 6 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 4 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].condition | default('unknown') }}
+          {{ forecast_data['weather.freudenstadt'].forecast[4].condition | default('unknown') }}
 
       - name: "Forecast (4h) Wind Speed"
         unique_id: forecast_4h_wind_speed
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 6 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 4 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].wind_speed
+          {{ forecast_data['weather.freudenstadt'].forecast[4].wind_speed
              | float(default=unknown) }}
         unit_of_measurement: "m/s"
         device_class: wind_speed
@@ -71,9 +71,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 6 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 4 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].wind_gust_speed
+          {{ forecast_data['weather.freudenstadt'].forecast[4].wind_gust_speed
              | float(default=unknown) }}
         unit_of_measurement: "m/s"
         device_class: wind_speed
@@ -84,9 +84,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 6 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 4 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].precipitation
+          {{ forecast_data['weather.freudenstadt'].forecast[4].precipitation
              | float(default=unknown) }}
         unit_of_measurement: "mm"
         state_class: measurement
@@ -96,9 +96,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 6 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 4 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[6].datetime | as_datetime | as_local }}
+          {{ forecast_data['weather.freudenstadt'].forecast[4].datetime | as_datetime | as_local }}
 
       # -------- 8h --------
       - name: "Forecast (8h) Temperature"
@@ -106,9 +106,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 10 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 8 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].temperature
+          {{ forecast_data['weather.freudenstadt'].forecast[8].temperature
              | float(default=unknown) }}
         unit_of_measurement: "°C"
         device_class: temperature
@@ -119,18 +119,18 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 10 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 8 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].condition | default('unknown') }}
+          {{ forecast_data['weather.freudenstadt'].forecast[8].condition | default('unknown') }}
 
       - name: "Forecast (8h) Wind Speed"
         unique_id: forecast_8h_wind_speed
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 10 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 8 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].wind_speed
+          {{ forecast_data['weather.freudenstadt'].forecast[8].wind_speed
              | float(default=unknown) }}
         unit_of_measurement: "m/s"
         device_class: wind_speed
@@ -141,9 +141,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 10 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 8 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].wind_gust_speed
+          {{ forecast_data['weather.freudenstadt'].forecast[8].wind_gust_speed
              | float(default=unknown) }}
         unit_of_measurement: "m/s"
         device_class: wind_speed
@@ -154,9 +154,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 10 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 8 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].precipitation
+          {{ forecast_data['weather.freudenstadt'].forecast[8].precipitation
              | float(default=unknown) }}
         unit_of_measurement: "mm"
         state_class: measurement
@@ -166,9 +166,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 10 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 8 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[10].datetime | as_datetime | as_local }}
+          {{ forecast_data['weather.freudenstadt'].forecast[8].datetime | as_datetime | as_local }}
 
       # -------- 12h --------
       - name: "Forecast (12h) Temperature"
@@ -176,9 +176,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 14 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 12 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].temperature
+          {{ forecast_data['weather.freudenstadt'].forecast[12].temperature
              | float(default=unknown) }}
         unit_of_measurement: "°C"
         device_class: temperature
@@ -189,18 +189,18 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 14 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 12 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].condition | default('unknown') }}
+          {{ forecast_data['weather.freudenstadt'].forecast[12].condition | default('unknown') }}
 
       - name: "Forecast (12h) Wind Speed"
         unique_id: forecast_12h_wind_speed
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 14 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 12 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].wind_speed
+          {{ forecast_data['weather.freudenstadt'].forecast[12].wind_speed
              | float(default=unknown) }}
         unit_of_measurement: "m/s"
         device_class: wind_speed
@@ -211,9 +211,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 14 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 12 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].wind_gust_speed
+          {{ forecast_data['weather.freudenstadt'].forecast[12].wind_gust_speed
              | float(default=unknown) }}
         unit_of_measurement: "m/s"
         device_class: wind_speed
@@ -224,9 +224,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 14 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 12 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].precipitation
+          {{ forecast_data['weather.freudenstadt'].forecast[12].precipitation
              | float(default=unknown) }}
         unit_of_measurement: "mm"
         state_class: measurement
@@ -236,9 +236,9 @@ template:
         availability: >
           {{ forecast_data is defined
              and forecast_data['weather.freudenstadt'] is defined
-             and (forecast_data['weather.freudenstadt'].forecast | length) > 14 }}
+             and (forecast_data['weather.freudenstadt'].forecast | length) > 12 }}
         state: >
-          {{ forecast_data['weather.freudenstadt'].forecast[14].datetime | as_datetime | as_local }}
+          {{ forecast_data['weather.freudenstadt'].forecast[12].datetime | as_datetime | as_local }}
 
   # ---------------------- BLOCK 2: DAILY FORECAST ----------------------
   - trigger:

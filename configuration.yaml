@@ -20,7 +20,7 @@ homeassistant:
   country: DE
   unit_system: metric
   time_zone: "Europe/Berlin"
-  packages: !include_dir_named packages
+  packages: !include_dir_named custom_packages
 
   #Workaround for Custom Sensors for Energy Dashboard
   customize_glob:
@@ -48,7 +48,6 @@ light: !include_dir_merge_list custom_light
 cover: !include_dir_merge_list custom_cover
 sensor: !include_dir_merge_list custom_sensor
 binary_sensor: !include_dir_merge_list custom_binarySensor
-modbus: !include_dir_merge_list custom_modbus
 lock: !include_dir_merge_list custom_lock
 alarm_control_panel: !include_dir_merge_list custom_secPanel
 notify: !include notify.yaml
