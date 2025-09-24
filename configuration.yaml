@@ -20,7 +20,7 @@ homeassistant:
   country: DE
   unit_system: metric
   time_zone: "Europe/Berlin"
-  packages: !include_dir_named custom_packages
+  packages: !include_dir_merge_named custom_packages
 
   #Workaround for Custom Sensors for Energy Dashboard
   customize_glob:
@@ -37,17 +37,10 @@ homeassistant:
 http:
   server_port: 443
 
-# ADS Config
-ads:
-  ip_address: !secret beckhoff_ip
-  device: !secret beckhoff_ads_device
-  port: !secret beckhoff_ads_port
-
 #------------------ Other Includes ----------------------
 light: !include_dir_merge_list custom_light
 cover: !include_dir_merge_list custom_cover
 sensor: !include_dir_merge_list custom_sensor
-binary_sensor: !include_dir_merge_list custom_binarySensor
 lock: !include_dir_merge_list custom_lock
 alarm_control_panel: !include_dir_merge_list custom_secPanel
 notify: !include notify.yaml
@@ -55,4 +48,3 @@ group: !include groups.yaml
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
-climate: !include_dir_merge_list custom_climate

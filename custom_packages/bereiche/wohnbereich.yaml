@@ -1,0 +1,67 @@
+package_area_wohmnbereich:
+  ### ---------------------------------------------------------------------------
+  ### Scripts
+  ### ---------------------------------------------------------------------------
+  script:
+    # Guten Morgen Script
+    wohnbereich_guten_morgen:
+      alias: "[-Wohnbereich-] Guten Morgen"
+      icon: mdi:weather-sunset-up
+      mode: single
+      sequence:
+        - if:
+            - condition: numeric_state
+              entity_id: sensor.ads_wetterlux
+              above: 0
+          then:
+            - action: cover.open_cover
+              metadata: {}
+              data: {}
+              target:
+                entity_id:
+                  - cover.kuche
+                  - cover.esszimmer_sud
+                  - cover.jalousie_esszimmer
+                  - cover.wohnzimmer_jalousie
+          else:
+            - action: light.turn_on
+              metadata: {}
+              data:
+                brightness_pct: 50
+              target:
+                entity_id: light.mb_esszimmertisch
+        - action: switch.turn_on
+          metadata: {}
+          data: {}
+          target:
+            entity_id: switch.mb_powersocket_fernseher
+
+    # Gute Nacht Script
+    wohnbereich_gute_nacht:
+      alias: "[-Wohnbereich-] Gute Nacht"
+      icon: mdi:weather-sunset-down
+      mode: single
+      sequence:
+        - action: cover.close_cover
+          metadata: {}
+          data: {}
+          target:
+            entity_id:
+              - cover.kuche
+              - cover.esszimmer_sud
+        - action: switch.turn_off
+          metadata: {}
+          data: {}
+          target:
+            entity_id: switch.mb_powersocket_fernseher
+        - action: light.turn_off
+          metadata: {}
+          data: {}
+          target:
+            entity_id:
+              - light.std_lavalampe
+              - light.marmorlampe
+              - light.mb_wohnzimmer
+              - light.mb_esszimmertisch
+              - light.mb_esszimmer
+              - light.mb_kuche

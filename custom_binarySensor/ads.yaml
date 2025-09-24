@@ -1,8 +1,0 @@
-- platform: ads
-  name: "ads_WetterRain"
-  adsvar: gvl_ha.bWetterRAIN
-  device_class: moisture
-- platform: ads
-  name: "ads_Briefkasten_full"
-  adsvar: gvl_RETAIN.bBriefkastenFull
-  device_class: occupancy

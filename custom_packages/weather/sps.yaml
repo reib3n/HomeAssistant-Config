@@ -1,0 +1,26 @@
+# ============================================================
+# PACKAGE: Weather – SPS
+# ============================================================
+# Purpose: All Weather related thinks from the sps
+# Notes:
+#   - Reads raw rain sensor state from binary_sensor.ads_wetterrain
+#   - Uses input_datetime.letzterniederschlag as timestamp reference
+# ============================================================
+
+package_weather_sps:
+  template:
+    - binary_sensor:
+        - name: "Status Regen"
+          unique_id: wetterraincustom
+          device_class: moisture
+          # Der Sensor ist "on", wenn der ADS-Regensensor aktiv ist
+          state: "{{ is_state('binary_sensor.ads_wetterrain', 'on') }}"
+          attributes:
+            letzterRegen: >-
+              {% set last = states('input_datetime.letzterniederschlag') %}
+              {% if last not in ['unknown','unavailable','none',''] %}
+                {% set days = ((as_timestamp(now()) - as_timestamp(last)) / 86400) | int %}
+                {{ days }} Tage
+              {% else %}
+                unbekannt
+              {% endif %}

@@ -1,8 +1,0 @@
-- platform: template
-  sensors:
-    wetterraincustom:
-      friendly_name: "Status Regen"
-      device_class: moisture
-      value_template: "{{ states.binary_sensor.ads_wetterrain }}"
-      attribute_templates:
-        letzterRegen: "{{ (as_timestamp(now()) - as_timestamp(states('input_datetime.letzterniederschlag'))) | timestamp_custom('%j', true ) | int - 1}} Tage"

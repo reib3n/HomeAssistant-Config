@@ -1,75 +1,76 @@
-### ---------------------------------------------------------------------------
-### Calendars
-### ---------------------------------------------------------------------------
-calendar:
-  - platform: caldav
-    username: !secret userIcloud
-    password: !secret passIcloud
-    url: https://caldav.icloud.com
+package_calendars:
+  ### ---------------------------------------------------------------------------
+  ### Calendars
+  ### ---------------------------------------------------------------------------
+  calendar:
+    - platform: caldav
+      username: !secret userIcloud
+      password: !secret passIcloud
+      url: https://caldav.icloud.com
 
-### ---------------------------------------------------------------------------
-### Triggered template: fetch events for today and tomorrow, expose sensors
-### ---------------------------------------------------------------------------
-template:
-  - trigger:
-      - trigger: time_pattern
-        hours: "/1"
+  ### ---------------------------------------------------------------------------
+  ### Triggered template: fetch events for today and tomorrow, expose sensors
+  ### ---------------------------------------------------------------------------
+  template:
+    - trigger:
+        - trigger: time_pattern
+          hours: "/1"
 
-    action:
-      # Variables for today
-      - variables:
-          start_heute: "{{ now().replace(hour=6, minute=0, second=0, microsecond=0) }}"
-          end_heute: "{{ now().replace(hour=23, minute=59, second=59, microsecond=0) }}"
+      action:
+        # Variables for today
+        - variables:
+            start_heute: "{{ now().replace(hour=6, minute=0, second=0, microsecond=0) }}"
+            end_heute: "{{ now().replace(hour=23, minute=59, second=59, microsecond=0) }}"
 
-      - action: calendar.get_events
-        target:
-          entity_id: calendar.abfall
-        data:
-          start_date_time: "{{ start_heute }}"
-          end_date_time: "{{ end_heute }}"
-        response_variable: agenda_heute
+        - action: calendar.get_events
+          target:
+            entity_id: calendar.abfall
+          data:
+            start_date_time: "{{ start_heute }}"
+            end_date_time: "{{ end_heute }}"
+          response_variable: agenda_heute
 
-      - variables:
-          events_heute: >-
-            {{ agenda_heute['calendar.abfall']['events']
-               if agenda_heute is defined and agenda_heute.get('calendar.abfall') is not none
-               else [] }}
+        - variables:
+            events_heute: >-
+              {{ agenda_heute['calendar.abfall']['events']
+                if agenda_heute is defined and agenda_heute.get('calendar.abfall') is not none
+                else [] }}
 
-      # Variables for tomorrow
-      - variables:
-          morgen: "{{ (now() + timedelta(days=1)).date() }}"
-          start_morgen: "{{ as_local(as_datetime(morgen | string + ' 06:00:00')) }}"
-          end_morgen: "{{ as_local(as_datetime(morgen | string + ' 23:59:59')) }}"
+        # Variables for tomorrow
+        - variables:
+            morgen: "{{ (now() + timedelta(days=1)).date() }}"
+            start_morgen: "{{ as_local(as_datetime(morgen | string + ' 06:00:00')) }}"
+            end_morgen: "{{ as_local(as_datetime(morgen | string + ' 23:59:59')) }}"
 
-      - action: calendar.get_events
-        target:
-          entity_id: calendar.abfall
-        data:
-          start_date_time: "{{ start_morgen }}"
-          end_date_time: "{{ end_morgen }}"
-        response_variable: agenda_morgen
+        - action: calendar.get_events
+          target:
+            entity_id: calendar.abfall
+          data:
+            start_date_time: "{{ start_morgen }}"
+            end_date_time: "{{ end_morgen }}"
+          response_variable: agenda_morgen
 
-      - variables:
-          events_morgen: >-
-            {{ agenda_morgen['calendar.abfall']['events']
-               if agenda_morgen is defined and agenda_morgen.get('calendar.abfall') is not none
-               else [] }}
+        - variables:
+            events_morgen: >-
+              {{ agenda_morgen['calendar.abfall']['events']
+                if agenda_morgen is defined and agenda_morgen.get('calendar.abfall') is not none
+                else [] }}
 
-    sensor:
-      - name: "Abfalltermine Heute"
-        unique_id: trash_calendar_events_today
-        state: >-
-          {% set summaries = events_heute | map(attribute='summary') | list %}
-          {{ summaries | join(' + ') if summaries else '-' }}
-        attributes:
-          count: "{{ (events_heute | map(attribute='summary') | list) | count }}"
-          titles: "{{ events_heute | map(attribute='summary') | list }}"
+      sensor:
+        - name: "Abfalltermine Heute"
+          unique_id: trash_calendar_events_today
+          state: >-
+            {% set summaries = events_heute | map(attribute='summary') | list %}
+            {{ summaries | join(' + ') if summaries else '-' }}
+          attributes:
+            count: "{{ (events_heute | map(attribute='summary') | list) | count }}"
+            titles: "{{ events_heute | map(attribute='summary') | list }}"
 
-      - name: "Abfalltermine Morgen"
-        unique_id: trash_calendar_events_tomorrow
-        state: >-
-          {% set summaries = events_morgen | map(attribute='summary') | list %}
-          {{ summaries | join(' + ') if summaries else '-' }}
-        attributes:
-          count: "{{ (events_morgen | map(attribute='summary') | list) | count }}"
-          titles: "{{ events_morgen | map(attribute='summary') | list }}"
+        - name: "Abfalltermine Morgen"
+          unique_id: trash_calendar_events_tomorrow
+          state: >-
+            {% set summaries = events_morgen | map(attribute='summary') | list %}
+            {{ summaries | join(' + ') if summaries else '-' }}
+          attributes:
+            count: "{{ (events_morgen | map(attribute='summary') | list) | count }}"
+            titles: "{{ events_morgen | map(attribute='summary') | list }}"
