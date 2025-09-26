@@ -5,12 +5,6 @@ package_weather_dwd:
   # Verarbeitet die Informationen der Integration des DWD
   # -------------------------------------------------------------------
 
-  # 1) WEATHER-INTEGRATION
-  # >>> PASTE: BEGIN weather <<<
-  # weather:
-  #   # <-- Hier deinen vorhandenen weather:-Block einfügen (unverändert)
-  # >>> PASTE: END weather <<<
-
   # 2) TEMPLATE-SENSOREN (aufgeteilt in zwei Blöcke)
 
   template:

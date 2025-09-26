@@ -30,6 +30,12 @@ package_area_wohmnbereich:
                 brightness_pct: 50
               target:
                 entity_id: light.mb_esszimmertisch
+            - action: light.turn_on
+              metadata: {}
+              data:
+                brightness_pct: 50
+              target:
+                entity_id: light.marmorlampe
         - action: switch.turn_on
           metadata: {}
           data: {}

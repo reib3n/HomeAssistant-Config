@@ -9,4 +9,6 @@
 /home-assistant_v2.db-wal
 /secrets.yaml
 /tts
-
+/image
+/custom_components
+/www

@@ -47,6 +47,7 @@ package_voice:
               {% if states('sensor.stadt_dornstetten_aktuelle_warnstufe') | int(0) > 0 %}
               Aktuell gibt es eine Wetterwarnung vor {{ states('sensor.dwd_aktuelle_warnungen_text')}}
               {% endif %}
+
             preannounce: false
           target:
             device_id: "{{ target_device }}"
@@ -117,6 +118,14 @@ package_voice:
         - action: script.voice_wetterbericht_jetzt
           data:
             target_device: "{{ trigger.device_id }}"
+
+        # 4) Temperatur Wohnzimmer
+        - action: assist_satellite.announce
+          data:
+            message: "Im Wohnbereich hat es {{ states('sensor.mb_temp_wohnzimmer') }}°."
+            preannounce: false
+          target:
+            device_id: "{{ trigger.device_id }}"
 
     # Night routine
     - alias: "[-Voice-] Command - Gute Nacht"

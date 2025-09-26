@@ -1,0 +1,13 @@
+package_recorder:
+  recorder:
+    db_url: !secret mariadb_url # Use MariaDB instead of default SQLite
+    auto_purge: true # run cleanup automatically
+    purge_keep_days: 14 # keep 14 days of raw event/state data
+    auto_repack: true # optimize DB occasionally after purge
+    commit_interval: 5 # seconds; small buffer for fewer writes
+#    exclude: # keep DB klein & schnell
+#      domains:
+#        - automation # example: skip noisy domains
+#        - updater
+#      entities:
+#        - sensor.irrelevanter_sensor
