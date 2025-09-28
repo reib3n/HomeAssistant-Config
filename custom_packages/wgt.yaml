@@ -468,14 +468,15 @@ package_wgt:
             {{ 'mdi:power' if v==0 else 'mdi:fire' if v==1 else 'mdi:snowflake' if v==2 else 'mdi:cached' if v in [3,4] else 'mdi:help' }}
           availability: "{{ is_number(states('sensor.wgt_heizen_kuehlen')) }}"
 
-        - name: "WGT Heizen"
+        - name: "WGT Heizen Text"
           unique_id: "wgt_heizen_text"
           state: >-
-            {% set raw = states('sensor.wgt_heizen') %}
-            {% if is_number(raw) %}{{ {0:'Aus',1:'Heizen'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
-          icon: >-
-            {% set v = states('sensor.wgt_heizen')|int(-1) %}
-            {{ 'mdi:power' if v==0 else 'mdi:fire' if v==1 else 'mdi:help' }}
+            {% set raw = states('sensor.status_waermepumpe_wgt') %}
+            {% if is_number(raw) %}{{ {0:'Aus',5:'Heizen',49:'Kühlen'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
+          attributes:
+            Lufttemperatur: >-
+              {% set v = states('sensor.temperatur_nach_ne') %}
+              {% if is_number(v) %}{{ v ~ '°C' }}{% else %}-{% endif %}
           availability: "{{ is_number(states('sensor.wgt_heizen')) }}"
 
         - name: "WGT Kühlen"
