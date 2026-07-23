@@ -1,0 +1,46 @@
+package_power_mgmt:
+  # =======================================================================
+  # STATISTICS SENSORS
+  # =======================================================================
+  sensor:
+    - platform: statistics
+      name: "m1_ac_power_a_stat"
+      entity_id: sensor.mb_solaredge_m1_ac_power_a_final
+      state_characteristic: average_linear
+      sampling_size: 20
+
+    - platform: statistics
+      name: "m1_ac_power_b_stat"
+      entity_id: sensor.mb_solaredge_m1_ac_power_b_final
+      state_characteristic: average_linear
+      sampling_size: 20
+
+    - platform: statistics
+      name: "m1_ac_power_c_stat"
+      entity_id: sensor.mb_solaredge_m1_ac_power_c_final
+      state_characteristic: average_linear
+      sampling_size: 20
+
+  template:
+    - sensor:
+        # --- Grid Import (positive when drawing from grid) --------------------
+        - name: "calc_grid_import_now"
+          unique_id: calc_grid_import_now
+          unit_of_measurement: "W"
+          device_class: power
+          state_class: measurement
+          icon: mdi:transmission-tower-import
+          state: >
+            {% set val = states('sensor.mb_solaredge_m1_ac_power_final') | float(0) %}
+            {{ (val * -1) if val < 0 else 0 }}
+
+        # --- Grid Export (positive when feeding to grid) ----------------------
+        - name: "calc_grid_export_now"
+          unique_id: calc_grid_export_now
+          unit_of_measurement: "W"
+          device_class: power
+          state_class: measurement
+          icon: mdi:transmission-tower-export
+          state: >
+            {% set val = states('sensor.mb_solaredge_m1_ac_power_final') | float(0) %}
+            {{ val if val > 0 else 0 }}

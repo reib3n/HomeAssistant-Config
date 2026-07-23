@@ -1,0 +1,15 @@
+package_area_garage:
+  template:
+    - sensor:
+        - default_entity_id: sensor.mb_garagentor_status_text
+          name: Garagentor
+          state: >-
+            {% if is_state('sensor.status_garagentor', '0') %}
+              teilweise geöffnet
+            {% elif is_state('sensor.status_garagentor', '1') %}
+              Lüftungstellung
+            {% elif is_state('sensor.status_garagentor', '2') %}
+              geschlossen
+            {% elif is_state('sensor.status_garagentor', '3') %}
+              geöffnet
+            {% endif %}

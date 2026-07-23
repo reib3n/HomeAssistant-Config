@@ -1,0 +1,35 @@
+package_area_outdoor:
+  template:
+    - light:
+        - unique_id: mb_balkon
+          turn_on:
+            - action: modbus.write_coil
+              data_template:
+                hub: Beckhoff
+                unit: 1
+                address: 1010
+                state: true
+          turn_off:
+            - action: modbus.write_coil
+              data_template:
+                hub: Beckhoff
+                unit: 1
+                address: 1010
+                state: false
+          set_level:
+            - action: modbus.write_register
+              data_template:
+                hub: Beckhoff
+                unit: 1
+                address: 2010
+                value: "{{ brightness }}"
+          default_entity_id: light.mb_balkon
+          name: Balkon
+          level: "{{ (states('sensor.mb_light_balkon_bright') | int(0) ) }}"
+          state: "{{ (states('binary_sensor.mb_light_balkon_status')) }}"
+
+    - sensor:
+        - unit_of_measurement: l
+          default_entity_id: sensor.zistern_water_today
+          name: Zisternenwasser Entnahme heute
+          state: "{{ ((states.sensor.zisternenentnahme_heute.state | float(0) * 1000)) | round(0) }}"

@@ -1,0 +1,80 @@
+package_access:
+  template:
+    - lock:
+        - name: Haustür
+          optimistic: true
+          lock:
+            - action: switch.turn_off
+              target:
+                entity_id:
+                  - switch.mb_haustur_dauer
+          unlock:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_haustur_dauer
+          open:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_haustur_impuls
+          state:
+            "{{ is_state('switch.mb_haustur_dauer', 'off') and is_state('switch.mb_haustur_impuls',
+            'off') }}"
+    - lock:
+        - name: Garage Haus
+          optimistic: true
+          lock:
+            - action: switch.turn_off
+              target:
+                entity_id:
+                  - switch.mb_turoffner_garage_haus
+          unlock:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_turoffner_garage_haus
+          open:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_turoffner_garage_haus
+          state: "{{ is_state('switch.mb_turoffner_garage_haus', 'off') }}"
+    - lock:
+        - name: Garage Strasse
+          optimistic: true
+          lock:
+            - action: switch.turn_off
+              target:
+                entity_id:
+                  - switch.mb_turoffner_garage_strasse
+          unlock:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_turoffner_garage_strasse
+          open:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_turoffner_garage_strasse
+          state: "{{ is_state('switch.mb_turoffner_garage_strasse', 'off') }}"
+    - lock:
+        - name: Werkstatt
+          optimistic: true
+          lock:
+            - action: switch.turn_off
+              target:
+                entity_id:
+                  - switch.mb_turoffner_werkstatt
+          unlock:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_turoffner_werkstatt
+          open:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_turoffner_werkstatt
+          state: "{{ is_state('switch.mb_turoffner_werkstatt', 'off') }}"

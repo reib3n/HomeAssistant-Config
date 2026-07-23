@@ -1,0 +1,8 @@
+package_recorder:
+  recorder:
+#    exclude: # keep DB klein & schnell
+#      domains:
+#        - automation # example: skip noisy domains
+#        - updater
+#      entities:
+#        - sensor.irrelevanter_sensor

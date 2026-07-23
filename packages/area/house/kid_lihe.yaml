@@ -1,0 +1,38 @@
+package_area_kid_lihe:
+  template:
+    - cover:
+        - device_class: shutter
+          open_cover:
+            - action: cover.open_cover
+              target:
+                entity_id:
+                  - cover.linus_sud
+          close_cover:
+            - action: cover.close_cover
+              target:
+                entity_id:
+                  - cover.linus_sud
+          stop_cover:
+            - action: cover.stop_cover
+              target:
+                entity_id:
+                  - cover.linus_sud
+          set_cover_position:
+            - action: cover.set_cover_position
+              target:
+                entity_id:
+                  - cover.linus_sud
+              data:
+                position: "{{position}}"
+          default_entity_id: cover.linus_sud_custom
+          name: Rollladen Linus Süd Custom
+          position: "{{ states('sensor.cover_linus_sud_optimistic') }}"
+    - sensor:
+        - default_entity_id: sensor.cover_linus_sud_optimistic
+          name: Rolladen Linus Süd optimistic Positiom
+          state: >-
+            {% if 100 >= (states('sensor.linus_sud_target_closure') | int(-1)) >= 0 %}
+              {{ ( 100 | int) - (states('sensor.linus_sud_target_closure') | int(0)) }}
+            {% else %}
+              {{ 100 | int }}
+            {% endif %}

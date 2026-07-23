@@ -1,0 +1,40 @@
+package_area_tech:
+  template:
+    - sensor:
+        - default_entity_id: sensor.status_spulmaschine
+          attributes:
+            Leistung: "{{ (states('sensor.std_spulmaschine_leistung') | float(0) | round(1))}} W"
+          name: Spülmaschine
+          state: >-
+            {% if is_state('input_select.spulmaschine_state_machine', 'idle') %}
+              untätig
+            {% elif is_state('input_select.spulmaschine_state_machine', 'paused') %}
+              pausiert
+            {% elif is_state('input_select.spulmaschine_state_machine', 'detached_overload') %}
+              überlastet
+            {% elif is_state('input_select.spulmaschine_state_machine', 'job_ongoing') %}
+              läuft
+            {% elif is_state('input_select.spulmaschine_state_machine', 'job_completed') %}
+              fertig
+            {% elif is_state('input_select.spulmaschine_state_machine', 'unplugged') %}
+              ausgesteckt
+            {% endif %}
+    - sensor:
+        - default_entity_id: sensor.status_waschmaschine
+          attributes:
+            Leistung: "{{ (states('sensor.waschmaschine_power') | float(0) | round(1))}} W"
+          name: Waschmaschine
+          state: >-
+            {% if is_state('input_select.waschmaschine_state_machine', 'idle') %}
+              untätig
+            {% elif is_state('input_select.waschmaschine_state_machine', 'paused') %}
+              pausiert
+            {% elif is_state('input_select.waschmaschine_state_machine', 'detached_overload') %}
+              überlastet
+            {% elif is_state('input_select.waschmaschine_state_machine', 'job_ongoing') %}
+              läuft
+            {% elif is_state('input_select.waschmaschine_state_machine', 'job_completed') %}
+              fertig
+            {% elif is_state('input_select.waschmaschine_state_machine', 'unplugged') %}
+              ausgesteckt
+            {% endif %}

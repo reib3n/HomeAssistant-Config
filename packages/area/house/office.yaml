@@ -1,0 +1,38 @@
+package_area_office:
+  template:
+    - cover:
+        - device_class: shutter
+          open_cover:
+            - action: cover.open_cover
+              target:
+                entity_id:
+                  - cover.buro
+          close_cover:
+            - action: cover.close_cover
+              target:
+                entity_id:
+                  - cover.buro
+          stop_cover:
+            - action: cover.stop_cover
+              target:
+                entity_id:
+                  - cover.buro
+          set_cover_position:
+            - action: cover.set_cover_position
+              target:
+                entity_id:
+                  - cover.buro
+              data:
+                position: "{{position}}"
+          default_entity_id: cover.buro_custom
+          name: Rollladen Büro Custom
+          position: "{{ states('sensor.cover_buro_optimistic') }}"
+    - sensor:
+        - default_entity_id: sensor.cover_buro_optimistic
+          name: Rolladen Büro optimistic Positiom
+          state: >-
+            {% if 100 >= (states('sensor.buro_target_closure') | int(-1)) >= 0 %}
+              {{ ( 100 | int) - (states('sensor.buro_target_closure') | int(0)) }}
+            {% else %}
+              {{ 100 | int }}
+            {% endif %}

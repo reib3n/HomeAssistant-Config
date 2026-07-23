@@ -1,0 +1,32 @@
+# Board: Generic ESP32-H2 Board (Generic)
+# Definition: definitions/boards/generic-esp32h2/manifest.yaml
+
+esphome:
+  name: esp-thrd-btprox-ug
+  friendly_name: esp-thrd-btprox-ug
+
+esp32:
+  variant: esp32h2
+  framework:
+    type: esp-idf
+
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_key
+
+# Example OpenThread configuration (ESP32)
+network:
+  enable_ipv6: true
+
+openthread:
+  force_dataset: true
+  tlv: !secret thread_tlv
+
+bluetooth_proxy:

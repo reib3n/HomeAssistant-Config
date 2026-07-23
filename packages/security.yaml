@@ -1,0 +1,64 @@
+package_security:
+  template:
+    - alarm_control_panel:
+        - arm_away:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_testalarm_esszimmertisch
+              data:
+                code: !secret alarm_code
+          arm_home:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_testalarm_esszimmertisch
+              data:
+                code: !secret alarm_code
+          disarm:
+            - condition: state
+              entity_id:
+                - device_tracker.riphone15
+              state: home
+              match: all
+            - action: switch.turn_off
+              target:
+                entity_id:
+                  - switch.mb_testalarm_esszimmertisch
+              data:
+                code: !secret alarm_code
+          code_arm_required: true
+          code_format: number
+          default_entity_id: alarm_control_panel.alarm_panel_home
+          name: alarm_panel_home
+    - alarm_control_panel:
+        - arm_away:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_testalarm_esszimmertisch
+              data:
+                code: !secret alarm_code
+          arm_home:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.mb_testalarm_esszimmertisch
+              data:
+                code: !secret alarm_code
+          disarm:
+            - condition: state
+              entity_id:
+                - device_tracker.riphone15
+              state: home
+              match: all
+            - action: switch.turn_off
+              target:
+                entity_id:
+                  - switch.mb_testalarm_esszimmertisch
+              data:
+                code: !secret alarm_code
+          code_arm_required: true
+          code_format: number
+          default_entity_id: alarm_control_panel.alarm_panel_garage
+          name: alarm_panel_garage

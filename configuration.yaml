@@ -1,0 +1,45 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+  extra_module_url:
+    - /config/www/community/lovelace-card-mod/card-mod.js
+
+# Text to speech
+tts:
+  - platform: google_translate
+#---------------------------------------------------------------
+homeassistant:
+  name: Aach
+  latitude: !secret latitude
+  longitude: !secret longitude
+  elevation: 640
+  currency: EUR
+  country: DE
+  unit_system: metric
+  time_zone: "Europe/Berlin"
+  packages: !include_dir_merge_named packages
+
+  #Workaround for Custom Sensors for Energy Dashboard
+  customize_glob:
+    sensor.*_energy:
+      last_reset: "1970-01-01T00:00:00+00:00"
+      device_class: energy
+      state_class: total_increasing
+    sensor.trinkwasser:
+      last_reset: "1970-01-01T00:00:00+00:00"
+      device_class: "water"
+      state_class: total_increasing
+
+# Web Access Config
+http:
+  server_port: 443
+
+#------------------ Other Includes ----------------------
+notify: !include notify.yaml
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
