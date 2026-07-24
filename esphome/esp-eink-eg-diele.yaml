@@ -3,7 +3,7 @@
 # ---------------------------------------------------------
 esphome:
   name: "esp-eink-eg-diele"
-  friendly_name: "esp-eink-eg-diele"
+  friendly_name: eInk Diele EG
   on_boot:
     priority: 800
     then:
