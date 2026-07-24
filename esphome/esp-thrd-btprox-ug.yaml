@@ -3,7 +3,7 @@
 
 esphome:
   name: esp-thrd-btprox-ug
-  friendly_name: BLE-Proxy-UG
+  friendly_name: Bluetooth Proxy UG
 
 esp32:
   variant: esp32h2
