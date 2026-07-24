@@ -189,6 +189,7 @@ binary_sensor:
       number: GPIO12
       mode:
         input: true
+        pulldown: true
     filters:
       - delayed_off: 2s
 
@@ -200,6 +201,7 @@ binary_sensor:
       number: GPIO13
       mode:
         input: true
+        pulldown: true
     filters:
       - delayed_off: 2s
 
