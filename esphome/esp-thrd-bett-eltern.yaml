@@ -1,0 +1,17 @@
+# Board: Espressif ESP32-H2-DevKit
+# Definition: definitions/boards/esp32-h2-devkitm-1/manifest.yaml
+
+esphome:
+  name: esp-thrd-bett-eltern
+  friendly_name: esp-thrd-bett-eltern
+
+esp32:
+  variant: esp32h2
+
+logger:
+
+# This board has no native Wi-Fi. ESPHome's ``api:`` and
+# ``ota:`` components both require a ``network``
+# component — configure ``openthread:`` / ``ethernet:`` /
+# ``esp32_hosted:`` to suit your setup, then add ``api:``
+# and ``ota:`` blocks once the network is ready.
