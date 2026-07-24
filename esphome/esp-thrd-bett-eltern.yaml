@@ -3,7 +3,14 @@
 
 esphome:
   name: esp-thrd-bett-eltern
-  friendly_name: esp-thrd-bett-eltern
+  friendly_name: Bettbeleuchtung Eltern
+  on_boot:
+    # Erst nach dem Einschwingen der Eingänge auf Schalteränderungen reagieren,
+    # sonst schaltet der initiale Zustand beim Neustart das Licht
+    priority: -100
+    then:
+      - delay: 2s
+      - lambda: "id(booted) = true;"
 
 esp32:
   variant: esp32h2
@@ -26,3 +33,244 @@ network:
 openthread:
   force_dataset: true
   tlv: !secret thread_tlv
+
+# ---------------------------------------------------------
+# Interner Zustand
+# ---------------------------------------------------------
+globals:
+  # true, solange das Licht vom Nachtlichtmodus eingeschaltet wurde
+  - id: nightlight_active
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  # Schutz gegen Schalten durch initiale Zustandsmeldung nach dem Boot
+  - id: booted
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+# ---------------------------------------------------------
+# Parameter (in HA einstellbar)
+# ---------------------------------------------------------
+number:
+  - platform: template
+    id: brightness_switch
+    name: "Helligkeit Schalter"
+    icon: mdi:brightness-7
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 100
+    min_value: 1
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+
+  - platform: template
+    id: brightness_night
+    name: "Helligkeit Nachtlicht"
+    icon: mdi:brightness-4
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 15
+    min_value: 1
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+
+  - platform: template
+    id: nightlight_timeout
+    name: "Nachlaufzeit Nachtlicht"
+    icon: mdi:timer-outline
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 60
+    min_value: 5
+    max_value: 600
+    step: 5
+    unit_of_measurement: "s"
+    mode: box
+
+# ---------------------------------------------------------
+# Bewegungsmelder-Funktion ein/aus (aus HA schaltbar)
+# ---------------------------------------------------------
+switch:
+  - platform: template
+    id: motion_enabled
+    name: "Bewegungsmelder aktiv"
+    icon: mdi:motion-sensor
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    on_turn_off:
+      # Laufenden Nachlauf abbrechen, aktives Nachtlicht sofort beenden
+      - script.stop: nightlight_off_timer
+      - if:
+          condition:
+            lambda: "return id(nightlight_active);"
+          then:
+            - light.turn_off: bed_light
+
+# ---------------------------------------------------------
+# LED-Band (PWM über MOSFET-Treiber)
+# ---------------------------------------------------------
+output:
+  - platform: ledc
+    id: bed_light_pwm
+    pin: GPIO4
+    frequency: 1000 Hz
+
+light:
+  - platform: monochromatic
+    id: bed_light
+    name: None # -> light.bettbeleuchtung_eltern
+    output: bed_light_pwm
+    default_transition_length: 500ms
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_off:
+      # Egal wer ausschaltet: Nachlauf stoppen und Flag zurücksetzen
+      - script.stop: nightlight_off_timer
+      - lambda: "id(nightlight_active) = false;"
+
+# ---------------------------------------------------------
+# Eingänge
+# ---------------------------------------------------------
+binary_sensor:
+  # --- Rastschalter (Wechselschaltung: jede Betätigung schaltet um) ---
+  - platform: gpio
+    id: switch_left
+    name: "Schalter Links"
+    icon: mdi:light-switch
+    pin:
+      number: GPIO10
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      - delayed_on_off: 50ms
+    on_state:
+      - if:
+          condition:
+            lambda: "return id(booted);"
+          then:
+            - script.execute: switch_action
+
+  - platform: gpio
+    id: switch_right
+    name: "Schalter Rechts"
+    icon: mdi:light-switch
+    pin:
+      number: GPIO11
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      - delayed_on_off: 50ms
+    on_state:
+      - if:
+          condition:
+            lambda: "return id(booted);"
+          then:
+            - script.execute: switch_action
+
+  # --- Bewegungsmelder unter dem Bett ----------------------
+  - platform: gpio
+    id: pir_left
+    name: "Bewegung Links"
+    device_class: motion
+    pin:
+      number: GPIO12
+      mode:
+        input: true
+    filters:
+      - delayed_off: 2s
+
+  - platform: gpio
+    id: pir_right
+    name: "Bewegung Rechts"
+    device_class: motion
+    pin:
+      number: GPIO13
+      mode:
+        input: true
+    filters:
+      - delayed_off: 2s
+
+  # --- Zusammengefasste Bewegung + Nachtlicht-Steuerung ----
+  - platform: template
+    id: motion_any
+    name: "Bewegung"
+    device_class: motion
+    lambda: "return id(pir_left).state || id(pir_right).state;"
+    on_press:
+      - script.stop: nightlight_off_timer
+      - if:
+          condition:
+            and:
+              - switch.is_on: motion_enabled
+              - light.is_off: bed_light
+          then:
+            - lambda: "id(nightlight_active) = true;"
+            - light.turn_on:
+                id: bed_light
+                brightness: !lambda "return id(brightness_night).state / 100.0;"
+    on_release:
+      - if:
+          condition:
+            lambda: "return id(nightlight_active);"
+          then:
+            - script.execute: nightlight_off_timer
+
+  - platform: template
+    id: nightlight_state
+    name: "Nachtlicht aktiv"
+    icon: mdi:weather-night
+    lambda: "return id(nightlight_active);"
+
+# ---------------------------------------------------------
+# Abläufe
+# ---------------------------------------------------------
+script:
+  # Nachlaufzeit nach letzter Bewegung; mode:restart -> jede neue
+  # Bewegung setzt den Timer zurück
+  - id: nightlight_off_timer
+    mode: restart
+    then:
+      - delay: !lambda "return (uint32_t)(id(nightlight_timeout).state * 1000);"
+      - if:
+          condition:
+            lambda: "return id(nightlight_active);"
+          then:
+            - light.turn_off: bed_light
+
+  # Schalterbetätigung
+  - id: switch_action
+    mode: single
+    then:
+      - script.stop: nightlight_off_timer
+      - if:
+          condition:
+            lambda: "return id(nightlight_active);"
+          then:
+            # Nachtlicht läuft -> auf Schalthelligkeit hochziehen
+            - lambda: "id(nightlight_active) = false;"
+            - light.turn_on:
+                id: bed_light
+                brightness: !lambda "return id(brightness_switch).state / 100.0;"
+          else:
+            - if:
+                condition:
+                  light.is_on: bed_light
+                then:
+                  - light.turn_off: bed_light
+                else:
+                  - light.turn_on:
+                      id: bed_light
+                      brightness: !lambda "return id(brightness_switch).state / 100.0;"
