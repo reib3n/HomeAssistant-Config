@@ -2217,7 +2217,7 @@
   - action: script.voice_ausgabe_wetterbericht_jetzt
     metadata: {}
     data:
-      target_device: c314a7066bb03c848998c8086d0acc96
+      target_device: '{{ trigger.device_id }}'
   mode: single
 - id: '1785072457454'
   alias: Voice - Command - Wetterwarnungen
