@@ -122,17 +122,12 @@ blueprint:
       icon: mdi:sun-thermometer
       collapsed: true
       input:
-        forecast_source:
-          name: Tages-Höchsttemperatur (Vorhersage)
-          description: >-
-            Wetter-Entity (z. B. DWD) → der Tages-Höchstwert wird per
-            weather.get_forecasts (daily) automatisch extrahiert.
-            ODER ein Temperatur-Sensor, der den Höchstwert bereits liefert
-            (z. B. sensor.forecast_weather_max_temp_today). Kern des Saison-Gates.
+        forecast_sensor:
+          name: Sensor Tages-Höchsttemperatur (Vorhersage)
+          description: z. B. sensor.forecast_weather_max_temp_today. Kern des Saison-Gates – an kühlen Vorhersagetagen wird nicht beschattet, damit die Sonne heizt.
           selector:
             entity:
               filter:
-                - domain: weather
                 - domain: sensor
                   device_class: temperature
         forecast_high_min:
@@ -245,7 +240,7 @@ variables:
   lux_sensor: !input lux_sensor
   lux_close: !input lux_close
   lux_open: !input lux_open
-  forecast_source: !input forecast_source
+  forecast_sensor: !input forecast_sensor
   forecast_high_min: !input forecast_high_min
   outdoor_sensor: !input outdoor_sensor
   outdoor_min: !input outdoor_min
@@ -266,8 +261,6 @@ variables:
   has_wind: "{{ wind_sensor is string and wind_sensor | length > 0 }}"
   has_sleep: "{{ sleep_lock is string and sleep_lock | length > 0 }}"
   has_disable: "{{ disable_boolean is string and disable_boolean | length > 0 }}"
-  # Vorhersage-Quelle: Wetter-Entity (Wert per Service) oder Temperatur-Sensor (Wert direkt)
-  is_weather: "{{ forecast_source.split('.')[0] == 'weather' }}"
 
   # --- Sonnenstand / Geometrie ---
   sun_az: "{{ state_attr('sun.sun','azimuth') | float(0) }}"
@@ -279,10 +272,12 @@ variables:
 
   # --- Messwerte ---
   lux: "{{ states(lux_sensor) | float(0) }}"
+  forecast_high: "{{ states(forecast_sensor) | float(0) }}"
   outdoor: "{{ states(outdoor_sensor) | float(0) }}"
   indoor: "{{ states(indoor_sensor) | float(-99) if has_indoor else 99 }}"
 
-  # --- Wärme (ohne Vorhersage; forecast_high kommt in der Aktion) ---
+  # --- Saison-/Wärme-Gate ---
+  season_ok: "{{ forecast_high >= forecast_high_min }}"
   warm_now: "{{ outdoor >= outdoor_min and (indoor >= indoor_target if has_indoor else true) }}"
   cool_now: >
     {{ (outdoor < outdoor_min - temp_hysterese)
@@ -299,6 +294,11 @@ variables:
 
   block_open: "{{ fully_closed or sleeping }}"
 
+  # --- Wunsch-Aktion ---
+  want_shade: >
+    {{ geo and season_ok and warm_now and (lux >= lux_close) and not contact_open }}
+  want_open: >
+    {{ (not geo) or (not season_ok) or (lux < lux_open) or cool_now }}
   # nur senden, wenn nötig (schont Tahoma/RTS; bei fehlender Position wird ggf. wiederholt)
   need_shade_cmd: "{{ pos is none or (pos | float(100)) > shade_position + 5 }}"
 
@@ -311,37 +311,9 @@ trigger:
 condition: []
 
 action:
-  # 1) Tages-Höchstwert bestimmen: Wetter-Entity -> per Service, sonst Sensor-State
-  - if:
-      - condition: template
-        value_template: "{{ is_weather }}"
-    then:
-      - action: weather.get_forecasts
-        continue_on_error: true
-        target:
-          entity_id: !input forecast_source
-        data:
-          type: daily
-        response_variable: fc
-  - variables:
-      forecast_valid: >
-        {{ (not is_weather)
-           or (fc is defined and fc.get(forecast_source)
-               and (fc[forecast_source].forecast | default([]) | count) > 0) }}
-      forecast_high: >
-        {{ (fc[forecast_source].forecast[0].temperature | float(0))
-           if (is_weather and forecast_valid)
-           else (states(forecast_source) | float(0)) }}
-      season_ok: "{{ forecast_high >= forecast_high_min }}"
-      want_shade: >
-        {{ geo and season_ok and warm_now and (lux >= lux_close) and not contact_open }}
-      want_open: >
-        {{ (not geo) or (not season_ok) or (lux < lux_open) or cool_now }}
-
-  # 2) Entscheidung (oberste zutreffende Bedingung gewinnt)
   - choose:
-      # A) Deaktiviert oder (Wetter-)Vorhersage nicht lesbar -> halten
-      - conditions: "{{ disabled or not forecast_valid }}"
+      # A) Deaktiviert -> nichts tun
+      - conditions: "{{ disabled }}"
         sequence: []
 
       # B) Wind -> Zwangsöffnen (außer komplett geschlossen), Vorrang
