@@ -1994,7 +1994,7 @@
     metadata: {}
     data: {}
     target:
-      device_id: 01be4db6375dc60a12651b82d5942f8a
+      device_id: b4ddcc71c457f8ffeb9b496542c8f10e
   mode: single
 - id: '1769542567863'
   alias: Beleuchtung Hausgang

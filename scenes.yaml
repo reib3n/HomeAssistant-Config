@@ -1,14 +1,14 @@
 - id: '1742843242303'
   name: Abendbeleuchtung
   entities:
-    light.std_lavalampe:
+    light.wohnbereich_std_lavalampe:
       supported_color_modes:
       - onoff
       color_mode: onoff
       friendly_name: Lavalampe
       supported_features: 0
       state: 'on'
-    light.marmorlampe:
+    light.marmorlampe_2:
       min_color_temp_kelvin: 2127
       max_color_temp_kelvin: 6535
       min_mireds: 153
@@ -43,9 +43,9 @@
       supported_features: 0
       state: 'on'
   metadata:
-    light.std_lavalampe:
+    light.wohnbereich_std_lavalampe:
       entity_only: true
-    light.marmorlampe:
+    light.marmorlampe_2:
       entity_only: true
     light.mb_esszimmertisch:
       entity_only: true

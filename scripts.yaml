@@ -176,3 +176,63 @@ eink_display_eg_diele_licht:
         text:
       name: Modus
       required: true
+wohnbereich_gute_nacht_2:
+  sequence:
+  - action: cover.close_cover
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - cover.kuche
+      - cover.esszimmer_sud
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.mb_powersocket_fernseher
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - light.mb_wohnzimmer
+      - light.mb_esszimmertisch
+      - light.mb_esszimmer
+      - light.mb_kuche
+      - light.wohnbereich_std_lavalampe
+      - light.marmorlampe_2
+  alias: '[-Wohnbereich-] Gute Nacht'
+  icon: mdi:weather-sunset-down
+  mode: single
+wohnbereich_guten_morgen_2:
+  sequence:
+  - if:
+    - condition: numeric_state
+      entity_id: sensor.wetterluxtotal
+      above: 0
+    then:
+    - action: cover.open_cover
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - cover.kuche
+        - cover.esszimmer_sud
+        - cover.jalousie_esszimmer
+        - cover.wohnzimmer_jalousie
+    else:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        brightness_pct: 50
+      target:
+        entity_id: light.mb_esszimmertisch
+    - action: light.turn_on
+      metadata: {}
+      data:
+        brightness_pct: 50
+      target:
+        entity_id: light.marmorlampe_2
+  alias: '[-Wohnbereich-] Guten Morgen'
+  icon: mdi:weather-sunset-up
+  mode: single
