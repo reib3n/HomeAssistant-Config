@@ -37,7 +37,7 @@ package_sps:
       name: "ads_WetterRAIN"
       adsvar: gvl_ha.wWetterRAIN
       unit_of_measurement: "mm"
-      state_class: TOTAL_INCREASING
+      state_class: total_increasing
       adstype: word
       factor: 10
     - platform: ads

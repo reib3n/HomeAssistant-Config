@@ -579,7 +579,7 @@ package_solaredge:
           state: >
             {% set raw = states('sensor.mb_solaredge_m1_ac_power')|float(0) %}
             {% set sf  = states('sensor.mb_solaredge_m1_ac_power_sf')|float(-3) %}
-            {{ (raw * (10 ** sf)) * (-1) | round(1) }}
+            {{ ((raw * (10 ** sf)) * -1) | round(1) }}
 
         # Leistung Phasen (W)
         - name: "mb_solaredge_m1_ac_power_a_final"

@@ -13,3 +13,9 @@
 
 # macOS
 .DS_Store
+
+# HACS / integrations (managed externally, not part of config)
+/custom_components/
+/www/community/
+/image/
+/.ha_run.lock
