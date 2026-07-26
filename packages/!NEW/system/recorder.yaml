@@ -1,8 +1,54 @@
 package_recorder:
+  # -------------------------------------------------------------------
+  # Recorder-Tuning
+  # Ziel: Schreiblast/DB-Größe senken, ohne für Charts/Energie relevante
+  # Sensoren zu verlieren. purge_keep_days bleibt beim HA-Default (10).
+  # -------------------------------------------------------------------
   recorder:
-#    exclude: # keep DB klein & schnell
-#      domains:
-#        - automation # example: skip noisy domains
-#        - updater
-#      entities:
-#        - sensor.irrelevanter_sensor
+    # Zustände gebündelt alle 30 s in einem Rutsch schreiben statt sofort.
+    # Reduziert Disk-I/O deutlich; kein Datenverlust (nur Durability-Fenster
+    # von max. 30 s bei einem harten Absturz).
+    commit_interval: 30
+
+    exclude:
+      entity_globs:
+        # SunSpec-Skalierungsfaktoren: praktisch konstant, in der History ohne Aussage
+        - sensor.mb_solaredge_*_sf
+
+      entities:
+        # Rohe, UNskalierte Elektro-Detailregister. Erst mit dem passenden SF
+        # ergeben sie einen sinnvollen Wert -> die skalierten *_final-Sensoren
+        # bleiben aufgezeichnet, die Rohwerte fliegen aus der History.
+
+        # --- Wechselrichter Garage ---
+        - sensor.mb_solaredge_garage_ac_current
+        - sensor.mb_solaredge_garage_ac_voltage
+        - sensor.mb_solaredge_garage_ac_freq
+        - sensor.mb_solaredge_garage_ac_va
+        - sensor.mb_solaredge_garage_ac_var
+        - sensor.mb_solaredge_garage_ac_pf
+        - sensor.mb_solaredge_garage_dc_current
+        - sensor.mb_solaredge_garage_dc_voltage
+
+        # --- Zähler M1: Strom / Spannung / Frequenz je Phase ---
+        - sensor.mb_solaredge_m1_ac_current_a
+        - sensor.mb_solaredge_m1_ac_current_b
+        - sensor.mb_solaredge_m1_ac_current_c
+        - sensor.mb_solaredge_m1_ac_volt_a
+        - sensor.mb_solaredge_m1_ac_volt_b
+        - sensor.mb_solaredge_m1_ac_volt_c
+        - sensor.mb_solaredge_m1_ac_freq
+
+        # --- Zähler M1: Schein-/Blindleistung / Leistungsfaktor je Phase (Rohwerte) ---
+        - sensor.mb_solaredge_m1_power_app_sum
+        - sensor.mb_solaredge_m1_power_app_a
+        - sensor.mb_solaredge_m1_power_app_b
+        - sensor.mb_solaredge_m1_power_app_c
+        - sensor.mb_solaredge_m1_power_rea_sum
+        - sensor.mb_solaredge_m1_power_rea_a
+        - sensor.mb_solaredge_m1_power_rea_b
+        - sensor.mb_solaredge_m1_power_rea_c
+        - sensor.mb_solaredge_m1_power_fac_avg
+        - sensor.mb_solaredge_m1_power_fac_a
+        - sensor.mb_solaredge_m1_power_fac_b
+        - sensor.mb_solaredge_m1_power_fac_c
