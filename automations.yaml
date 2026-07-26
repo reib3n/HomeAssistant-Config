@@ -2156,3 +2156,85 @@
       entity_id: switch.mb_powersocket_fernseher
     data: {}
   mode: single
+- id: '1785071483641'
+  alias: Voice - Command - Guten Morgen
+  description: 'Runs morning routine: turn evening-off devices back on, greet, then
+    announce weather.'
+  triggers:
+  - trigger: conversation
+    command: Guten Morgen
+  conditions: []
+  actions:
+  - action: script.wohnbereich_guten_morgen_2
+    data: {}
+  - action: assist_satellite.announce
+    data:
+      message: Guten Morgen, liebe Familie.
+      preannounce: false
+    target:
+      device_id: '{{ trigger.device_id }}'
+  - action: script.voice_ausgabe_wetterbericht_jetzt
+    data: {}
+  - action: assist_satellite.announce
+    data:
+      message: Im Wohnbereich hat es {{ states('sensor.mb_temp_wohnzimmer') }}°.
+      preannounce: false
+    target:
+      device_id: '{{ trigger.device_id }}'
+  mode: single
+- id: '1785071774512'
+  alias: Voice - Command - Gute Nacht
+  description: Says good night on the caller device and runs the night routine.
+  triggers:
+  - trigger: conversation
+    command: Gute Nacht
+  conditions: []
+  actions:
+  - action: assist_satellite.announce
+    data:
+      message: Gute Nacht, schlaf gut
+      preannounce: false
+    target:
+      device_id: '{{ trigger.device_id }}'
+  - action: script.wohnbereich_gute_nacht_2
+    data: {}
+  mode: single
+- id: '1785072439118'
+  alias: Voice - Command - Wetterbericht
+  description: Responds to weather-related voice commands by running the weather report
+    script on the caller device.
+  triggers:
+  - trigger: conversation
+    command:
+    - Wie ist das Wetter
+    - Wie wird das Wetter
+    - Sag mir das Wetter
+    - Wie wird das Wetter heute
+    - Wie ist es draussen
+    - Brauche ich einen Regenschirm
+  conditions: []
+  actions:
+  - action: script.voice_ausgabe_wetterbericht_jetzt
+    data:
+      device_id: '{{ trigger.device_id }}'
+  mode: single
+- id: '1785072457454'
+  alias: Voice - Command - Wetterwarnungen
+  description: Announces current weather warnings, if any, on the caller device.
+  triggers:
+  - trigger: conversation
+    command:
+    - Gibt es Wetterwarnungen
+    - Gibt es aktuelle Wetterwarnungen
+    - Gibt es aktuell Wetterwarnungen
+  conditions: []
+  actions:
+  - action: assist_satellite.announce
+    data:
+      message: '{% if states(''sensor.stadt_dornstetten_aktuelle_warnstufe'') | int(0)
+        > 0 %} Aktuell gibt es eine Wetterwarnung vor {{ states(''sensor.dwd_aktuelle_warnungen_text'')}}
+        {% else %} Nein, es gibt aktuell keine Warnungen. {% endif %}'
+      preannounce: false
+    target:
+      device_id: '{{ trigger.device_id }}'
+  mode: single

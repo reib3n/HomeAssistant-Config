@@ -201,9 +201,10 @@ wohnbereich_gute_nacht_2:
       - light.mb_kuche
       - light.wohnbereich_std_lavalampe
       - light.marmorlampe_2
-  alias: '[-Wohnbereich-] Gute Nacht'
+  alias: Wohnbereich - Gute Nacht
   icon: mdi:weather-sunset-down
   mode: single
+  description: ''
 wohnbereich_guten_morgen_2:
   sequence:
   - if:
@@ -233,6 +234,43 @@ wohnbereich_guten_morgen_2:
         brightness_pct: 50
       target:
         entity_id: light.marmorlampe_2
-  alias: '[-Wohnbereich-] Guten Morgen'
+  alias: Wohnbereich - Guten Morgen
   icon: mdi:weather-sunset-up
   mode: single
+  description: ''
+voice_ausgabe_wetterbericht_jetzt:
+  sequence:
+  - action: assist_satellite.announce
+    metadata: {}
+    data:
+      message: 'Die Außentemperatur beträgt aktuell {{ states(''sensor.temp_aussen_low'')
+        | round }}°. Die Temperaturspanne reicht von {{ states(''sensor.forecast_weather_min_temp_today'')
+        | round }}° bis {{ states(''sensor.forecast_weather_max_temp_today'') | round
+        }}°.
+
+        {% if is_state(''binary_sensor.ads_wetterrain'', ''on'') %} Es regnet. {%
+        endif %}
+
+        {% if states(''sensor.forecast_weather_regen_today'') | int(0) > 0 %} Es sollen
+        heute noch {{ states(''sensor.forecast_weather_regen_today'') | round(1) }}
+        Liter Regen fallen. {% else %} Es ist kein Regen vorhergesagt. {% endif %}
+
+        {% if states(''sensor.stadt_dornstetten_aktuelle_warnstufe'') | int(0) > 0
+        %} Aktuell gibt es eine Wetterwarnung vor {{ states(''sensor.dwd_aktuelle_warnungen_text'')}}
+        {% endif %}'
+      preannounce: false
+    target:
+      device_id: '{{ target_device }}'
+  alias: Voice - Ausgabe - Wetterbericht (jetzt)
+  description: Announce current temperature, today's range, rain, and warnings on
+    a selected device.
+  icon: mdi:weather-cloudy
+  mode: single
+  fields:
+    target_device:
+      name: Zielgerät (Device)
+      description: Wähle das Assist-/Satelliten-Gerät für die Ausgabe.
+      required: true
+      selector:
+        device:
+          multiple: false
