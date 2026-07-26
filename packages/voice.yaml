@@ -55,7 +55,8 @@ package_voice:
   # --- Automations -------------------------------------------
   automation:
     # Weather report by voice command
-    - alias: "[-Voice-] Command - Wetterbericht"
+    - id: voice_command_wetterbericht
+      alias: "[-Voice-] Command - Wetterbericht"
       description: "Responds to weather-related voice commands by running the weather report script on the caller device."
       mode: single
       trigger:
@@ -73,7 +74,8 @@ package_voice:
             target_device: "{{ trigger.device_id }}"
 
     # Weather warnings by voice command
-    - alias: "[-Voice-] Command - Wetterwarnungen"
+    - id: voice_command_wetterwarnungen
+      alias: "[-Voice-] Command - Wetterwarnungen"
       description: "Announces current weather warnings, if any, on the caller device."
       mode: single
       trigger:
@@ -96,7 +98,8 @@ package_voice:
             device_id: "{{ trigger.device_id }}"
 
     # Morning routine
-    - alias: "[-Voice-] Command - Guten Morgen"
+    - id: voice_command_guten_morgen
+      alias: "[-Voice-] Command - Guten Morgen"
       description: "Runs morning routine: turn evening-off devices back on, greet, then announce weather."
       mode: single
       trigger:
@@ -128,7 +131,8 @@ package_voice:
             device_id: "{{ trigger.device_id }}"
 
     # Night routine
-    - alias: "[-Voice-] Command - Gute Nacht"
+    - id: voice_command_gute_nacht
+      alias: "[-Voice-] Command - Gute Nacht"
       description: "Says good night on the caller device and runs the night routine."
       mode: single
       trigger:
