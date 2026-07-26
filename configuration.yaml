@@ -8,8 +8,8 @@ frontend:
     - /config/www/community/lovelace-card-mod/card-mod.js
 
 # Text to speech
-tts:
-  - platform: google_translate
+#tts:
+#  - platform: google_translate
 #---------------------------------------------------------------
 homeassistant:
   name: Aach
