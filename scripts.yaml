@@ -274,3 +274,75 @@ voice_ausgabe_wetterbericht_jetzt:
       selector:
         device:
           multiple: false
+watch_haustur_offnen:
+  sequence:
+  - action: lock.open
+    metadata: {}
+    target:
+      entity_id: lock.haustur
+    data: {}
+  alias: Watch - Haustür öffnen
+  description: ''
+watch_garage_auf:
+  sequence:
+  - action: switch.turn_on
+    metadata: {}
+    target:
+      entity_id: switch.mb_garagentorstellung_auf
+    data: {}
+  alias: Watch - Garage auf
+  description: ''
+watch_garage_zu:
+  sequence:
+  - action: switch.turn_on
+    metadata: {}
+    target:
+      entity_id: switch.mb_garagentorstellung_ab
+    data: {}
+  alias: Watch - Garage zu
+  description: ''
+watch_garage_luften:
+  sequence:
+  - action: switch.turn_on
+    metadata: {}
+    target:
+      entity_id: switch.mb_garagentorstellung_luften
+    data: {}
+  alias: Watch - Garage lüften
+  description: ''
+watch_werkstatt_offnen:
+  sequence:
+  - action: switch.turn_on
+    metadata: {}
+    target:
+      entity_id: switch.mb_turoffner_werkstatt
+    data: {}
+  alias: Watch - Werkstatt öffnen
+  description: ''
+watch_garage_tur_strasse:
+  sequence:
+  - action: switch.turn_on
+    metadata: {}
+    target:
+      entity_id: switch.mb_turoffner_garage_strasse
+    data: {}
+  alias: Watch - Garage Tür Strasse
+  description: ''
+watch_garage_tur_haus:
+  sequence:
+  - action: switch.turn_on
+    metadata: {}
+    target:
+      entity_id: switch.mb_turoffner_garage_haus
+    data: {}
+  alias: Watch - Garage Tür Haus
+  description: ''
+watch_werkstatt_lufter:
+  sequence:
+  - action: fan.toggle
+    metadata: {}
+    target:
+      entity_id: fan.werkstatt
+    data: {}
+  alias: Watch - Werkstatt Lüfter
+  description: ''
