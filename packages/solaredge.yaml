@@ -66,6 +66,7 @@ package_solaredge:
           name: "mb_solaredge_garage_AC-Current-SF"
           address: 40075
           unique_id: "mb_solaredge_garage_ac_current_sf"
+          scan_interval: 300
 
         - <<: *U16
           name: "mb_solaredge_garage_AC-Voltage"
@@ -76,11 +77,13 @@ package_solaredge:
           name: "mb_solaredge_garage_AC-Voltage-SF"
           address: 40082
           unique_id: "mb_solaredge_garage_ac_voltage_sf"
+          scan_interval: 300
 
         - <<: *I16
           name: "mb_solaredge_garage_AC-Power-SF"
           address: 40084
           unique_id: "mb_solaredge_garage_ac_power_sf"
+          scan_interval: 300
 
         - <<: *U16
           name: "mb_solaredge_garage_AC-Freq"
@@ -91,6 +94,7 @@ package_solaredge:
           name: "mb_solaredge_garage_AC-Freq-SF"
           address: 40086
           unique_id: "mb_solaredge_garage_ac_freq_sf"
+          scan_interval: 300
 
         - <<: *I16
           name: "mb_solaredge_garage_AC-VA"
@@ -101,6 +105,7 @@ package_solaredge:
           name: "mb_solaredge_garage_AC-VA-SF"
           address: 40088
           unique_id: "mb_solaredge_garage_ac_va_sf"
+          scan_interval: 300
 
         - <<: *I16
           name: "mb_solaredge_garage_AC-VAR"
@@ -111,6 +116,7 @@ package_solaredge:
           name: "mb_solaredge_garage_AC-VAR-SF"
           address: 40090
           unique_id: "mb_solaredge_garage_ac_var_sf"
+          scan_interval: 300
 
         - <<: *I16
           name: "mb_solaredge_garage_AC-PF"
@@ -121,11 +127,13 @@ package_solaredge:
           name: "mb_solaredge_garage_AC-PF-SF"
           address: 40092
           unique_id: "mb_solaredge_garage_ac_pf_sf"
+          scan_interval: 300
 
         - <<: *U16
           name: "mb_solaredge_garage_AC_LifetimeEnergy-SF"
           address: 40095
           unique_id: "mb_solaredge_garage_ac_lifetimeenergy_sf"
+          scan_interval: 300
 
         # DC-Seite + Temp-SF
         - <<: *U16
@@ -136,6 +144,7 @@ package_solaredge:
           name: "mb_solaredge_garage_DC-Current-SF"
           address: 40097
           unique_id: "mb_solaredge_garage_dc_current_sf"
+          scan_interval: 300
 
         - <<: *U16
           name: "mb_solaredge_garage_DC-Voltage"
@@ -145,6 +154,7 @@ package_solaredge:
           name: "mb_solaredge_garage_DC-Voltage-SF"
           address: 40099
           unique_id: "mb_solaredge_garage_dc_voltage_sf"
+          scan_interval: 300
 
         - <<: *I16
           name: "mb_solaredge_garage_DC-Power"
@@ -154,11 +164,13 @@ package_solaredge:
           name: "mb_solaredge_garage_DC-Power-SF"
           address: 40101
           unique_id: "mb_solaredge_garage_dc_power_sf"
+          scan_interval: 300
 
         - <<: *I16
           name: "mb_solaredge_garage_Temp-SF"
           address: 40106
           unique_id: "mb_solaredge_garage_temp_sf"
+          scan_interval: 300
 
         # ======= Strommessgerät 1 (SunSpec Meter) =======
         # Energie-Zähler: kumulativ
@@ -186,6 +198,7 @@ package_solaredge:
           name: "mb_solaredge_m1_energy_w_SF"
           address: 40242
           unique_id: "mb_solaredge_m1_energy_w_sf"
+          scan_interval: 300
 
         # Leistung (Summe & Phasen) + SF
         - <<: *I16
@@ -212,7 +225,7 @@ package_solaredge:
         - <<: *I16
           name: "mb_solaredge_m1_ac_power_SF"
           address: 40210
-          scan_interval: 5
+          scan_interval: 300
           unique_id: "mb_solaredge_m1_ac_power_sf"
 
         # Strom (A, B, C) + SF
@@ -234,7 +247,7 @@ package_solaredge:
         - <<: *I16
           name: "mb_solaredge_m1_ac_current_SF"
           address: 40194
-          scan_interval: 5
+          scan_interval: 300
           unique_id: "mb_solaredge_m1_ac_current_sf"
 
         # Spannung (A, B, C) + SF
@@ -256,7 +269,7 @@ package_solaredge:
         - <<: *I16
           name: "mb_solaredge_m1_ac_volt_SF"
           address: 40203
-          scan_interval: 5
+          scan_interval: 300
           unique_id: "mb_solaredge_m1_ac_volt_sf"
 
         # Frequenz + SF
@@ -268,7 +281,7 @@ package_solaredge:
         - <<: *I16
           name: "mb_solaredge_m1_ac_freq_SF"
           address: 40205
-          scan_interval: 5
+          scan_interval: 300
           unique_id: "mb_solaredge_m1_ac_freq_sf"
 
         # Schein-/Blindleistung + SF
@@ -295,7 +308,7 @@ package_solaredge:
         - <<: *I16
           name: "mb_solaredge_m1_power_app_SF"
           address: 40215
-          scan_interval: 5
+          scan_interval: 300
           unique_id: "mb_solaredge_m1_power_app_sf"
 
         - <<: *I16
@@ -321,7 +334,7 @@ package_solaredge:
         - <<: *I16
           name: "mb_solaredge_m1_power_rea_SF"
           address: 40220
-          scan_interval: 5
+          scan_interval: 300
           unique_id: "mb_solaredge_m1_power_rea_sf"
 
         # Leistungsfaktor (durchweg skaliert)
@@ -348,7 +361,7 @@ package_solaredge:
         - <<: *I16
           name: "mb_solaredge_m1_power_fac_SF"
           address: 40225
-          scan_interval: 5
+          scan_interval: 300
           unique_id: "mb_solaredge_m1_power_fac_sf"
   ################################################################################################
   #
