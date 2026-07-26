@@ -785,7 +785,7 @@ package_wgt:
       max_temp: 23
       current_temperature_template: "{{ states('sensor.temperatur_linus_henry') }}"
       target_temperature_template: "{{ states('sensor.zieltemperatur_linus_henry') }}"
-      hvac_mode_template: "{{ iif(is_state('switch.zusatzheizungen_linus_henry', 'on'), 'heat', 'off') }}"
+      hvac_mode_template: "{{ iif(is_state('switch.zusatzheizungen_linus', 'on'), 'heat', 'off') }}"
       set_hvac_mode:
         service: modbus.write_register
         data_template:
