@@ -12,8 +12,19 @@ esp32:
 
 logger:
 
-# This board has no native Wi-Fi. ESPHome's ``api:`` and
-# ``ota:`` components both require a ``network``
-# component — configure ``openthread:`` / ``ethernet:`` /
-# ``esp32_hosted:`` to suit your setup, then add ``api:``
-# and ``ota:`` blocks once the network is ready.
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_key
+
+# Example OpenThread configuration (ESP32)
+network:
+  enable_ipv6: true
+
+openthread:
+  force_dataset: true
+  tlv: !secret thread_tlv
