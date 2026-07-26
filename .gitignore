@@ -15,6 +15,9 @@
 .DS_Store
 
 # HACS / integrations (managed externally, not part of config)
-/custom_components/
 /image/
 /.ha_run.lock
+
+# Python build artifacts (auto-generated)
+__pycache__/
+*.py[cod]
