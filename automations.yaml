@@ -2252,4 +2252,4 @@
       forecast_high_min: 24
       outdoor_sensor: sensor.temp_aussen_low
       indoor_sensor: sensor.mb_temp_wohnzimmer
-      forecast_sensor: sensor.ads_wettertemp
+      forecast_sensor: sensor.forecast_weather_max_temp_today
