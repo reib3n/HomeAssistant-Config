@@ -3,7 +3,7 @@
 
 esphome:
   name: esp-thrd-bad-og
-  friendly_name: esp-thrd-bad-OG
+  friendly_name: Steuerung Bad OG
 
 esp32:
   variant: esp32h2
