@@ -26,10 +26,12 @@ package_area_kid_lihe:
                 position: "{{position}}"
           default_entity_id: cover.linus_sud_custom
           name: Rollladen Linus Süd Custom
+          unique_id: "rollladen_linus_sud_custom"
           position: "{{ states('sensor.cover_linus_sud_optimistic') }}"
     - sensor:
         - default_entity_id: sensor.cover_linus_sud_optimistic
           name: Rolladen Linus Süd optimistic Positiom
+          unique_id: "rolladen_linus_sud_optimistic_positiom"
           state: >-
             {% if 100 >= (states('sensor.linus_sud_target_closure') | int(-1)) >= 0 %}
               {{ ( 100 | int) - (states('sensor.linus_sud_target_closure') | int(0)) }}

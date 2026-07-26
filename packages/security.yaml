@@ -31,6 +31,7 @@ package_security:
           code_format: number
           default_entity_id: alarm_control_panel.alarm_panel_home
           name: alarm_panel_home
+          unique_id: "alarm_panel_home"
     - alarm_control_panel:
         - arm_away:
             - action: switch.turn_on
@@ -62,3 +63,4 @@ package_security:
           code_format: number
           default_entity_id: alarm_control_panel.alarm_panel_garage
           name: alarm_panel_garage
+          unique_id: "alarm_panel_garage"

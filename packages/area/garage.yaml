@@ -3,6 +3,7 @@ package_area_garage:
     - sensor:
         - default_entity_id: sensor.mb_garagentor_status_text
           name: Garagentor
+          unique_id: "garagentor"
           state: >-
             {% if is_state('sensor.status_garagentor', '0') %}
               teilweise geöffnet

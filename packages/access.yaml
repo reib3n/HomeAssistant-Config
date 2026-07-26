@@ -2,6 +2,7 @@ package_access:
   template:
     - lock:
         - name: Haustür
+          unique_id: "haustur"
           optimistic: true
           lock:
             - action: switch.turn_off
@@ -23,6 +24,7 @@ package_access:
             'off') }}"
     - lock:
         - name: Garage Haus
+          unique_id: "garage_haus"
           optimistic: true
           lock:
             - action: switch.turn_off
@@ -42,6 +44,7 @@ package_access:
           state: "{{ is_state('switch.mb_turoffner_garage_haus', 'off') }}"
     - lock:
         - name: Garage Strasse
+          unique_id: "garage_strasse"
           optimistic: true
           lock:
             - action: switch.turn_off
@@ -61,6 +64,7 @@ package_access:
           state: "{{ is_state('switch.mb_turoffner_garage_strasse', 'off') }}"
     - lock:
         - name: Werkstatt
+          unique_id: "werkstatt"
           optimistic: true
           lock:
             - action: switch.turn_off

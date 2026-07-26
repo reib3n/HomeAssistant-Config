@@ -86,52 +86,63 @@ package_sps:
 
       binary_sensors:
         - name: "mb_light_Esszimmertisch_status"
+          unique_id: "mb_light_esszimmertisch_status"
           address: 1007
           scan_interval: 5
           input_type: coil
         - name: "mb_light_Esszimmer_status"
+          unique_id: "mb_light_esszimmer_status"
           address: 1008
           scan_interval: 5
           input_type: coil
         - name: "mb_light_Wohnzimmer_status"
+          unique_id: "mb_light_wohnzimmer_status"
           address: 1009
           scan_interval: 5
           input_type: coil
         - name: "mb_light_Balkon_status"
+          unique_id: "mb_light_balkon_status"
           address: 1010
           scan_interval: 5
           input_type: coil
         - name: "Fenster Bad EG"
+          unique_id: "fenster_bad_eg"
           address: 1200
           scan_interval: 5
           input_type: coil
           device_class: window
         - name: "Fenster Büro EG"
+          unique_id: "fenster_buro_eg"
           address: 1201
           scan_interval: 5
           input_type: coil
           device_class: window
         - name: "Fenster Keller"
+          unique_id: "fenster_keller"
           address: 1203
           scan_interval: 5
           input_type: coil
           device_class: window
         - name: "Fenster Technikraum"
+          unique_id: "fenster_technikraum"
           address: 1204
           scan_interval: 5
           input_type: coil
           device_class: window
         - name: "Fenster Hobbyraum Süd"
+          unique_id: "fenster_hobbyraum_sud"
           address: 1205
           scan_interval: 5
           input_type: coil
           device_class: window
         - name: "Terassentür"
+          unique_id: "terassentur"
           address: 1207
           scan_interval: 5
           input_type: coil
           device_class: door
         - name: "Fenster Hobbyraum West"
+          unique_id: "fenster_hobbyraum_west"
           address: 1206
           scan_interval: 5
           input_type: coil
@@ -143,51 +154,61 @@ package_sps:
           device_class: door
           unique_id: "Balkontür"
         - name: "Werkstatttür"
+          unique_id: "werkstatttur"
           address: 1209
           scan_interval: 5
           input_type: coil
           device_class: door
         - name: "Fenster Werkstatt"
+          unique_id: "fenster_werkstatt"
           address: 1208
           scan_interval: 5
           input_type: coil
           device_class: window
         - name: "Bewegungsmelder Treppe Sud"
+          unique_id: "bewegungsmelder_treppe_sud"
           address: 1029
           scan_interval: 5
           input_type: coil
           device_class: motion
         - name: "Bewegungsmelder Hauseingang"
+          unique_id: "bewegungsmelder_hauseingang"
           address: 1031
           scan_interval: 5
           input_type: coil
           device_class: motion
         - name: "Tür Garage Strasse"
+          unique_id: "tur_garage_strasse"
           address: 1210
           scan_interval: 5
           input_type: coil
           device_class: door
         - name: "Fenster Garage"
+          unique_id: "fenster_garage"
           address: 1211
           scan_interval: 5
           input_type: coil
           device_class: window
         - name: "Tür Garage Haus"
+          unique_id: "tur_garage_haus"
           address: 1212
           scan_interval: 5
           input_type: coil
           device_class: door
         - name: "Garagentor offen"
+          unique_id: "garagentor_offen"
           address: 1213
           scan_interval: 5
           input_type: coil
           device_class: door
         - name: "Garagentor geschlossen"
+          unique_id: "garagentor_geschlossen"
           address: 1214
           scan_interval: 5
           input_type: coil
           device_class: door
         - name: "Garagentor Lüftung"
+          unique_id: "garagentor_luftung"
           address: 1215
           scan_interval: 5
           input_type: coil
@@ -195,18 +216,22 @@ package_sps:
 
       sensors:
         - name: "mb_light_Esszimmertisch_bright"
+          unique_id: "mb_light_esszimmertisch_bright"
           address: 2007
           scan_interval: 5
           data_type: int16
         - name: "mb_light_Esszimmer_bright"
+          unique_id: "mb_light_esszimmer_bright"
           address: 2008
           scan_interval: 5
           data_type: int16
         - name: "mb_light_Wohnnzimmer_bright"
+          unique_id: "mb_light_wohnnzimmer_bright"
           address: 2009
           scan_interval: 5
           data_type: int16
         - name: "mb_light_Balkon_bright"
+          unique_id: "mb_light_balkon_bright"
           address: 2010
           scan_interval: 5
           data_type: int16
@@ -248,6 +273,7 @@ package_sps:
           data_type: int16
           unique_id: "mb_co2_Wohnzimmer"
         - name: "mb_temp_FlurUG"
+          unique_id: "mb_temp_flurug"
           address: 2032
           unit_of_measurement: °C
           precision: 1
@@ -256,6 +282,7 @@ package_sps:
           state_class: measurement
           data_type: int16
         - name: "mb_temp_Keller"
+          unique_id: "mb_temp_keller"
           address: 2034
           unit_of_measurement: °C
           precision: 1
@@ -264,6 +291,7 @@ package_sps:
           state_class: measurement
           data_type: int16
         - name: "mb_temp_Technikraum"
+          unique_id: "mb_temp_technikraum"
           address: 2017
           unit_of_measurement: °C
           precision: 1
@@ -272,12 +300,14 @@ package_sps:
           state_class: measurement
           data_type: int16
         - name: "mb_hum_Technikraum"
+          unique_id: "mb_hum_technikraum"
           address: 2018
           unit_of_measurement: "%"
           device_class: humidity
           state_class: measurement
           data_type: int16
         - name: "mb_temp_Bühne"
+          unique_id: "mb_temp_buhne"
           address: 2019
           unit_of_measurement: °C
           precision: 1
@@ -286,6 +316,7 @@ package_sps:
           state_class: measurement
           data_type: int16
         - name: "mb_temp_Werkstatt"
+          unique_id: "mb_temp_werkstatt"
           address: 2020
           unit_of_measurement: °C
           precision: 1
@@ -294,6 +325,7 @@ package_sps:
           state_class: measurement
           data_type: int16
         - name: "mb_temp_Garage"
+          unique_id: "mb_temp_garage"
           address: 2023
           unit_of_measurement: °C
           precision: 1
@@ -302,29 +334,34 @@ package_sps:
           state_class: measurement
           data_type: int16
         - name: "mb_hum_Werkstatt"
+          unique_id: "mb_hum_werkstatt"
           address: 2021
           unit_of_measurement: "%"
           device_class: humidity
           state_class: measurement
           data_type: int16
         - name: "mb_hum_Garage"
+          unique_id: "mb_hum_garage"
           address: 2024
           unit_of_measurement: "%"
           device_class: humidity
           state_class: measurement
           data_type: int16
         - name: "mb_Zisterne_Proz"
+          unique_id: "mb_zisterne_proz"
           address: 2012
           unit_of_measurement: "%"
           state_class: measurement
           data_type: int16
         - name: "mb_Zisterne_Liter"
+          unique_id: "mb_zisterne_liter"
           address: 2013
           unit_of_measurement: "L"
           device_class: water
           state_class: total
           data_type: int16
         - name: "Trinkwasser"
+          unique_id: "trinkwasser"
           address: 2000
           unit_of_measurement: "m³"
           device_class: water
@@ -333,6 +370,7 @@ package_sps:
           state_class: total_increasing
           data_type: int16
         - name: "Zisterne"
+          unique_id: "zisterne"
           address: 2022
           unit_of_measurement: "m³"
           device_class: water
@@ -341,52 +379,64 @@ package_sps:
           state_class: total_increasing
           data_type: int16
         - name: "Status Garagentor"
+          unique_id: "status_garagentor"
           address: 2025
           scan_interval: 5
           data_type: int16
 
       switches:
         - name: "mb_Security ALLES AN"
+          unique_id: "mb_security_alles_an"
           address: 1240
           write_type: coil
           verify:
         - name: "mb_Security Licht AN"
+          unique_id: "mb_security_licht_an"
           address: 1241
           write_type: coil
           verify:
         - name: "mb_Security Licht Innen"
+          unique_id: "mb_security_licht_innen"
           address: 1242
           write_type: coil
           verify:
         - name: "mb_Security Licht Aussen"
+          unique_id: "mb_security_licht_aussen"
           address: 1243
           write_type: coil
           verify:
         - name: "mb_Security Alarm AN"
+          unique_id: "mb_security_alarm_an"
           address: 1244
           write_type: coil
           verify:
         - name: "mb_Security Alarm Innen"
+          unique_id: "mb_security_alarm_innen"
           address: 1245
           write_type: coil
           verify:
         - name: "mb_Security Alarm Aussen"
+          unique_id: "mb_security_alarm_aussen"
           address: 1246
           write_type: coil
           verify:
         - name: "mb_Testalarm Esszimmertisch"
+          unique_id: "mb_testalarm_esszimmertisch"
           address: 1251
           write_type: coil
           verify:
         - name: "mb_Testalarm Esszimmer"
+          unique_id: "mb_testalarm_esszimmer"
           address: 1252
           write_type: coil
           verify:
         - name: "mb_Testalarm Wohnzimmer"
+          unique_id: "mb_testalarm_wohnzimmer"
           address: 1253
           write_type: coil
           verify:
         - name: "mb_Testalarm Balkon"
+          unique_id: "mb_testalarm_balkon"
           address: 1254
           write_type: coil
           verify:
@@ -396,6 +446,7 @@ package_sps:
           unique_id: "mb_powersocket_Fernseher"
           verify:
         - name: "mb_powersocket_Werkstatt"
+          unique_id: "mb_powersocket_werkstatt"
           address: 1012
           write_type: coil
           verify:
@@ -405,18 +456,22 @@ package_sps:
           unique_id: "mb_vitramo_OG_Bad"
           verify:
         - name: "mb_Garagentor"
+          unique_id: "mb_garagentor"
           address: 1013
           write_type: coil
           verify:
         - name: "mb_Türgong"
+          unique_id: "mb_turgong"
           address: 1014
           write_type: coil
           verify:
         - name: "mb_Haustür_Impuls"
+          unique_id: "mb_haustur_impuls"
           address: 1016
           write_type: coil
           verify:
         - name: "mb_Haustür_Dauer"
+          unique_id: "mb_haustur_dauer"
           address: 1017
           write_type: coil
           verify:
@@ -441,6 +496,7 @@ package_sps:
           unique_id: "mb_powersocket_aussen_balkon"
           verify:
         - name: "mb_power_zisterne"
+          unique_id: "mb_power_zisterne"
           address: 1023
           write_type: coil
           verify:
@@ -450,38 +506,47 @@ package_sps:
           verify:
           unique_id: "mb_power_SmartMirror"
         - name: "mb_powersocket_LED-Band_Wohn"
+          unique_id: "mb_powersocket_led_band_wohn"
           address: 1025
           write_type: coil
           verify:
         - name: "mb_Werkstatt_Entfeuchter"
+          unique_id: "mb_werkstatt_entfeuchter"
           address: 1042
           write_type: coil
           verify:
         - name: "mb_Türöffner_Garage_Strasse"
+          unique_id: "mb_turoffner_garage_strasse"
           address: 1034
           write_type: coil
           verify:
         - name: "mb_Türöffner_Garage_Haus"
+          unique_id: "mb_turoffner_garage_haus"
           address: 1035
           write_type: coil
           verify:
         - name: "mb_Garagentorstellung_Lüften"
+          unique_id: "mb_garagentorstellung_luften"
           address: 1037
           write_type: coil
           verify:
         - name: "mb_Garagentorstellung_AUF"
+          unique_id: "mb_garagentorstellung_auf"
           address: 1038
           write_type: coil
           verify:
         - name: "mb_Garagentorstellung_AB"
+          unique_id: "mb_garagentorstellung_ab"
           address: 1039
           write_type: coil
           verify:
         - name: "mb_Garagentorstellung_HALB"
+          unique_id: "mb_garagentorstellung_halb"
           address: 1040
           write_type: coil
           verify:
         - name: "mb_Türöffner_Werkstatt"
+          unique_id: "mb_turoffner_werkstatt"
           address: 1041
           write_type: coil
           verify:
@@ -528,64 +593,79 @@ package_sps:
           unique_id: "mb_hausgang"
           verify:
         - name: "mb_Aussen_OST"
+          unique_id: "mb_aussen_ost"
           address: 1002
           write_type: coil
           verify:
         - name: "mb_Aussen_Haustür"
+          unique_id: "mb_aussen_haustur"
           address: 1003
           write_type: coil
           verify:
         - name: "mb_Technikraum"
+          unique_id: "mb_technikraum"
           address: 1004
           write_type: coil
           verify:
         - name: "mb_Hobbyraum"
+          unique_id: "mb_hobbyraum"
           address: 1005
           write_type: coil
           verify:
         - name: "mb_Werkstatt"
+          unique_id: "mb_werkstatt"
           address: 1006
           write_type: coil
           verify:
         - name: "mb_Aussen_Treppe_Sud"
+          unique_id: "mb_aussen_treppe_sud"
           address: 1028
           write_type: coil
           verify:
         - name: "mb_Garage"
+          unique_id: "mb_garage"
           address: 1030
           write_type: coil
           verify:
         - name: "mb_Aussen_Hauseingang"
+          unique_id: "mb_aussen_hauseingang"
           address: 1032
           write_type: coil
           verify:
         - name: "mb_Garage_Antrieblicht"
+          unique_id: "mb_garage_antrieblicht"
           address: 1036
           write_type: coil
           verify:
         - name: "mb_UG_Hausgang"
+          unique_id: "mb_ug_hausgang"
           address: 1045
           write_type: coil
           verify:
         - name: "mb_UG_Vorratsraum"
+          unique_id: "mb_ug_vorratsraum"
           address: 1046
           write_type: coil
           verify:
         - name: "mb_OG_Treppenhaus"
+          unique_id: "mb_og_treppenhaus"
           address: 1050
           write_type: coil
           verify:
         - name: "mb_OG_Diele"
+          unique_id: "mb_og_diele"
           address: 1051
           write_type: coil
           verify:
 
       fans:
         - name: "Werkstatt"
+          unique_id: "werkstatt"
           address: 1026
           write_type: coil
           verify:
         - name: "Garage"
+          unique_id: "garage"
           address: 1033
           write_type: coil
           verify:

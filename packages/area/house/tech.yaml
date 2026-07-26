@@ -5,6 +5,7 @@ package_area_tech:
           attributes:
             Leistung: "{{ (states('sensor.std_spulmaschine_leistung') | float(0) | round(1))}} W"
           name: Spülmaschine
+          unique_id: "spulmaschine"
           state: >-
             {% if is_state('input_select.spulmaschine_state_machine', 'idle') %}
               untätig
@@ -24,6 +25,7 @@ package_area_tech:
           attributes:
             Leistung: "{{ (states('sensor.waschmaschine_power') | float(0) | round(1))}} W"
           name: Waschmaschine
+          unique_id: "waschmaschine"
           state: >-
             {% if is_state('input_select.waschmaschine_state_machine', 'idle') %}
               untätig

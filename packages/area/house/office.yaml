@@ -26,10 +26,12 @@ package_area_office:
                 position: "{{position}}"
           default_entity_id: cover.buro_custom
           name: Rollladen Büro Custom
+          unique_id: "rollladen_buro_custom"
           position: "{{ states('sensor.cover_buro_optimistic') }}"
     - sensor:
         - default_entity_id: sensor.cover_buro_optimistic
           name: Rolladen Büro optimistic Positiom
+          unique_id: "rolladen_buro_optimistic_positiom"
           state: >-
             {% if 100 >= (states('sensor.buro_target_closure') | int(-1)) >= 0 %}
               {{ ( 100 | int) - (states('sensor.buro_target_closure') | int(0)) }}

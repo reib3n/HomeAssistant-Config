@@ -24,6 +24,7 @@ package_weather:
   sensor:
     - platform: statistics
       name: "wetterwindspeedboe4h"
+      unique_id: "wetterwindspeedboe4h"
       entity_id: sensor.ads_wetterwindspeed
       state_characteristic: value_max
       max_age:

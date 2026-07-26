@@ -32,4 +32,5 @@ package_area_outdoor:
         - unit_of_measurement: l
           default_entity_id: sensor.zistern_water_today
           name: Zisternenwasser Entnahme heute
+          unique_id: "zisternenwasser_entnahme_heute"
           state: "{{ ((states.sensor.zisternenentnahme_heute.state | float(0) * 1000)) | round(0) }}"
