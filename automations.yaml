@@ -2248,8 +2248,9 @@
       cover: cover.esszimmer_sud
       shade_button: button.esszimmer_sud_my_position
       azimuth_start: 130
-      lux_sensor: sensor.ads_wetterlux
-      forecast_high_min: 24
+      lux_sensor: sensor.wetterluxtotal
+      forecast_high_min: 23
       outdoor_sensor: sensor.temp_aussen_low
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
+      indoor_target: 20
