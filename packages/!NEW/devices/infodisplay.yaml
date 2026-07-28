@@ -272,13 +272,21 @@ package_device_infodisplay:
       sensor:
         - name: "Forecast Weather Max Temp today"
           unique_id: forecast_weather_max_temp_today
+          # Tageshöchstwert für den heutigen Kalendertag (0-24 Uhr).
+          # Eintrag wird per Datum gewählt, nicht per festem Index [0]
+          # (die Tagesliste kann im Tagesverlauf verrutschen).
           availability: >
             {{ forecast_data is defined
-              and forecast_data['weather.freudenstadt'] is defined
-              and (forecast_data['weather.freudenstadt'].forecast | length) > 0
-              and (forecast_data['weather.freudenstadt'].forecast[0].temperature is defined) }}
+              and forecast_data.get('weather.freudenstadt')
+              and (forecast_data['weather.freudenstadt'].forecast
+                   | selectattr('datetime','defined')
+                   | selectattr('datetime','search', now().strftime('%Y-%m-%d'))
+                   | list | count) > 0 }}
           state: >
-            {{ forecast_data['weather.freudenstadt'].forecast[0].temperature
+            {% set fc = forecast_data['weather.freudenstadt'].forecast %}
+            {% set heute = fc | selectattr('datetime','defined')
+                 | selectattr('datetime','search', now().strftime('%Y-%m-%d')) | list %}
+            {{ (heute[0].temperature if heute else fc[0].temperature)
               | float(default=unknown) }}
           unit_of_measurement: "°C"
           device_class: temperature
@@ -286,13 +294,20 @@ package_device_infodisplay:
 
         - name: "Forecast Weather Min Temp today"
           unique_id: forecast_weather_min_temp_today
+          # Tagestiefstwert für den heutigen Kalendertag (0-24 Uhr).
+          # Eintrag per Datum gewählt (siehe Max-Sensor).
           availability: >
             {{ forecast_data is defined
-              and forecast_data['weather.freudenstadt'] is defined
-              and (forecast_data['weather.freudenstadt'].forecast | length) > 0
-              and (forecast_data['weather.freudenstadt'].forecast[0].templow is defined) }}
+              and forecast_data.get('weather.freudenstadt')
+              and (forecast_data['weather.freudenstadt'].forecast
+                   | selectattr('datetime','defined')
+                   | selectattr('datetime','search', now().strftime('%Y-%m-%d'))
+                   | list | count) > 0 }}
           state: >
-            {{ forecast_data['weather.freudenstadt'].forecast[0].templow
+            {% set fc = forecast_data['weather.freudenstadt'].forecast %}
+            {% set heute = fc | selectattr('datetime','defined')
+                 | selectattr('datetime','search', now().strftime('%Y-%m-%d')) | list %}
+            {{ (heute[0].templow if heute else fc[0].templow)
               | float(default=unknown) }}
           unit_of_measurement: "°C"
           device_class: temperature
