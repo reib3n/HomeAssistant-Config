@@ -305,8 +305,16 @@ variables:
 trigger:
   - trigger: time_pattern
     minutes: "/5"
-  - trigger: state
+  # Nur bei echten Schwellen-Übertritten reagieren, nicht bei jedem kleinen
+  # Lux-Zappeln. Kurze Entprellzeit gegen einzelne Ausreißer (Sonnenblitz).
+  - trigger: numeric_state
     entity_id: !input lux_sensor
+    above: !input lux_close
+    for: "00:00:30"
+  - trigger: numeric_state
+    entity_id: !input lux_sensor
+    below: !input lux_open
+    for: "00:00:30"
 
 condition: []
 
