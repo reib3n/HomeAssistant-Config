@@ -4,6 +4,13 @@
 esphome:
   name: esp-thrd-bad-og
   friendly_name: Steuerung Bad OG
+  on_boot:
+    # Erst nach dem Einschwingen der Eingänge auf Schalteränderungen reagieren,
+    # sonst schaltet der initiale Zustand beim Neustart das Licht
+    priority: -100
+    then:
+      - delay: 2s
+      - lambda: "id(booted) = true;"
 
 esp32:
   variant: esp32h2
@@ -28,3 +35,92 @@ network:
 openthread:
   force_dataset: true
   tlv: !secret thread_tlv
+
+# ---------------------------------------------------------
+# Interner Zustand
+# ---------------------------------------------------------
+globals:
+  # Schutz gegen Schalten durch initiale Zustandsmeldung nach dem Boot
+  - id: booted
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+# ---------------------------------------------------------
+# Ausgänge
+# ---------------------------------------------------------
+output:
+  # Status-LED im Taster (folgt dem Vitramo-Zustand aus HA)
+  - platform: gpio
+    id: vitramo_led
+    pin: GPIO11
+
+  # Relais für das Licht am Spiegelschrank
+  - platform: gpio
+    id: mirror_light_relay
+    pin: GPIO13
+
+# ---------------------------------------------------------
+# Block 2: Spiegelschrank-Licht (in HA sicht- und steuerbar)
+# ---------------------------------------------------------
+light:
+  - platform: binary
+    id: mirror_light
+    name: "Licht Spiegelschrank"
+    output: mirror_light_relay
+    restore_mode: RESTORE_DEFAULT_OFF
+
+# ---------------------------------------------------------
+# Eingänge
+# ---------------------------------------------------------
+binary_sensor:
+  # --- Block 1: Taster -> Vitramo togglen -------------------
+  - platform: gpio
+    id: vitramo_button
+    name: "Taster Vitramo"
+    icon: mdi:gesture-tap-button
+    pin:
+      number: GPIO10
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      - homeassistant.action:
+          action: switch.toggle
+          data:
+            entity_id: switch.mb_vitramo_og_bad
+
+  # --- Block 1: Vitramo-Zustand aus HA importieren ----------
+  # Steuert die Status-LED. Reagiert auf Schalten per Taster UND per HA.
+  - platform: homeassistant
+    id: vitramo_state
+    entity_id: switch.mb_vitramo_og_bad
+    on_press:
+      - output.turn_on: vitramo_led
+    on_release:
+      - output.turn_off: vitramo_led
+
+  # --- Block 2: Rastschalter -> Spiegelschrank-Licht togglen -
+  # Jede Betätigung toggelt; nötig, weil HA das Licht ebenfalls
+  # unabhängig schalten kann.
+  - platform: gpio
+    id: mirror_switch
+    name: "Schalter Spiegelschrank"
+    icon: mdi:light-switch
+    pin:
+      number: GPIO12
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      - delayed_on_off: 50ms
+    on_state:
+      - if:
+          condition:
+            lambda: "return id(booted);"
+          then:
+            - light.toggle: mirror_light
