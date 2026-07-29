@@ -2286,19 +2286,19 @@
       id:
       - Große Taste
     then:
-    - action: light.turn_on
+    - action: input_boolean.turn_off
       metadata: {}
       target:
-        entity_id: light.marmorlampe_2
+        entity_id: input_boolean.mullmeldung
       data: {}
   - if:
     - condition: trigger
       id:
       - Kleine Taste
     then:
-    - action: light.turn_off
+    - action: input_boolean.turn_off
       metadata: {}
       target:
-        entity_id: light.marmorlampe_2
+        entity_id: input_boolean.mullmeldung
       data: {}
   mode: single
