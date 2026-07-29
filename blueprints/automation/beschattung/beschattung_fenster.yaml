@@ -3,12 +3,12 @@ blueprint:
   description: >
     Beschattet ein einzelnes Fenster anhand des aktuellen Sonnenstands (Azimut +
     Elevation), der Helligkeit (Lux mit Hysterese) und eines Saison-/Wärme-Gates
-    aus Wettervorhersage-Höchstwert + Außen- (und optional Innen-)Temperatur.
+    aus dem Wettervorhersage-Höchstwert (optional beschleunigt durch die Innentemperatur).
 
     Konzept:
       * Beschattet nur, wenn die Sonne dieses Fenster trifft UND der Tag laut
         Vorhersage heiß genug ist (Übergangszeit: Sonne heizt das Haus) UND es
-        real warm ist UND es hell genug ist.
+        hell genug ist. Ein bereits zu warmer Raum kann zusätzlich auslösen.
       * Fährt wieder hoch, wenn die direkte Sonne wegfällt oder die Lux abends
         unter die Schwelle fallen – ABER nie, wenn der Rollladen komplett
         geschlossen ist (Schläfer-Schutz) oder ein Sleep-Lock aktiv ist.
@@ -135,21 +135,9 @@ blueprint:
           default: 22
           selector:
             number: { min: 10, max: 40, step: 0.5, unit_of_measurement: "°C", mode: box }
-        outdoor_sensor:
-          name: Außentemperatur-Sensor
-          selector:
-            entity:
-              filter:
-                - domain: sensor
-                  device_class: temperature
-        outdoor_min:
-          name: Beschatten erst ab Außentemperatur (°C)
-          default: 18
-          selector:
-            number: { min: 5, max: 40, step: 0.5, unit_of_measurement: "°C", mode: box }
         indoor_sensor:
           name: Innentemperatur-Sensor (optional)
-          description: Wenn gesetzt, wird nur beschattet, wenn der Raum über das Ziel steigt. Ohne Sensor entfällt diese Bedingung.
+          description: Beschleuniger, kein Blocker – ein Raum über dem Ziel löst auch an einem grenzwertigen Vorhersagetag aus. Ohne Sensor entscheidet allein der Vorhersage-Höchstwert.
           default: {}
           selector:
             entity:
@@ -242,8 +230,6 @@ variables:
   lux_open: !input lux_open
   forecast_sensor: !input forecast_sensor
   forecast_high_min: !input forecast_high_min
-  outdoor_sensor: !input outdoor_sensor
-  outdoor_min: !input outdoor_min
   indoor_sensor: !input indoor_sensor
   indoor_target: !input indoor_target
   temp_hysterese: !input temp_hysterese
@@ -273,15 +259,17 @@ variables:
   # --- Messwerte ---
   lux: "{{ states(lux_sensor) | float(0) }}"
   forecast_high: "{{ states(forecast_sensor) | float(0) }}"
-  outdoor: "{{ states(outdoor_sensor) | float(0) }}"
-  indoor: "{{ states(indoor_sensor) | float(-99) if has_indoor else 99 }}"
+  indoor: "{{ states(indoor_sensor) | float(-99) if has_indoor else -99 }}"
 
-  # --- Saison-/Wärme-Gate ---
+  # --- Wärme-Gate ---
+  # Heißer Tag laut Vorhersage ODER Raum schon über Ziel. Innentemperatur ist
+  # Beschleuniger (nie Blocker); die Außentemperatur wird bewusst nicht geprüft
+  # (sie ist morgens am Ostfenster kühl, obwohl der Tag heiß wird).
   season_ok: "{{ forecast_high >= forecast_high_min }}"
-  warm_now: "{{ outdoor >= outdoor_min and (indoor >= indoor_target if has_indoor else true) }}"
-  cool_now: >
-    {{ (outdoor < outdoor_min - temp_hysterese)
-       or (has_indoor and indoor < indoor_target - temp_hysterese) }}
+  heat_gate: "{{ season_ok or (has_indoor and indoor >= indoor_target) }}"
+  heat_gone: >
+    {{ (not season_ok)
+       and ((not has_indoor) or indoor < indoor_target - temp_hysterese) }}
 
   # --- Zustände / Overrides ---
   pos: "{{ state_attr(cover,'current_position') }}"
@@ -296,9 +284,9 @@ variables:
 
   # --- Wunsch-Aktion ---
   want_shade: >
-    {{ geo and season_ok and warm_now and (lux >= lux_close) and not contact_open }}
+    {{ geo and heat_gate and (lux >= lux_close) and not contact_open }}
   want_open: >
-    {{ (not geo) or (not season_ok) or (lux < lux_open) or cool_now }}
+    {{ (not geo) or (lux < lux_open) or heat_gone }}
   # nur senden, wenn nötig (schont Tahoma/RTS; bei fehlender Position wird ggf. wiederholt)
   need_shade_cmd: "{{ pos is none or (pos | float(100)) > shade_position + 5 }}"
 

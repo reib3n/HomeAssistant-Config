@@ -2250,7 +2250,6 @@
       azimuth_start: 130
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
-      outdoor_sensor: sensor.temp_aussen_low
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 20
@@ -2265,7 +2264,6 @@
       azimuth_start: 130
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
-      outdoor_sensor: sensor.temp_aussen_low
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 20
@@ -2312,7 +2310,6 @@
       azimuth_start: 85
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
-      outdoor_sensor: sensor.temp_aussen_low
       indoor_sensor: sensor.temperatur_buro
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 20
@@ -2320,7 +2317,6 @@
       lux_close: 5000
       lux_open: 1000
       contact_sensor: binary_sensor.fenster_buro_eg
-      outdoor_min: 12
       shade_position: 35
 - id: '1785303158030'
   alias: Beschattung West - EG - Esszimmer Jalousie
@@ -2333,7 +2329,6 @@
       azimuth_start: 250
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
-      outdoor_sensor: sensor.temp_aussen_low
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 20
