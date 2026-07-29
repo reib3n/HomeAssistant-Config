@@ -1380,47 +1380,6 @@
           entity_id: cover.hobby_sud_low_speed
       alias: Öffnen
   mode: single
-- id: '1750856088782'
-  alias: Beschattung - EG - Wohnzimmer Jalousie
-  description: ''
-  triggers:
-  - trigger: time_pattern
-    minutes: /5
-  conditions:
-  - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster_sw
-    state: 'on'
-  actions:
-  - delay:
-      seconds: '{{ range(0, 20) | random }}'
-  - choose:
-    - conditions:
-      - condition: state
-        entity_id: binary_sensor.beschattung_westen_close
-        state: 'on'
-      sequence:
-      - action: button.press
-        metadata: {}
-        data: {}
-        target:
-          entity_id: button.wohnzimmer_jalousie_my_position
-      alias: Beschatten
-    - conditions:
-      - condition: numeric_state
-        entity_id: cover.wohnzimmer_jalousie
-        attribute: current_tilt_position
-        above: 0
-      - condition: numeric_state
-        entity_id: sensor.wetterluxtotal
-        below: 1000
-      sequence:
-      - action: cover.open_cover
-        metadata: {}
-        data: {}
-        target:
-          entity_id: cover.wohnzimmer_jalousie
-      alias: Öffnen
-  mode: single
 - id: '1750864984348'
   alias: Beschattung - UG - Hobby West
   description: ''
@@ -2056,7 +2015,7 @@
       device_id: '{{ trigger.device_id }}'
   mode: single
 - id: '1785086599712'
-  alias: Beschattung pro Fenster (Sonnenstand + Saison, Somfy/Tahoma)
+  alias: Beschattung Süd - EG - Esszimmer Süden
   description: ''
   use_blueprint:
     path: beschattung/beschattung_fenster.yaml
@@ -2069,8 +2028,10 @@
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 20
+      lux_open: 10000
+      lux_close: 25000
 - id: '1785169603280'
-  alias: Fenster Küche
+  alias: Beschattung Süd - EG - Küche
   description: ''
   use_blueprint:
     path: beschattung/beschattung_fenster.yaml
@@ -2083,6 +2044,8 @@
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 20
+      lux_close: 25000
+      lux_open: 10000
 - id: '1785217006507'
   alias: Switch - IKEA Diele
   description: ''
@@ -2142,7 +2105,7 @@
     input:
       cover: cover.jalousie_esszimmer
       shade_button: button.esszimmer_jalousie_my_position
-      azimuth_start: 250
+      azimuth_start: 210
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
       indoor_sensor: sensor.mb_temp_wohnzimmer
@@ -2152,5 +2115,24 @@
       lux_close: 3000
       lux_open: 1000
       contact_sensor: binary_sensor.balkontur
+      wind_sensor: sensor.ads_wetterwindspeed
+      wind_threshold: 70
+- id: '1785337163289'
+  alias: Beschattung West - EG - Wohnzimmer Jalousie
+  description: ''
+  use_blueprint:
+    path: beschattung/beschattung_fenster.yaml
+    input:
+      cover: cover.wohnzimmer_jalousie
+      shade_button: button.wohnzimmer_jalousie_my_position
+      azimuth_start: 210
+      lux_sensor: sensor.wetterluxtotal
+      forecast_high_min: 23
+      indoor_sensor: sensor.mb_temp_wohnzimmer
+      forecast_sensor: sensor.forecast_weather_max_temp_today
+      indoor_target: 20
+      azimuth_end: 360
+      lux_close: 3000
+      lux_open: 1000
       wind_sensor: sensor.ads_wetterwindspeed
       wind_threshold: 70
