@@ -2131,8 +2131,9 @@
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 20
-      azimuth_end: 360
+      azimuth_end: 270
       lux_close: 3000
       lux_open: 1000
       wind_sensor: sensor.ads_wetterwindspeed
       wind_threshold: 70
+      keep_closed_below: 5

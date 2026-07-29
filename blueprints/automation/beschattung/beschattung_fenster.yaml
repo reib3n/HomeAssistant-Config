@@ -273,7 +273,13 @@ variables:
 
   # --- Zustände / Overrides ---
   pos: "{{ state_attr(cover,'current_position') }}"
-  fully_closed: "{{ pos is not none and (pos | float(100)) <= keep_closed_below }}"
+  tilt: "{{ state_attr(cover,'current_tilt_position') }}"
+  # Bei Lamellen-Jalousien erst bei Position UND Schrägstellung nahe 0 wirklich
+  # komplett zu. Rollläden ohne Lamellen liefern kein current_tilt_position ->
+  # tilt bleibt None und wird dann nicht mitgeprüft (Verhalten wie bisher).
+  fully_closed: >
+    {{ pos is not none and (pos | float(100)) <= keep_closed_below
+       and (tilt is none or (tilt | float(100)) <= keep_closed_below) }}
   is_open: "{{ pos is not none and (pos | float(0)) >= 99 }}"
   sleeping: "{{ has_sleep and is_state(sleep_lock, 'on') }}"
   contact_open: "{{ has_contact and is_state(contact_sensor, 'on') }}"
