@@ -2302,3 +2302,43 @@
         entity_id: input_boolean.mullmeldung
       data: {}
   mode: single
+- id: '1785302548817'
+  alias: Beschattung Ost - EG - Büro
+  description: ''
+  use_blueprint:
+    path: beschattung/beschattung_fenster.yaml
+    input:
+      cover: cover.buro_custom
+      shade_button: button.buro_my_position
+      azimuth_start: 85
+      lux_sensor: sensor.wetterluxtotal
+      forecast_high_min: 23
+      outdoor_sensor: sensor.temp_aussen_low
+      indoor_sensor: sensor.temperatur_buro
+      forecast_sensor: sensor.forecast_weather_max_temp_today
+      indoor_target: 20
+      azimuth_end: 160
+      lux_close: 5000
+      lux_open: 1000
+      contact_sensor: binary_sensor.fenster_buro_eg
+- id: '1785303158030'
+  alias: Beschattung West - EG - Esszimmer Jalousie
+  description: ''
+  use_blueprint:
+    path: beschattung/beschattung_fenster.yaml
+    input:
+      cover: cover.jalousie_esszimmer
+      shade_button: button.esszimmer_jalousie_my_position
+      azimuth_start: 250
+      lux_sensor: sensor.wetterluxtotal
+      forecast_high_min: 23
+      outdoor_sensor: sensor.temp_aussen_low
+      indoor_sensor: sensor.mb_temp_wohnzimmer
+      forecast_sensor: sensor.forecast_weather_max_temp_today
+      indoor_target: 20
+      azimuth_end: 360
+      lux_close: 3000
+      lux_open: 1000
+      contact_sensor: binary_sensor.balkontur
+      wind_sensor: sensor.ads_wetterwindspeed
+      wind_threshold: 70
