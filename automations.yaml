@@ -2309,7 +2309,6 @@
     path: beschattung/beschattung_fenster.yaml
     input:
       cover: cover.buro_custom
-      shade_button: button.buro_my_position
       azimuth_start: 85
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
@@ -2321,6 +2320,8 @@
       lux_close: 5000
       lux_open: 1000
       contact_sensor: binary_sensor.fenster_buro_eg
+      outdoor_min: 12
+      shade_position: 35
 - id: '1785303158030'
   alias: Beschattung West - EG - Esszimmer Jalousie
   description: ''
