@@ -22,6 +22,9 @@ homeassistant:
 # Web Access Config
 http:
   server_port: 443
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 127.0.0.1
 
 #------------------ Other Includes ----------------------
 notify: !include notify.yaml

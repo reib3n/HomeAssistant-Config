@@ -275,6 +275,13 @@ package_device_infodisplay:
           # Tageshöchstwert für den heutigen Kalendertag (0-24 Uhr).
           # Eintrag wird per Datum gewählt, nicht per festem Index [0]
           # (die Tagesliste kann im Tagesverlauf verrutschen).
+          #
+          # simple_dwd_weatherforecast liefert für "heute" nur die Stunden ab
+          # dem letzten Abruf, nicht ab 0 Uhr (bereits vergangene Stunden
+          # fallen aus dem Rohdatensatz). Der rohe Tageswert würde dadurch
+          # alle 3h schrumpfen und bereits erreichte Extremwerte verlieren.
+          # Daher hier laufendes Maximum: neuer Wert wird nur noch mit dem
+          # bisherigen kombiniert, außer beim ersten Abruf des Tages (0 Uhr).
           availability: >
             {{ forecast_data is defined
               and forecast_data.get('weather.freudenstadt')
@@ -286,8 +293,15 @@ package_device_infodisplay:
             {% set fc = forecast_data['weather.freudenstadt'].forecast %}
             {% set heute = fc | selectattr('datetime','defined')
                  | selectattr('datetime','search', now().strftime('%Y-%m-%d')) | list %}
-            {{ (heute[0].temperature if heute else fc[0].temperature)
-              | float(default=unknown) }}
+            {% set neu = (heute[0].temperature if heute else fc[0].temperature) | float(default=None) %}
+            {% set alt = states('sensor.forecast_weather_max_temp_today') | float(None) %}
+            {% if neu is none %}
+              {{ alt if alt is not none else unknown }}
+            {% elif alt is none or now().hour == 0 %}
+              {{ neu }}
+            {% else %}
+              {{ [neu, alt] | max }}
+            {% endif %}
           unit_of_measurement: "°C"
           device_class: temperature
           state_class: measurement
@@ -296,6 +310,8 @@ package_device_infodisplay:
           unique_id: forecast_weather_min_temp_today
           # Tagestiefstwert für den heutigen Kalendertag (0-24 Uhr).
           # Eintrag per Datum gewählt (siehe Max-Sensor).
+          # Laufendes Minimum aus demselben Grund wie beim Max-Sensor
+          # (siehe dortiger Kommentar).
           availability: >
             {{ forecast_data is defined
               and forecast_data.get('weather.freudenstadt')
@@ -307,8 +323,15 @@ package_device_infodisplay:
             {% set fc = forecast_data['weather.freudenstadt'].forecast %}
             {% set heute = fc | selectattr('datetime','defined')
                  | selectattr('datetime','search', now().strftime('%Y-%m-%d')) | list %}
-            {{ (heute[0].templow if heute else fc[0].templow)
-              | float(default=unknown) }}
+            {% set neu = (heute[0].templow if heute else fc[0].templow) | float(default=None) %}
+            {% set alt = states('sensor.forecast_weather_min_temp_today') | float(None) %}
+            {% if neu is none %}
+              {{ alt if alt is not none else unknown }}
+            {% elif alt is none or now().hour == 0 %}
+              {{ neu }}
+            {% else %}
+              {{ [neu, alt] | min }}
+            {% endif %}
           unit_of_measurement: "°C"
           device_class: temperature
           state_class: measurement
