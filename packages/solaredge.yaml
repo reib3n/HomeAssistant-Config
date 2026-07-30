@@ -47,13 +47,21 @@ package_solaredge:
           state_class: total_increasing
           unique_id: "mb_solaredge_garage_ac_lifetimeenergy"
 
+        # Momentanleistung: Mantisse (40083) + Skalierungsfaktor (40084).
+        # WICHTIG: SolarEdge passt den SF dynamisch an (0 … -5), damit die
+        # Mantisse den int16-Bereich ausnutzt. Mantisse und SF MÜSSEN daher aus
+        # demselben Modbus-Frame stammen – sonst entstehen Fehler um Faktor 10…1000
+        # (typisch in Dämmerung, wenn der SF wechselt).
+        # virtual_count: 1 liest 40083+40084 in EINEM Request und erzeugt:
+        #   sensor.mb_solaredge_garage_energy_now    -> Mantisse (40083)
+        #   sensor.mb_solaredge_garage_energy_now_1  -> SF       (40084)
+        # Kein unit/state_class: der Rohwert ist keine Leistung, sondern eine Mantisse.
         - slave: 1
           name: "mb_solaredge_garage_energy_now"
           address: 40083
-          scan_interval: 10
+          scan_interval: 5
           data_type: int16
-          unit_of_measurement: "W" # Momentanleistung (Rohwert, eigener SF s.u.)
-          state_class: measurement
+          virtual_count: 1
           unique_id: "mb_solaredge_garage_energy_now"
 
         # AC-Strang: Strom, Spannung, Leistung, Frequenz + zugehörige SF
@@ -79,11 +87,8 @@ package_solaredge:
           unique_id: "mb_solaredge_garage_ac_voltage_sf"
           scan_interval: 300
 
-        - <<: *I16
-          name: "mb_solaredge_garage_AC-Power-SF"
-          address: 40084
-          unique_id: "mb_solaredge_garage_ac_power_sf"
-          scan_interval: 300
+        # 40084 (AC-Power-SF) wird oben zusammen mit 40083 atomar gelesen
+        # (mb_solaredge_garage_energy_now_1) – kein separater Sensor mehr.
 
         - <<: *U16
           name: "mb_solaredge_garage_AC-Freq"
@@ -96,38 +101,21 @@ package_solaredge:
           unique_id: "mb_solaredge_garage_ac_freq_sf"
           scan_interval: 300
 
-        - <<: *I16
-          name: "mb_solaredge_garage_AC-VA"
+        # Blockread VA / VAR / PF + deren SF (40087…40092) in EINEM Request.
+        # Alle drei SF sind dynamisch -> müssen aus demselben Frame stammen.
+        #   mb_solaredge_garage_ac_blk    -> 40087  VA
+        #   mb_solaredge_garage_ac_blk_1  -> 40088  VA-SF
+        #   mb_solaredge_garage_ac_blk_2  -> 40089  VAR
+        #   mb_solaredge_garage_ac_blk_3  -> 40090  VAR-SF
+        #   mb_solaredge_garage_ac_blk_4  -> 40091  PF
+        #   mb_solaredge_garage_ac_blk_5  -> 40092  PF-SF
+        - slave: 1
+          name: "mb_solaredge_garage_ac_blk"
           address: 40087
-          # unit_of_measurement: "VA"
-          unique_id: "mb_solaredge_garage_ac_va"
-        - <<: *I16
-          name: "mb_solaredge_garage_AC-VA-SF"
-          address: 40088
-          unique_id: "mb_solaredge_garage_ac_va_sf"
-          scan_interval: 300
-
-        - <<: *I16
-          name: "mb_solaredge_garage_AC-VAR"
-          address: 40089
-          # unit_of_measurement: "var"
-          unique_id: "mb_solaredge_garage_ac_var"
-        - <<: *I16
-          name: "mb_solaredge_garage_AC-VAR-SF"
-          address: 40090
-          unique_id: "mb_solaredge_garage_ac_var_sf"
-          scan_interval: 300
-
-        - <<: *I16
-          name: "mb_solaredge_garage_AC-PF"
-          address: 40091
-          # Leistungsfaktor (unitless, meist mit SF)
-          unique_id: "mb_solaredge_garage_ac_pf"
-        - <<: *I16
-          name: "mb_solaredge_garage_AC-PF-SF"
-          address: 40092
-          unique_id: "mb_solaredge_garage_ac_pf_sf"
-          scan_interval: 300
+          scan_interval: 5
+          data_type: int16
+          virtual_count: 5
+          unique_id: "mb_solaredge_garage_ac_blk"
 
         - <<: *U16
           name: "mb_solaredge_garage_AC_LifetimeEnergy-SF"
@@ -135,36 +123,25 @@ package_solaredge:
           unique_id: "mb_solaredge_garage_ac_lifetimeenergy_sf"
           scan_interval: 300
 
-        # DC-Seite + Temp-SF
-        - <<: *U16
-          name: "mb_solaredge_garage_DC-Current"
+        # DC-Seite: Blockread 40096…40101 in EINEM Request.
+        # DC-Strom-SF ist dynamisch (0…-6) -> Atomarität nötig.
+        #   mb_solaredge_garage_dc_blk    -> 40096  DC-Strom
+        #   mb_solaredge_garage_dc_blk_1  -> 40097  DC-Strom-SF
+        #   mb_solaredge_garage_dc_blk_2  -> 40098  DC-Spannung
+        #   mb_solaredge_garage_dc_blk_3  -> 40099  DC-Spannung-SF
+        #   mb_solaredge_garage_dc_blk_4  -> 40100  DC-Leistung
+        #   mb_solaredge_garage_dc_blk_5  -> 40101  DC-Leistung-SF
+        # Hinweis: 40096/40098 sind laut SunSpec uint16, werden hier als int16
+        # gelesen (ein Block = ein data_type). Reale Mantissen bleiben < 32767;
+        # ein negativer Rohwert bedeutet uint16 > 32767 (z. B. 0xFFFF =
+        # "not implemented") und wird von der Plausibilitätsprüfung verworfen.
+        - slave: 1
+          name: "mb_solaredge_garage_dc_blk"
           address: 40096
-          unique_id: "mb_solaredge_garage_dc_current"
-        - <<: *I16
-          name: "mb_solaredge_garage_DC-Current-SF"
-          address: 40097
-          unique_id: "mb_solaredge_garage_dc_current_sf"
-          scan_interval: 300
-
-        - <<: *U16
-          name: "mb_solaredge_garage_DC-Voltage"
-          address: 40098
-          unique_id: "mb_solaredge_garage_dc_voltage"
-        - <<: *I16
-          name: "mb_solaredge_garage_DC-Voltage-SF"
-          address: 40099
-          unique_id: "mb_solaredge_garage_dc_voltage_sf"
-          scan_interval: 300
-
-        - <<: *I16
-          name: "mb_solaredge_garage_DC-Power"
-          address: 40100
-          unique_id: "mb_solaredge_garage_dc_power"
-        - <<: *I16
-          name: "mb_solaredge_garage_DC-Power-SF"
-          address: 40101
-          unique_id: "mb_solaredge_garage_dc_power_sf"
-          scan_interval: 300
+          scan_interval: 5
+          data_type: int16
+          virtual_count: 5
+          unique_id: "mb_solaredge_garage_dc_blk"
 
         - <<: *I16
           name: "mb_solaredge_garage_Temp-SF"
@@ -200,72 +177,49 @@ package_solaredge:
           unique_id: "mb_solaredge_m1_energy_w_sf"
           scan_interval: 300
 
-        # Leistung (Summe & Phasen) + SF
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_power"
+        # Leistung (Summe & Phasen) + SF: Blockread 40206…40210, ein Request.
+        # m1_ac_power_sf wechselte in 10 Tagen 3971x -> hier war der Fehler am
+        # grössten. Summe, Phasen und SF stammen jetzt aus demselben Frame.
+        #   mb_solaredge_m1_pwr_blk    -> 40206  Leistung Summe
+        #   mb_solaredge_m1_pwr_blk_1  -> 40207  Leistung L1
+        #   mb_solaredge_m1_pwr_blk_2  -> 40208  Leistung L2
+        #   mb_solaredge_m1_pwr_blk_3  -> 40209  Leistung L3
+        #   mb_solaredge_m1_pwr_blk_4  -> 40210  Leistung-SF
+        - slave: 1
+          name: "mb_solaredge_m1_pwr_blk"
           address: 40206
           scan_interval: 5
-          # unit_of_measurement: "W"
-          unique_id: "mb_solaredge_m1_ac_power"
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_power_A"
-          address: 40207
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_ac_power_a"
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_power_B"
-          address: 40208
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_ac_power_b"
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_power_C"
-          address: 40209
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_ac_power_c"
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_power_SF"
-          address: 40210
-          scan_interval: 300
-          unique_id: "mb_solaredge_m1_ac_power_sf"
+          data_type: int16
+          virtual_count: 4
+          unique_id: "mb_solaredge_m1_pwr_blk"
 
-        # Strom (A, B, C) + SF
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_current_A"
+        # Strom (A, B, C) + SF: Blockread 40191…40194, ein Request.
+        #   mb_solaredge_m1_cur_blk    -> 40191  Strom L1
+        #   mb_solaredge_m1_cur_blk_1  -> 40192  Strom L2
+        #   mb_solaredge_m1_cur_blk_2  -> 40193  Strom L3
+        #   mb_solaredge_m1_cur_blk_3  -> 40194  Strom-SF
+        - slave: 1
+          name: "mb_solaredge_m1_cur_blk"
           address: 40191
           scan_interval: 5
-          unique_id: "mb_solaredge_m1_ac_current_a"
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_current_B"
-          address: 40192
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_ac_current_b"
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_current_C"
-          address: 40193
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_ac_current_c"
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_current_SF"
-          address: 40194
-          scan_interval: 300
-          unique_id: "mb_solaredge_m1_ac_current_sf"
+          data_type: int16
+          virtual_count: 3
+          unique_id: "mb_solaredge_m1_cur_blk"
 
-        # Spannung (A, B, C) + SF
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_volt_A"
+        # Spannung L1/L2/L3: Blockread 40196…40198, ein Request statt drei.
+        #   mb_solaredge_m1_volt_blk    -> 40196  Spannung L1
+        #   mb_solaredge_m1_volt_blk_1  -> 40197  Spannung L2
+        #   mb_solaredge_m1_volt_blk_2  -> 40198  Spannung L3
+        # Der SF (40203) liegt nicht direkt hinter L3 (40199…40202 sind die
+        # Leiter-Leiter-Spannungen) und ist nachweislich statisch (-1) -> bleibt
+        # ein eigener 300-s-Sensor, Atomarität ist hier nicht nötig.
+        - slave: 1
+          name: "mb_solaredge_m1_volt_blk"
           address: 40196
           scan_interval: 5
-          unique_id: "mb_solaredge_m1_ac_volt_a"
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_volt_B"
-          address: 40197
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_ac_volt_b"
-        - <<: *I16
-          name: "mb_solaredge_m1_ac_volt_C"
-          address: 40198
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_ac_volt_c"
+          data_type: int16
+          virtual_count: 2
+          unique_id: "mb_solaredge_m1_volt_blk"
         - <<: *I16
           name: "mb_solaredge_m1_ac_volt_SF"
           address: 40203
@@ -284,85 +238,49 @@ package_solaredge:
           scan_interval: 300
           unique_id: "mb_solaredge_m1_ac_freq_sf"
 
-        # Schein-/Blindleistung + SF
-        - <<: *I16
-          name: "mb_solaredge_m1_power_app_sum"
+        # Scheinleistung + SF: Blockread 40211…40215, ein Request.
+        #   mb_solaredge_m1_app_blk    -> 40211  Scheinleistung Summe
+        #   mb_solaredge_m1_app_blk_1  -> 40212  Scheinleistung L1
+        #   mb_solaredge_m1_app_blk_2  -> 40213  Scheinleistung L2
+        #   mb_solaredge_m1_app_blk_3  -> 40214  Scheinleistung L3
+        #   mb_solaredge_m1_app_blk_4  -> 40215  Scheinleistung-SF
+        - slave: 1
+          name: "mb_solaredge_m1_app_blk"
           address: 40211
           scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_app_sum"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_app_A"
-          address: 40212
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_app_a"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_app_B"
-          address: 40213
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_app_b"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_app_C"
-          address: 40214
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_app_c"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_app_SF"
-          address: 40215
-          scan_interval: 300
-          unique_id: "mb_solaredge_m1_power_app_sf"
+          data_type: int16
+          virtual_count: 4
+          unique_id: "mb_solaredge_m1_app_blk"
 
-        - <<: *I16
-          name: "mb_solaredge_m1_power_rea_sum"
+        # Blindleistung + SF: Blockread 40216…40220, ein Request.
+        #   mb_solaredge_m1_rea_blk    -> 40216  Blindleistung Summe
+        #   mb_solaredge_m1_rea_blk_1  -> 40217  Blindleistung L1
+        #   mb_solaredge_m1_rea_blk_2  -> 40218  Blindleistung L2
+        #   mb_solaredge_m1_rea_blk_3  -> 40219  Blindleistung L3
+        #   mb_solaredge_m1_rea_blk_4  -> 40220  Blindleistung-SF
+        - slave: 1
+          name: "mb_solaredge_m1_rea_blk"
           address: 40216
           scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_rea_sum"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_rea_A"
-          address: 40217
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_rea_a"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_rea_B"
-          address: 40218
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_rea_b"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_rea_C"
-          address: 40219
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_rea_c"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_rea_SF"
-          address: 40220
-          scan_interval: 300
-          unique_id: "mb_solaredge_m1_power_rea_sf"
+          data_type: int16
+          virtual_count: 4
+          unique_id: "mb_solaredge_m1_rea_blk"
 
-        # Leistungsfaktor (durchweg skaliert)
-        - <<: *I16
-          name: "mb_solaredge_m1_power_fac_avg"
+        # Leistungsfaktor + SF: Blockread 40221…40225, ein Request statt fünf.
+        # SF ist hier statisch (-2), der Block spart aber vier Requests und
+        # macht die Skalierung nebenbei atomar.
+        #   mb_solaredge_m1_fac_blk    -> 40221  Leistungsfaktor Mittel
+        #   mb_solaredge_m1_fac_blk_1  -> 40222  Leistungsfaktor L1
+        #   mb_solaredge_m1_fac_blk_2  -> 40223  Leistungsfaktor L2
+        #   mb_solaredge_m1_fac_blk_3  -> 40224  Leistungsfaktor L3
+        #   mb_solaredge_m1_fac_blk_4  -> 40225  Leistungsfaktor-SF
+        - slave: 1
+          name: "mb_solaredge_m1_fac_blk"
           address: 40221
           scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_fac_avg"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_fac_A"
-          address: 40222
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_fac_a"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_fac_B"
-          address: 40223
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_fac_b"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_fac_C"
-          address: 40224
-          scan_interval: 5
-          unique_id: "mb_solaredge_m1_power_fac_c"
-        - <<: *I16
-          name: "mb_solaredge_m1_power_fac_SF"
-          address: 40225
-          scan_interval: 300
-          unique_id: "mb_solaredge_m1_power_fac_sf"
+          data_type: int16
+          virtual_count: 4
+          unique_id: "mb_solaredge_m1_fac_blk"
   ################################################################################################
   #
   # 2) TEMPLATE-SENSOREN
@@ -387,17 +305,29 @@ package_solaredge:
             {{ map.get(code, 'Unknown') }}
 
         # Momentanleistung (W)
+        # Mantisse + SF kommen aus einem gemeinsamen Modbus-Read (virtual_count).
+        # Zusätzliche Plausibilitätsprüfung als Sicherheitsnetz:
+        #   - SF ausserhalb -10…+3 (z. B. -32768 = SunSpec "not implemented")
+        #   - Ergebnis ausserhalb -100…3200 W. Obergrenze = AC-Nennleistung des WR
+        #     (Messreihe: Realwerte enden hart bei ~3000 W). Untergrenze lässt
+        #     die geringe Nachtaufnahme des WR zu, falls er sie negativ meldet.
+        # Unplausible Samples machen den Sensor kurz 'unavailable' statt einen
+        # falschen Wert zu liefern (Recorder/Statistik überspringen ihn dann).
         - name: "mb_solaredge_garage_energy_now_final"
           unique_id: "mb_solaredge_garage_energy_now_final"
           unit_of_measurement: "W"
           device_class: power
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_garage_energy_now') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_garage_ac_power_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_garage_energy_now') %}
+            {% set sf  = states('sensor.mb_solaredge_garage_energy_now_1') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -100 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 3200 }}
           state: >
             {% set raw = states('sensor.mb_solaredge_garage_energy_now')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_garage_ac_power_sf')|float(-3) %}
+            {% set sf  = states('sensor.mb_solaredge_garage_energy_now_1')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         # Temperatur (°C)
@@ -435,11 +365,15 @@ package_solaredge:
           device_class: current
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_garage_dc_current') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_garage_dc_current_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_garage_dc_blk') %}
+            {% set sf  = states('sensor.mb_solaredge_garage_dc_blk_1') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 15 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_garage_dc_current')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_garage_dc_current_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_garage_dc_blk')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_garage_dc_blk_1')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(2) }}
 
         # DC Voltage (V)
@@ -449,11 +383,15 @@ package_solaredge:
           device_class: voltage
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_garage_dc_voltage') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_garage_dc_voltage_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_garage_dc_blk_2') %}
+            {% set sf  = states('sensor.mb_solaredge_garage_dc_blk_3') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 600 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_garage_dc_voltage')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_garage_dc_voltage_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_garage_dc_blk_2')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_garage_dc_blk_3')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         # DC Power (W)
@@ -463,11 +401,15 @@ package_solaredge:
           device_class: power
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_garage_dc_power') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_garage_dc_power_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_garage_dc_blk_4') %}
+            {% set sf  = states('sensor.mb_solaredge_garage_dc_blk_5') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -100 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 3400 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_garage_dc_power')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_garage_dc_power_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_garage_dc_blk_4')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_garage_dc_blk_5')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         # AC Current (A)
@@ -518,11 +460,15 @@ package_solaredge:
           unit_of_measurement: "VA"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_garage_ac_va') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_garage_ac_va_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_garage_ac_blk') %}
+            {% set sf  = states('sensor.mb_solaredge_garage_ac_blk_1') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 3400 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_garage_ac_va')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_garage_ac_va_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_garage_ac_blk')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_garage_ac_blk_1')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         # AC Blindleistung (VAR)
@@ -531,11 +477,15 @@ package_solaredge:
           unit_of_measurement: "VAR"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_garage_ac_var') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_garage_ac_var_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_garage_ac_blk_2') %}
+            {% set sf  = states('sensor.mb_solaredge_garage_ac_blk_3') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -3400 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 3400 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_garage_ac_var')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_garage_ac_var_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_garage_ac_blk_2')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_garage_ac_blk_3')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         # Leistungsfaktor (%)
@@ -544,11 +494,15 @@ package_solaredge:
           unit_of_measurement: "%"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_garage_ac_pf') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_garage_ac_pf_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_garage_ac_blk_4') %}
+            {% set sf  = states('sensor.mb_solaredge_garage_ac_blk_5') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -100 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 100 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_garage_ac_pf')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_garage_ac_pf_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_garage_ac_blk_4')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_garage_ac_blk_5')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         # ===== METER 1 =====
@@ -560,11 +514,15 @@ package_solaredge:
           device_class: power
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_ac_power') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_ac_power_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_pwr_blk') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_pwr_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -25000 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 25000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_ac_power')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_ac_power_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_pwr_blk')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_pwr_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         # Leistung gesamt (W)
@@ -574,11 +532,15 @@ package_solaredge:
           device_class: power
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_ac_power') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_ac_power_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_pwr_blk') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_pwr_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -25000 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 25000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_ac_power')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_ac_power_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_pwr_blk')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_pwr_blk_4')|float(-3) %}
             {{ ((raw * (10 ** sf)) * -1) | round(1) }}
 
         # Leistung Phasen (W)
@@ -588,11 +550,15 @@ package_solaredge:
           device_class: power
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_ac_power_a') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_ac_power_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_pwr_blk_1') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_pwr_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -9000 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 9000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_ac_power_a')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_ac_power_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_pwr_blk_1')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_pwr_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_power_b_final"
@@ -601,11 +567,15 @@ package_solaredge:
           device_class: power
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_ac_power_b') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_ac_power_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_pwr_blk_2') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_pwr_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -9000 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 9000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_ac_power_b')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_ac_power_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_pwr_blk_2')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_pwr_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_power_c_final"
@@ -614,11 +584,15 @@ package_solaredge:
           device_class: power
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_ac_power_c') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_ac_power_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_pwr_blk_3') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_pwr_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -9000 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 9000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_ac_power_c')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_ac_power_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_pwr_blk_3')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_pwr_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         # Energie Import/Export (kWh)
@@ -655,11 +629,15 @@ package_solaredge:
           device_class: current
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_ac_current_a') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_ac_current_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_cur_blk') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_cur_blk_3') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 40 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_ac_current_a')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_ac_current_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_cur_blk')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_cur_blk_3')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_current_b_final"
@@ -668,11 +646,15 @@ package_solaredge:
           device_class: current
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_ac_current_b') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_ac_current_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_cur_blk_1') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_cur_blk_3') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 40 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_ac_current_b')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_ac_current_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_cur_blk_1')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_cur_blk_3')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_current_c_final"
@@ -681,11 +663,15 @@ package_solaredge:
           device_class: current
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_ac_current_c') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_ac_current_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_cur_blk_2') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_cur_blk_3') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 40 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_ac_current_c')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_ac_current_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_cur_blk_2')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_cur_blk_3')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         # Spannung (V)
@@ -695,10 +681,14 @@ package_solaredge:
           device_class: voltage
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_ac_volt_a') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_ac_volt_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_volt_blk') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_ac_volt_sf') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 300 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_ac_volt_a')|float(0) %}
+            {% set raw = states('sensor.mb_solaredge_m1_volt_blk')|float(0) %}
             {% set sf  = states('sensor.mb_solaredge_m1_ac_volt_sf')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
@@ -708,10 +698,14 @@ package_solaredge:
           device_class: voltage
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_ac_volt_b') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_ac_volt_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_volt_blk_1') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_ac_volt_sf') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 300 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_ac_volt_b')|float(0) %}
+            {% set raw = states('sensor.mb_solaredge_m1_volt_blk_1')|float(0) %}
             {% set sf  = states('sensor.mb_solaredge_m1_ac_volt_sf')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
@@ -721,10 +715,14 @@ package_solaredge:
           device_class: voltage
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_ac_volt_c') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_ac_volt_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_volt_blk_2') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_ac_volt_sf') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 300 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_ac_volt_c')|float(0) %}
+            {% set raw = states('sensor.mb_solaredge_m1_volt_blk_2')|float(0) %}
             {% set sf  = states('sensor.mb_solaredge_m1_ac_volt_sf')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
@@ -748,11 +746,15 @@ package_solaredge:
           unit_of_measurement: "VA"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_app_sum') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_app_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_app_blk') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_app_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 25000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_app_sum')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_app_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_app_blk')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_app_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_power_app_a_final"
@@ -760,11 +762,15 @@ package_solaredge:
           unit_of_measurement: "VA"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_app_a') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_app_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_app_blk_1') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_app_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 9000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_app_a')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_app_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_app_blk_1')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_app_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_power_app_b_final"
@@ -772,11 +778,15 @@ package_solaredge:
           unit_of_measurement: "VA"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_app_b') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_app_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_app_blk_2') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_app_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 9000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_app_b')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_app_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_app_blk_2')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_app_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_power_app_c_final"
@@ -784,11 +794,15 @@ package_solaredge:
           unit_of_measurement: "VA"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_app_c') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_app_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_app_blk_3') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_app_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and 0 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 9000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_app_c')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_app_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_app_blk_3')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_app_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         # Blindleistung (VAR)
@@ -797,11 +811,15 @@ package_solaredge:
           unit_of_measurement: "VAR"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_rea_sum') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_rea_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_rea_blk') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_rea_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -25000 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 25000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_rea_sum')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_rea_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_rea_blk')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_rea_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_power_rea_a_final"
@@ -809,11 +827,15 @@ package_solaredge:
           unit_of_measurement: "VAR"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_rea_a') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_rea_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_rea_blk_1') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_rea_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -9000 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 9000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_rea_a')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_rea_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_rea_blk_1')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_rea_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_power_rea_b_final"
@@ -821,11 +843,15 @@ package_solaredge:
           unit_of_measurement: "VAR"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_rea_b') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_rea_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_rea_blk_2') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_rea_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -9000 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 9000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_rea_b')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_rea_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_rea_blk_2')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_rea_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_power_rea_c_final"
@@ -833,11 +859,15 @@ package_solaredge:
           unit_of_measurement: "VAR"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_rea_c') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_rea_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_rea_blk_3') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_rea_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -9000 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 9000 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_rea_c')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_rea_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_rea_blk_3')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_rea_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         # Leistungsfaktor (%)
@@ -846,11 +876,15 @@ package_solaredge:
           unit_of_measurement: "%"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_fac_avg') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_fac_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_fac_blk') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_fac_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -100 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 100 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_fac_avg')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_fac_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_fac_blk')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_fac_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_power_fac_a_final"
@@ -858,11 +892,15 @@ package_solaredge:
           unit_of_measurement: "%"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_fac_a') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_fac_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_fac_blk_1') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_fac_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -100 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 100 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_fac_a')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_fac_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_fac_blk_1')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_fac_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_power_fac_b_final"
@@ -870,11 +908,15 @@ package_solaredge:
           unit_of_measurement: "%"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_fac_b') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_fac_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_fac_blk_2') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_fac_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -100 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 100 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_fac_b')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_fac_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_fac_blk_2')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_fac_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
 
         - name: "mb_solaredge_m1_ac_power_fac_c_final"
@@ -882,9 +924,13 @@ package_solaredge:
           unit_of_measurement: "%"
           state_class: measurement
           availability: >
-            {{ states('sensor.mb_solaredge_m1_power_fac_c') not in ['unavailable','unknown']
-              and states('sensor.mb_solaredge_m1_power_fac_sf') not in ['unavailable','unknown'] }}
+            {% set raw = states('sensor.mb_solaredge_m1_fac_blk_3') %}
+            {% set sf  = states('sensor.mb_solaredge_m1_fac_blk_4') %}
+            {{ raw not in ['unavailable','unknown','none']
+               and sf  not in ['unavailable','unknown','none']
+               and -10 <= sf|float(99) <= 3
+               and -100 <= raw|float(-1e9) * (10 ** sf|float(99)) <= 100 }}
           state: >
-            {% set raw = states('sensor.mb_solaredge_m1_power_fac_c')|float(0) %}
-            {% set sf  = states('sensor.mb_solaredge_m1_power_fac_sf')|float(-3) %}
+            {% set raw = states('sensor.mb_solaredge_m1_fac_blk_3')|float(0) %}
+            {% set sf  = states('sensor.mb_solaredge_m1_fac_blk_4')|float(-3) %}
             {{ (raw * (10 ** sf)) | round(1) }}
