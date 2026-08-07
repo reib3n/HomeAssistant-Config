@@ -29,3 +29,11 @@ package_weather:
       state_characteristic: value_max
       max_age:
         hours: 4
+
+    - platform: statistics
+      name: "wetterwindspeedboe30min"
+      unique_id: "wetterwindspeedboe30min"
+      entity_id: sensor.ads_wetterwindspeed
+      state_characteristic: value_max
+      max_age:
+        minutes: 30

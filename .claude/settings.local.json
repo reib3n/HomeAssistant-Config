@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sqlite3 -readonly file:/config/home-assistant_v2.db?immutable=1 ' *)"
+    ]
+  }
+}

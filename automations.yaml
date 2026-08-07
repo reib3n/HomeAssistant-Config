@@ -392,85 +392,42 @@
   mode: single
 - id: '1722606836815'
   alias: WGT - Set Climate Mode from WGT
-  description: ''
-  trigger:
-  - platform: state
+  description: 'Spiegelt Bedienung am WGT-Bedienteil nach HA. Seit dem hvac_mode_template
+    in packages/wgt.yaml leitet climate.wgtmode_template seinen Zustand direkt aus
+    den Registern ab; diese Automation ist damit nur noch ein Sicherheitsnetz und
+    wird im Normalbetrieb nie auslösen. WICHTIG: Register 100 kennt kein "Kühlen"
+    - cool und fan_only sind beide Sommerbetrieb (3). Der Zielmodus wird daher aus
+    100 UND 230/232 bestimmt. Die alte Fassung mappte 3 pauschal auf fan_only und
+    hat die gerade eingeschaltete Kühlung nach ~8 Sekunden per Registerschreibzugriff
+    (232 auf 0) wieder abgeschaltet. Luftstufen-Sync macht "WGT - Set Fan Level Dropdown".'
+  triggers:
+  - trigger: state
     entity_id:
     - sensor.betriebsart_wgt
+    - sensor.wgt_heizen_kuhlen
+    - sensor.wgt_kuhlen
     for:
-      hours: 0
-      minutes: 0
-      seconds: 1
-  condition:
-  - condition: and
-    conditions:
-    - condition: not
-      conditions:
-      - condition: state
-        entity_id: climate.wgtmode_template
-        state: cool
-      enabled: false
-    - condition: template
-      value_template: '{{ (states(''sensor.betriebsart_wgt'') == ''0'' and states(''climate.wgtmode_template'')
-        != ''off'' ) or (states(''sensor.betriebsart_wgt'') == ''2'' and states(''climate.wgtmode_template'')
-        != ''heat'' ) or
-
-
-        (states(''sensor.betriebsart_wgt'') == ''3'' and ( (states(''climate.wgtmode_template'')
-        != ''fan_only'' and states(''climate.wgtmode_template'') == ''cool'') or (states(''climate.wgtmode_template'')
-        == ''fan_only'' and states(''climate.wgtmode_template'') != ''cool'')  ))
-        or
-
-
-        (states(''sensor.betriebsart_wgt'') == ''4'' and states(''climate.wgtmode_template'')
-        != ''auto'' )  }}'
-  action:
-  - if:
-    - condition: numeric_state
-      entity_id: sensor.betriebsart_wgt
-      below: 1
-    then:
-    - service: climate.set_hvac_mode
-      metadata: {}
-      data:
-        hvac_mode: 'off'
-      target:
-        entity_id: climate.wgtmode_template
-  - if:
-    - condition: numeric_state
-      entity_id: sensor.betriebsart_wgt
-      below: 4
-      above: 2
-    then:
-    - service: climate.set_hvac_mode
-      metadata: {}
-      data:
-        hvac_mode: fan_only
-      target:
-        entity_id: climate.wgtmode_template
-  - if:
-    - condition: numeric_state
-      entity_id: sensor.betriebsart_wgt
-      below: 3
-      above: 1
-    then:
-    - service: climate.set_hvac_mode
-      metadata: {}
-      data:
-        hvac_mode: heat
-      target:
-        entity_id: climate.wgtmode_template
-  - if:
-    - condition: numeric_state
-      entity_id: sensor.betriebsart_wgt
-      above: 3
-    then:
-    - service: climate.set_hvac_mode
-      metadata: {}
-      data:
-        hvac_mode: auto
-      target:
-        entity_id: climate.wgtmode_template
+      seconds: 2
+  conditions:
+  - alias: Nur bei plausibler Rückmeldung
+    condition: template
+    value_template: '{{ is_number(states(''sensor.betriebsart_wgt'')) and has_value(''climate.wgtmode_template'')
+      }}'
+  actions:
+  - variables:
+      ziel: "{% set ba = states('sensor.betriebsart_wgt') | int(-1) %} {% set kuehlt
+        = states('sensor.wgt_heizen_kuhlen') | int(-1) == 2\n                and states('sensor.wgt_kuhlen')
+        | int(0) == 1 %}\n{{ 'heat' if ba == 2\n   else 'auto' if ba == 4\n   else
+        ('cool' if kuehlt else 'fan_only') if ba in [1, 3]\n   else 'off' }}"
+  - alias: Nur wenn die HA-Entity vom Gerät abweicht
+    condition: template
+    value_template: '{{ not is_state(''climate.wgtmode_template'', ziel) }}'
+  - alias: HA an das Gerät angleichen
+    action: climate.set_hvac_mode
+    data:
+      hvac_mode: '{{ ziel }}'
+    target:
+      entity_id: climate.wgtmode_template
   mode: single
 - id: '1733170085023'
   alias: Monitoring - Kühlschrank Prevent from OFF
@@ -1031,7 +988,7 @@
   triggers:
   - trigger: state
     entity_id:
-    - binary_sensor.hue_secure_contact_sensor_1_offnet
+    - binary_sensor.haustur_tur
     - binary_sensor.werkstatttur
     - binary_sensor.tur_garage_haus
     - binary_sensor.tur_garage_strasse
@@ -1043,8 +1000,10 @@
     - binary_sensor.fenster_buro_eg
     - binary_sensor.fenster_hobbyraum_sud
     - binary_sensor.fenster_hobbyraum_west
-    from: 'off'
-    to: 'on'
+    from:
+    - 'off'
+    to:
+    - 'on'
     for:
       hours: 0
       minutes: 0
@@ -1063,7 +1022,9 @@
   mode: single
 - id: '1749890412696'
   alias: WGT - Sommersteuerung
-  description: ''
+  description: Sommerklimatisierung. Draußen kälter -> freie Kühlung (nur lüften).
+    Draußen wärmer + PV-Überschuss -> WP-Kühlung. Sonst Anlage aus. Der Zielmodus
+    wird nur geschrieben, wenn er vom Ist-Zustand abweicht.
   triggers:
   - trigger: time_pattern
     minutes: /15
@@ -1072,56 +1033,44 @@
     entity_id: input_boolean.sommersteuerung_luftung
     state: 'on'
     alias: Wenn Sommersteuerung aktiv ist
+  - alias: Messwerte plausibel (sonst nichts anfassen)
+    condition: template
+    value_template: '{{ is_number(states(''sensor.temp_aussen_low'')) and is_number(states(''sensor.temperatur_wohnzimmer''))
+      and has_value(''climate.wgtmode_template'') }}'
   actions:
-  - choose:
-    - conditions:
-      - condition: template
-        value_template: '{{ states(''sensor.temp_aussen_low'') | float | round(0)
-          < states(''sensor.temperatur_wohnzimmer'') | float | round(0)}}'
-        alias: Wenn aussen KÄLTER
-      sequence:
-      - action: climate.set_hvac_mode
-        metadata: {}
-        data:
-          hvac_mode: fan_only
-        target:
-          entity_id: climate.wgtmode_template
-        alias: Nur Lüften
-    - conditions:
-      - condition: and
-        conditions:
-        - alias: Wenn aussen WÄRMER
-          condition: template
-          value_template: '{{ states(''sensor.temp_aussen_low'') | float | round(0)
-            > states(''sensor.temperatur_wohnzimmer'') | float | round(0)}}'
-        - condition: numeric_state
-          entity_id: sensor.mb_solaredge_m1_ac_power_final
-          above: 500
-        - condition: state
-          entity_id: input_boolean.urlaubsmodus
-          state: 'off'
-      sequence:
-      - action: climate.set_hvac_mode
-        metadata: {}
-        data:
-          hvac_mode: cool
-        target:
-          entity_id: climate.wgtmode_template
-        alias: Kühlen
-      alias: Wenn aussen WÄRMER + PV
-    - conditions:
-      - alias: Wenn aussen WÄRMER
-        condition: template
-        value_template: '{{ states(''sensor.temp_aussen_low'') | float | round(0)
-          > states(''sensor.temperatur_wohnzimmer'') | float | round(0)}}'
-      sequence:
-      - action: climate.set_hvac_mode
-        metadata: {}
-        data:
-          hvac_mode: 'off'
-        target:
-          entity_id: climate.wgtmode_template
-        alias: Lüftung ausschalten
+  - variables:
+      t_aussen: '{{ states(''sensor.temp_aussen_low'') | float }}'
+      t_innen: '{{ states(''sensor.temperatur_wohnzimmer'') | float }}'
+      kuehlt: '{{ is_state(''climate.wgtmode_template'', ''cool'') }}'
+      pv_mittel: '{{ states(''sensor.pv_ueberschuss_mittel_15min'') | float(0) }}'
+  - variables:
+      pv_frei: '{{ pv_mittel > 150 if kuehlt else pv_mittel > 600 }}'
+      kuehl_laufzeit: '{{ (now().timestamp() - state_attr(''input_datetime.wgt_kuehlung_start'',
+        ''timestamp'')) if (kuehlt and state_attr(''input_datetime.wgt_kuehlung_start'',
+        ''timestamp'') is number) else 99999 }}'
+  - variables:
+      ziel: '{% if t_aussen < t_innen - 0.5 %}fan_only {% elif pv_frei and is_state(''input_boolean.urlaubsmodus'',
+        ''off'') %}cool {% elif kuehlt and kuehl_laufzeit < 1200 %}cool {% else %}off{%
+        endif %}'
+  - alias: Nur bei echter Änderung schreiben
+    condition: template
+    value_template: '{{ not is_state(''climate.wgtmode_template'', ziel) }}'
+  - alias: Startzeitpunkt der Kühlung festhalten
+    if:
+    - condition: template
+      value_template: '{{ ziel == ''cool'' }}'
+    then:
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.wgt_kuehlung_start
+      data:
+        timestamp: '{{ now().timestamp() }}'
+  - alias: Zielmodus setzen
+    action: climate.set_hvac_mode
+    data:
+      hvac_mode: '{{ ziel }}'
+    target:
+      entity_id: climate.wgtmode_template
   mode: single
 - id: '1749996238572'
   alias: EnergySave - Accesspoints
@@ -1777,7 +1726,7 @@
   triggers:
   - trigger: state
     entity_id:
-    - binary_sensor.hue_secure_contact_sensor_1_offnet
+    - binary_sensor.haustur_tur
     from:
     - 'off'
     to:
@@ -2028,7 +1977,7 @@
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 20
-      lux_open: 10000
+      lux_open: 20000
       lux_close: 25000
 - id: '1785169603280'
   alias: Beschattung Süd - EG - Küche
@@ -2045,7 +1994,7 @@
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 20
       lux_close: 25000
-      lux_open: 10000
+      lux_open: 20000
 - id: '1785217006507'
   alias: Switch - IKEA Diele
   description: ''
@@ -2093,8 +2042,8 @@
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 20
       azimuth_end: 160
-      lux_close: 5000
-      lux_open: 1000
+      lux_close: 10000
+      lux_open: 8000
       contact_sensor: binary_sensor.fenster_buro_eg
       shade_position: 35
 - id: '1785303158030'
@@ -2115,8 +2064,9 @@
       lux_close: 3000
       lux_open: 1000
       contact_sensor: binary_sensor.balkontur
-      wind_sensor: sensor.ads_wetterwindspeed
-      wind_threshold: 70
+      wind_sensor: sensor.wetterwindspeedboe30min
+      wind_threshold: 38
+      elevation_min: 4
 - id: '1785337163289'
   alias: Beschattung West - EG - Wohnzimmer Jalousie
   description: ''
@@ -2131,9 +2081,10 @@
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 20
-      azimuth_end: 270
+      azimuth_end: 360
       lux_close: 3000
       lux_open: 1000
-      wind_sensor: sensor.ads_wetterwindspeed
-      wind_threshold: 70
+      wind_sensor: sensor.wetterwindspeedboe30min
+      wind_threshold: 38
       keep_closed_below: 5
+      elevation_min: 4

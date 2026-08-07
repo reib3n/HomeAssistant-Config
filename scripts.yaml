@@ -1,6 +1,13 @@
 wgt_mode_2:
   alias: WGT-Mode
   sequence:
+  # WICHTIG (verifiziert am 30.07.2026): Die WGT nimmt die Freigaben 231/232 nur an,
+  # wenn sie bereits in der passenden Betriebsart laeuft. Ein "232 = 1" im Zustand
+  # "Aus" wird verworfen - im Sommerbetrieb greift es sofort (WP-Status 49).
+  # Beim Einschalten von Heizen/Kuehlen wird daher zuerst die Betriebsart (100)
+  # gesetzt, auf deren Rueckmeldung gewartet und erst dann freigegeben.
+  # Beim Abschalten (fan_only) ist es umgekehrt: erst Freigaben auf 0, damit beim
+  # Start des Sommerbetriebs nicht kurz gekuehlt wird.
   - if:
     - condition: template
       value_template: '{{modus == "cool"}}'
@@ -12,6 +19,10 @@ wgt_mode_2:
         slave: 1
         value:
         - 3
+    - alias: Warten bis Sommerbetrieb zurueckgemeldet wird
+      wait_template: '{{ states(''sensor.betriebsart_wgt'') | int(-1) in [3, 4] }}'
+      timeout: '00:00:30'
+      continue_on_timeout: true
     - service: modbus.write_register
       data:
         hub: WGT
@@ -55,6 +66,10 @@ wgt_mode_2:
         slave: 1
         value:
         - 2
+    - alias: Warten bis Winterbetrieb zurueckgemeldet wird
+      wait_template: '{{ states(''sensor.betriebsart_wgt'') | int(-1) == 2 }}'
+      timeout: '00:00:30'
+      continue_on_timeout: true
     - service: modbus.write_register
       data:
         hub: WGT
@@ -83,13 +98,6 @@ wgt_mode_2:
     - service: modbus.write_register
       data:
         hub: WGT
-        address: 100
-        slave: 1
-        value:
-        - 3
-    - service: modbus.write_register
-      data:
-        hub: WGT
         address: 230
         slave: 1
         value:
@@ -108,6 +116,13 @@ wgt_mode_2:
         slave: 1
         value:
         - 0
+    - service: modbus.write_register
+      data:
+        hub: WGT
+        address: 100
+        slave: 1
+        value:
+        - 3
   - if:
     - condition: template
       value_template: '{{modus == "auto"}}'

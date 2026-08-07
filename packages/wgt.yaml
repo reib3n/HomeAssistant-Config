@@ -277,6 +277,27 @@ package_wgt:
           address: 118
           unique_id: "wgt_wgt_status_abluft"
 
+        # Bypass: 0 geschlossen, 1 offen (Kühlen), 2 offen (Heizen)
+        # -> zeigt, ob die freie Kühlung im Sommerbetrieb tatsächlich greift
+        - <<: *INT16
+          name: "WGT Bypass Zustand"
+          address: 123
+          unique_id: "wgt_bypass_zustand"
+
+        # EWT: 0 aus/geschlossen, 1 Heizbetrieb aktiv, 2 Kühlbetrieb aktiv
+        - <<: *INT16
+          name: "WGT EWT Zustand"
+          address: 121
+          unique_id: "wgt_ewt_zustand"
+
+        # Betriebsstunden WP kühlen -> Kennzahl, um die Kühl-Laufzeit zu prüfen
+        - <<: *INT16
+          name: "WGT Betriebsstunden WP kuehlen"
+          address: 806
+          unit_of_measurement: "h"
+          state_class: total_increasing
+          unique_id: "wgt_betriebsstunden_wp_kuehlen"
+
       switches:
         # Basis-Defaults via Anchor (&SW_HOLD). Der erste Eintrag ist real + dient als Vorlage.
         - &SW_HOLD
@@ -336,6 +357,42 @@ package_wgt:
           name: "Zusatzheizungen Bad OG"
           address: 447
           unique_id: "switch_wgt_zusatzheizungen_bad_og"
+  ################################################################################################
+  #
+  # 1a) HELFER
+  #
+  # Startzeitpunkt der WP-Kühlung. Wird von "WGT - Sommersteuerung" gesetzt, sobald
+  # auf cool geschaltet wird, und dient dort der Mindestlaufzeit des Verdichters.
+  # Bewusst NICHT über climate.wgtmode_template.last_changed gelöst: ein
+  # Modbus-Aussetzer (am 30.07.2026 um 13:25 für 55 s) setzt last_changed zurück
+  # und hätte der Kühlung dadurch 20 frische Minuten geschenkt.
+  ################################################################################################
+  input_datetime:
+    wgt_kuehlung_start:
+      name: "WGT Kühlung Start"
+      has_date: true
+      has_time: true
+      icon: mdi:snowflake-check
+
+  ################################################################################################
+  #
+  # 1b) GEMITTELTER NETZÜBERSCHUSS
+  #
+  # sensor.mb_solaredge_m1_ac_power_final ist der Momentanwert des Zählers (Meter 1).
+  # Der schwankt sekündlich um mehrere kW und ist als Schaltkriterium unbrauchbar.
+  # Für die Sommersteuerung wird deshalb der 15-Minuten-Mittelwert verwendet.
+  ################################################################################################
+  sensor:
+    - platform: statistics
+      name: "PV Ueberschuss Mittel 15min"
+      unique_id: "pv_ueberschuss_mittel_15min"
+      entity_id: sensor.mb_solaredge_m1_ac_power_final
+      state_characteristic: mean
+      sampling_size: 250
+      max_age:
+        minutes: 15
+      precision: 0
+
   ################################################################################################
   #
   # 2) TEMPLATE-SENSOREN
@@ -459,14 +516,14 @@ package_wgt:
         - name: "WGT Heizen Kühlen"
           unique_id: "wgt_heizen_kuhlen_text"
           state: >-
-            {% set raw = states('sensor.wgt_heizen_kuehlen') %}
+            {% set raw = states('sensor.wgt_heizen_kuhlen') %}
             {% if is_number(raw) %}
               {{ {0:'Aus',1:'Heizen',2:'Kühlen',3:'Auto T-Aussen',4:'Auto Digitaler Eingang'}.get(raw|int,'Unknown') }}
             {% else %}Unknown{% endif %}
           icon: >-
-            {% set v = states('sensor.wgt_heizen_kuehlen')|int(-1) %}
+            {% set v = states('sensor.wgt_heizen_kuhlen')|int(-1) %}
             {{ 'mdi:power' if v==0 else 'mdi:fire' if v==1 else 'mdi:snowflake' if v==2 else 'mdi:cached' if v in [3,4] else 'mdi:help' }}
-          availability: "{{ is_number(states('sensor.wgt_heizen_kuehlen')) }}"
+          availability: "{{ is_number(states('sensor.wgt_heizen_kuhlen')) }}"
 
         - name: "WGT Heizen Text"
           unique_id: "wgt_heizen_text"
@@ -482,12 +539,12 @@ package_wgt:
         - name: "WGT Kühlen"
           unique_id: "wgt_kuhlen_text"
           state: >-
-            {% set raw = states('sensor.wgt_kuehlen') %}
+            {% set raw = states('sensor.wgt_kuhlen') %}
             {% if is_number(raw) %}{{ {0:'Aus',1:'kühlen'}.get(raw|int,'Unknown') }}{% else %}Unknown{% endif %}
           icon: >-
-            {% set v = states('sensor.wgt_kuehlen')|int(-1) %}
+            {% set v = states('sensor.wgt_kuhlen')|int(-1) %}
             {{ 'mdi:power' if v==0 else 'mdi:snowflake' if v==1 else 'mdi:help' }}
-          availability: "{{ is_number(states('sensor.wgt_kuehlen')) }}"
+          availability: "{{ is_number(states('sensor.wgt_kuhlen')) }}"
 
         - name: "WGT Fehler"
           unique_id: "wgt_fehler_text"
@@ -836,6 +893,19 @@ package_wgt:
         - "fan_only"
         - "off"
         - "auto"
+      # Rückmeldung aus dem Gerät (auch bei Bedienung am Bedienteil).
+      # Register 100 (Betriebsart) kennt KEIN "Kühlen": cool und fan_only sind beide
+      # Sommerbetrieb (3). Eindeutig ist erst die Kombination mit der
+      # Heiz-/Kühlfunktion (230) und der WP-Kühlfreigabe (232).
+      availability_template: "{{ is_number(states('sensor.betriebsart_wgt')) }}"
+      hvac_mode_template: >-
+        {% set ba = states('sensor.betriebsart_wgt') | int(-1) %}
+        {% set kuehlt = states('sensor.wgt_heizen_kuhlen') | int(-1) == 2
+                        and states('sensor.wgt_kuhlen') | int(0) == 1 %}
+        {{ 'heat' if ba == 2
+           else 'auto' if ba == 4
+           else ('cool' if kuehlt else 'fan_only') if ba in [1, 3]
+           else 'off' }}
       set_hvac_mode:
         service: script.wgt_mode_2
         data:
