@@ -1,0 +1,407 @@
+package_env_water:
+  # =======================================================================
+  # KLIMATISCHE WASSERBILANZ UND ZISTERNEN-REICHWEITE
+  #
+  # Ob der Garten Wasser braucht, entscheidet nicht der Regen allein,
+  # sondern Regen MINUS Verdunstung. Dafuer wird die Referenz-
+  # Verdunstung ET0 berechnet (Verdunstung einer normierten Grasflaeche).
+  #
+  # Verfahren: MAKKINK, nicht Turc oder Hargreaves.
+  #   ET0 = 0.65 * (D / (D + g)) * Rs / L
+  # Begruendung: Makkink ist LINEAR in der Einstrahlung und ohne additiven
+  # Term. Damit ist der Ausdruck eine echte Rate, die sich per Riemann-
+  # Summe zu Tages-, Wochen- und Monatswerten aufaddieren laesst.
+  # Turc enthaelt einen Summanden (+50), der nachts bei Rs=0 faelschlich
+  # Verdunstung liefert - als integrierbare Rate unbrauchbar.
+  # Hargreaves braeuchte Tmin/Tmax und liefert nur Tageswerte.
+  # Makkink ist zudem fuer humide Mittelbreiten kalibriert, passt also
+  # zum Standort besser als die ariden Varianten.
+  #
+  #   D (Steigung der Saettigungsdampfdruckkurve) = 4098 * es / (T+237.3)^2
+  #   g (Psychrometerkonstante) = 0.0625 kPa/K
+  #       -> aus 0.665e-3 * P, mit P = 94.0 kPa fuer 640 m Hoehe.
+  #          Auf Meereshoehe waeren es 0.0665 - der Hoehenbezug macht
+  #          hier rund 6 % aus und ist deshalb eingerechnet.
+  #   L (Verdampfungswaerme) = 2.45 MJ/kg
+  #
+  # Strahlungsquelle ist der DWD und nicht der eigene Lux-Sensor: die
+  # Umrechnung lx -> W/m2 haengt stark vom Spektrum ab (Faktor 100-130 je
+  # nach Bewoelkung) und waere hier die groesste Fehlerquelle.
+  # =======================================================================
+  input_number:
+    dach_wirksame_flaeche:
+      name: Dach wirksame Auffangfläche
+      min: 0
+      max: 500
+      step: 1
+      unit_of_measurement: "L/mm"
+      icon: mdi:home-roof
+      # Liter Zulauf je mm Niederschlag. Zahlenwert = wirksame Flaeche in m².
+      #
+      # 131 stammt NICHT aus der Tabelle, sondern aus der eigenen Historie:
+      # Zulauf = Fuellstandsaenderung + Entnahme, gegen den Regenmesser
+      # regressiert ueber 8 verwertbare Regentage >= 5 mm. Regression durch
+      # den Ursprung und Median der Einzelquotienten liefern beide ~131.
+      #
+      # Zum Vergleich die Lehrbuchrechnung: Hausdach 9.5*11.3 = 107.4 m² bei
+      # Ertragsbeiwert 0.8 (Ziegel) = 85.9, Garage 40 m² bei 0.6 (Kiesdach)
+      # = 24.0, zusammen 110. Der Messwert liegt 19 % darueber - plausible
+      # Ursachen sind Dachueberstand und ein leicht unterschaetzender
+      # Kippwaagen-Regenmesser. Fuer den Soll-Ist-Abgleich zaehlt ohnehin
+      # der gemessene Wert, nicht der theoretische.
+
+    beet_kulturfaktor:
+      name: Beet Kulturfaktor
+      min: 0.4
+      max: 1.6
+      step: 0.05
+      icon: mdi:leaf
+      # ET0 ist die Verdunstung einer Referenz-Grasflaeche. Gemuese in
+      # Hochbeeten verdunstet mehr (groessere Blattflaeche, staerker
+      # durchlueftet): Kc liegt in der Hauptwachstumsphase bei 1.0-1.2.
+      # Im Fruehjahr und nach der Ernte eher 0.6-0.8 - hier nachziehbar.
+
+  template:
+    - sensor:
+        - name: "ET0 Rate"
+          unique_id: et0_rate
+          unit_of_measurement: "mm/h"
+          state_class: measurement
+          icon: mdi:water-percent-alert
+          availability: >
+            {{ states('sensor.freudenstadt_sonneneinstrahlung') not in
+                 ['unknown','unavailable','none','']
+               and states('sensor.temp_aussen_low') not in
+                 ['unknown','unavailable','none',''] }}
+          state: >
+            {% set t  = states('sensor.temp_aussen_low') | float %}
+            {% set rs = states('sensor.freudenstadt_sonneneinstrahlung') | float(0) %}
+            {% set es = 0.6108 * (e ** (17.27 * t / (t + 237.3))) %}
+            {% set d  = 4098 * es / ((t + 237.3) ** 2) %}
+            {% set g  = 0.0625 %}
+            {# W/m2 -> MJ/m2 pro Stunde: * 3600 s / 1e6 #}
+            {% set rs_mj = rs * 0.0036 %}
+            {{ [0.65 * (d / (d + g)) * rs_mj / 2.45, 0] | max | round(4) }}
+          attributes:
+            steigung_dampfdruckkurve: >
+              {% set t = states('sensor.temp_aussen_low') | float(0) %}
+              {% set es = 0.6108 * (e ** (17.27 * t / (t + 237.3))) %}
+              {{ (4098 * es / ((t + 237.3) ** 2)) | round(4) }}
+
+        # ---------------------------------------------------------------
+        # Wasserbilanz = Niederschlag - Verdunstung.
+        # Negativ heisst: der Boden hat mehr verloren als bekommen.
+        # Faustwert fuer Gemuesebeete: ab etwa -20 mm ueber 7 Tage wird
+        # Giessen noetig, je nach Bodenart und Durchwurzelungstiefe.
+        # ---------------------------------------------------------------
+        - name: "Wasserbilanz heute"
+          unique_id: wasserbilanz_heute
+          unit_of_measurement: "mm"
+          state_class: measurement
+          icon: mdi:scale-balance
+          state: >
+            {{ ((states('sensor.regen_heute') | float(0))
+                - (states('sensor.et0_heute') | float(0))) | round(2) }}
+
+        - name: "Wasserbilanz Woche"
+          unique_id: wasserbilanz_woche
+          unit_of_measurement: "mm"
+          state_class: measurement
+          icon: mdi:scale-balance
+          state: >
+            {{ ((states('sensor.regen_woche') | float(0))
+                - (states('sensor.et0_woche') | float(0))) | round(2) }}
+
+        - name: "Wasserbilanz Monat"
+          unique_id: wasserbilanz_monat
+          unit_of_measurement: "mm"
+          state_class: measurement
+          icon: mdi:scale-balance
+          state: >
+            {{ ((states('sensor.regen_monat') | float(0))
+                - (states('sensor.et0_monat') | float(0))) | round(2) }}
+
+        # ---------------------------------------------------------------
+        # Reichweite der Zisterne beim Verbrauch der letzten 7 Tage.
+        #
+        # Bezug auf 7 Tage statt auf heute, weil die Tagesentnahme je nach
+        # Giessrhythmus zwischen 0 und mehreren hundert Litern springt und
+        # eine Tagesbasis damit sinnlose Werte liefert.
+        #
+        # Basis ist bewusst sensor.zisternenentnahme_7_tage (statistics,
+        # rollierend) und NICHT ein utility_meter mit cycle: weekly:
+        #   - Ein frisch angelegter utility_meter startet bei null und
+        #     kennt die Vergangenheit nicht. Bis zur naechsten Entnahme
+        #     bliebe die Reichweite tagelang unverfuegbar.
+        #   - cycle: weekly setzt zudem Montag frueh hart zurueck, danach
+        #     waere der Mittelwert bis Mitte der Woche unbrauchbar.
+        # Die statistics-Plattform liest ihr Fenster beim Start aus dem
+        # Recorder nach und liefert deshalb sofort einen echten Wert.
+        # ---------------------------------------------------------------
+        - name: "Zisterne Reichweite"
+          unique_id: zisterne_reichweite
+          unit_of_measurement: "d"
+          state_class: measurement
+          icon: mdi:calendar-clock
+          # Ohne nennenswerte Entnahme ist die Reichweite nicht definiert.
+          # Das muss ueber availability laufen: ein state_class-Sensor darf
+          # keinen Nicht-Zahl-State wie "unknown" zurueckgeben.
+          availability: >
+            {{ states('sensor.mb_zisterne_liter') not in
+                 ['unknown','unavailable','none','']
+               and ((states('sensor.zisternenentnahme_7_tage') | float(0)) * 1000 / 7) >= 1 }}
+          state: >
+            {% set liter = states('sensor.mb_zisterne_liter') | float(0) %}
+            {% set woche = (states('sensor.zisternenentnahme_7_tage') | float(0)) * 1000 %}
+            {{ [liter / (woche / 7), 999] | min | round(1) }}
+          attributes:
+            entnahme_pro_tag: >
+              {{ (((states('sensor.zisternenentnahme_7_tage') | float(0)) * 1000) / 7) | round(0) }}
+
+        # ---------------------------------------------------------------
+        # Soll-Ist-Abgleich des Zisternenzulaufs.
+        #
+        # Der Zulauf ist nicht direkt gemessen, laesst sich aber exakt
+        # rekonstruieren: was oben reinlaeuft, steht entweder noch drin
+        # oder wurde entnommen.
+        #     Zulauf = Fuellstandsaenderung + Entnahme
+        # Beides ueber ein rollierendes 24-h-Fenster.
+        #
+        # Bleibt der gemessene Zulauf dauerhaft hinter dem erwarteten
+        # zurueck, deutet das auf verstopften Filter, verlegte Fallrohre
+        # oder einen Ueberlauf, den man sonst nie bemerkt.
+        # ---------------------------------------------------------------
+        - name: "Zisterne Zulauf 24h"
+          unique_id: zisterne_zulauf_24h
+          unit_of_measurement: "L"
+          state_class: measurement
+          icon: mdi:water-plus
+          # Entity-ID ohne "ue": HA slugifiziert Umlaute ohne
+          # Transliteration, aus "Fuellstand" wird _fullstand_.
+          availability: >
+            {{ states('sensor.zisterne_fullstand_24h') not in
+                 ['unknown','unavailable','none','']
+               and states('sensor.zisternenentnahme_24h') not in
+                 ['unknown','unavailable','none',''] }}
+          state: >
+            {% set dl = states('sensor.zisterne_fullstand_24h') | float(0) %}
+            {% set de = (states('sensor.zisternenentnahme_24h') | float(0)) * 1000 %}
+            {{ [dl + de, 0] | max | round(0) }}
+
+        - name: "Zisterne Zulauf erwartet 24h"
+          unique_id: zisterne_zulauf_erwartet_24h
+          unit_of_measurement: "L"
+          state_class: measurement
+          icon: mdi:water-outline
+          state: >
+            {{ ((states('sensor.regen_24h') | float(0))
+                * (states('input_number.dach_wirksame_flaeche') | float(0))) | round(0) }}
+
+        # Wirkungsgrad nur bei nennenswertem Regen und nicht voller
+        # Zisterne - sonst vergleicht man Rauschen oder misst den Ueberlauf.
+        - name: "Zisterne Zulauf Wirkungsgrad"
+          unique_id: zisterne_zulauf_wirkungsgrad
+          unit_of_measurement: "%"
+          state_class: measurement
+          icon: mdi:filter-check
+          availability: >
+            {{ (states('sensor.regen_24h') | float(0)) >= 3
+               and (states('sensor.mb_zisterne_proz') | float(100)) < 90
+               and (states('sensor.zisterne_zulauf_erwartet_24h') | float(0)) > 0 }}
+          state: >
+            {% set ist  = states('sensor.zisterne_zulauf_24h') | float(0) %}
+            {% set soll = states('sensor.zisterne_zulauf_erwartet_24h') | float(0) %}
+            {{ [100 * ist / soll, 300] | min | round(0) }}
+
+        # ---------------------------------------------------------------
+        # Giessbedarf je Beet in Litern.
+        #
+        # Aus der Wasserbilanz wird erst dann eine Handlungsanweisung,
+        # wenn sie in Litern pro Beet steht: 1 mm Defizit = 1 L je m².
+        # Flaechen vom Betreiber: Hochbeete je 2 m², Pflanzbeet 9 m².
+        # Balkon und Terrasse fehlen noch - sobald die Flaechen bekannt
+        # sind, hier ergaenzen.
+        # ---------------------------------------------------------------
+        - name: "Gießbedarf Hochbeet 1"
+          unique_id: giessbedarf_hochbeet_1
+          unit_of_measurement: "L"
+          state_class: measurement
+          icon: mdi:watering-can
+          state: >
+            {% set defizit = (states('sensor.et0_heute') | float(0))
+                             - (states('sensor.regen_heute') | float(0)) %}
+            {% set kc = states('input_number.beet_kulturfaktor') | float(1.1) %}
+            {{ [defizit * kc * 2, 0] | max | round(1) }}
+          attributes:
+            flaeche_m2: "2"
+            defizit_mm: >
+              {# Klammern noetig: Filter binden in Jinja staerker als "*" #}
+              {{ (((states('sensor.et0_heute') | float(0))
+                   - (states('sensor.regen_heute') | float(0)))
+                  * (states('input_number.beet_kulturfaktor') | float(1.1))) | round(2) }}
+
+        - name: "Gießbedarf Hochbeet 2"
+          unique_id: giessbedarf_hochbeet_2
+          unit_of_measurement: "L"
+          state_class: measurement
+          icon: mdi:watering-can
+          state: >
+            {% set defizit = (states('sensor.et0_heute') | float(0))
+                             - (states('sensor.regen_heute') | float(0)) %}
+            {% set kc = states('input_number.beet_kulturfaktor') | float(1.1) %}
+            {{ [defizit * kc * 2, 0] | max | round(1) }}
+          attributes:
+            flaeche_m2: "2"
+            defizit_mm: >
+              {# Klammern noetig: Filter binden in Jinja staerker als "*" #}
+              {{ (((states('sensor.et0_heute') | float(0))
+                   - (states('sensor.regen_heute') | float(0)))
+                  * (states('input_number.beet_kulturfaktor') | float(1.1))) | round(2) }}
+
+        - name: "Gießbedarf Hochbeet 3"
+          unique_id: giessbedarf_hochbeet_3
+          unit_of_measurement: "L"
+          state_class: measurement
+          icon: mdi:watering-can
+          state: >
+            {% set defizit = (states('sensor.et0_heute') | float(0))
+                             - (states('sensor.regen_heute') | float(0)) %}
+            {% set kc = states('input_number.beet_kulturfaktor') | float(1.1) %}
+            {{ [defizit * kc * 2, 0] | max | round(1) }}
+          attributes:
+            flaeche_m2: "2"
+            defizit_mm: >
+              {# Klammern noetig: Filter binden in Jinja staerker als "*" #}
+              {{ (((states('sensor.et0_heute') | float(0))
+                   - (states('sensor.regen_heute') | float(0)))
+                  * (states('input_number.beet_kulturfaktor') | float(1.1))) | round(2) }}
+
+        - name: "Gießbedarf Pflanzbeet"
+          unique_id: giessbedarf_pflanzbeet
+          unit_of_measurement: "L"
+          state_class: measurement
+          icon: mdi:watering-can
+          state: >
+            {% set defizit = (states('sensor.et0_heute') | float(0))
+                             - (states('sensor.regen_heute') | float(0)) %}
+            {% set kc = states('input_number.beet_kulturfaktor') | float(1.1) %}
+            {{ [defizit * kc * 9, 0] | max | round(1) }}
+          attributes:
+            flaeche_m2: "9"
+            defizit_mm: >
+              {# Klammern noetig: Filter binden in Jinja staerker als "*" #}
+              {{ (((states('sensor.et0_heute') | float(0))
+                   - (states('sensor.regen_heute') | float(0)))
+                  * (states('input_number.beet_kulturfaktor') | float(1.1))) | round(2) }}
+
+        - name: "Gießbedarf gesamt"
+          unique_id: giessbedarf_gesamt
+          unit_of_measurement: "L"
+          state_class: measurement
+          icon: mdi:watering-can-outline
+          state: >
+            {% set defizit = (states('sensor.et0_heute') | float(0))
+                             - (states('sensor.regen_heute') | float(0)) %}
+            {% set kc = states('input_number.beet_kulturfaktor') | float(1.1) %}
+            {# 3 Hochbeete a 2 m² + Pflanzbeet 9 m² = 15 m² #}
+            {{ [defizit * kc * 15, 0] | max | round(1) }}
+          attributes:
+            reicht_zisterne_fuer_tage: >
+              {% set bedarf = [((states('sensor.et0_heute') | float(0))
+                                - (states('sensor.regen_heute') | float(0)))
+                               * (states('input_number.beet_kulturfaktor') | float(1.1))
+                               * 15, 0] | max %}
+              {{ ((states('sensor.mb_zisterne_liter') | float(0)) / bedarf) | round(0)
+                 if bedarf > 1 else 'unbegrenzt' }}
+
+  sensor:
+    # Rollierende 7-Tage-Entnahme aus dem Zisternen-Zaehler.
+    # state_characteristic: change = Differenz zwischen erstem und letztem
+    # Wert im Fenster, bei einem total_increasing-Zaehler also exakt der
+    # Verbrauch. sampling_size grosszuegig: sensor.zisterne erzeugt rund
+    # 1600 States pro Woche, 5000 deckt das mit Reserve ab.
+    # 24-h-Fenster fuer den Zulaufabgleich. change = letzter minus erster
+    # Wert im Fenster, beim Fuellstand also auch negativ (Entnahme).
+    - platform: statistics
+      name: "Zisterne Füllstand 24h"
+      unique_id: zisterne_fuellstand_24h
+      entity_id: sensor.mb_zisterne_liter
+      state_characteristic: change
+      sampling_size: 3000
+      max_age:
+        hours: 24
+
+    - platform: statistics
+      name: "Zisternenentnahme 24h"
+      unique_id: zisternenentnahme_24h
+      entity_id: sensor.zisterne
+      state_characteristic: change
+      sampling_size: 3000
+      max_age:
+        hours: 24
+
+    - platform: statistics
+      name: "Regen 24h"
+      unique_id: regen_24h
+      entity_id: sensor.ads_wetterrain
+      state_characteristic: change
+      sampling_size: 3000
+      max_age:
+        hours: 24
+
+    - platform: statistics
+      name: "Zisternenentnahme 7 Tage"
+      unique_id: zisternenentnahme_7_tage
+      entity_id: sensor.zisterne
+      state_characteristic: change
+      sampling_size: 5000
+      max_age:
+        days: 7
+
+    # ET0-Rate aufintegrieren. Quelle liefert mm/h, unit_time h -> mm.
+    # max_sub_interval erzwingt Zwischenschritte, weil die DWD-Strahlung
+    # nur stuendlich aktualisiert und die Riemann-Summe sonst zu grob
+    # stuetzt.
+    - platform: integration
+      source: sensor.et0_rate
+      name: "ET0 kumuliert"
+      unique_id: et0_kumuliert
+      unit_time: h
+      method: trapezoidal
+      max_sub_interval: "00:10:00"
+      round: 4
+
+  utility_meter:
+    et0_heute:
+      always_available: true
+      name: "ET0 heute"
+      source: sensor.et0_kumuliert
+      cycle: daily
+    et0_woche:
+      always_available: true
+      name: "ET0 Woche"
+      source: sensor.et0_kumuliert
+      cycle: weekly
+    et0_monat:
+      always_available: true
+      name: "ET0 Monat"
+      source: sensor.et0_kumuliert
+      cycle: monthly
+
+    # Regen aus der eigenen Station. sensor.ads_wetterrain ist ein
+    # aufsteigender Zaehler in mm - passt direkt als utility_meter-Quelle.
+    regen_heute:
+      always_available: true
+      name: "Regen heute"
+      source: sensor.ads_wetterrain
+      cycle: daily
+    regen_woche:
+      always_available: true
+      name: "Regen Woche"
+      source: sensor.ads_wetterrain
+      cycle: weekly
+    regen_monat:
+      always_available: true
+      name: "Regen Monat"
+      source: sensor.ads_wetterrain
+      cycle: monthly

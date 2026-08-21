@@ -1,0 +1,137 @@
+package_building_holzofen:
+  # =======================================================================
+  # HOLZOFEN-ERKENNUNG (Wohnzimmer)
+  #
+  # Warum ueberhaupt: der Ofen liefert Waerme, die am Stromzaehler der
+  # Heizung nicht auftaucht. Ein Winter mit viel Holz sieht dadurch aus
+  # wie eine effizientere Anlage - sensor.heizenergie_je_heizgradtag_jahr
+  # wird zu gut. Erst wenn man weiss, wie viele Stunden der Ofen lief,
+  # laesst sich die Kennzahl ehrlich zwischen Jahren vergleichen.
+  #
+  # Erkannt wird die ANSTIEGSRATE, nicht die Absoluttemperatur.
+  # Begruendung aus den Daten (Dez 2025 - Feb 2026, 2065 Stundenwerte):
+  #   - Das Wohnzimmer liegt den ganzen Winter im Median 3.2 K ueber den
+  #     uebrigen Raeumen. Ein Absolutschwellwert trennt deshalb nichts,
+  #     die Verteilung ist nicht zweigipflig.
+  #   - Anstiege >= 0.5 K/h sind dagegen selten (9.6 % der Stunden) und
+  #     dabei im Median 1.39 K/h staerker als im Referenzraum -> die
+  #     Waermequelle sitzt lokal im Wohnzimmer.
+  #   - 145 dieser 198 Stunden liegen im Dunkeln (< 2000 lx), verteilt auf
+  #     7-9 Uhr und 17-22 Uhr. Das ist Anfeuern, keine Sonne. Ein
+  #     Helligkeits-Gate waere ueberfluessig und wuerde nur Empfindlichkeit
+  #     kosten - hell traten nur 4 schwache Faelle auf.
+  #   - Perzentile der Stundenaenderung: 90. = +0.44, 95. = +1.38 K/h.
+  #     Die Schwelle 1.0 liegt dazwischen und trifft die echten Ereignisse.
+  # =======================================================================
+  input_number:
+    holzofen_schwelle:
+      name: Holzofen Erkennungsschwelle
+      min: 0.3
+      max: 3.0
+      step: 0.1
+      unit_of_measurement: "K/h"
+      icon: mdi:fire
+      # Hoeher setzen, wenn der Sensor bei Kochen oder vielen Gaesten
+      # anspringt; niedriger, wenn schwaches Anfeuern durchrutscht.
+
+  template:
+    - sensor:
+        # Lokaler Waermeeintrag: um wie viel schneller steigt das
+        # Wohnzimmer als der Referenzraum. Alles, was das ganze Haus
+        # betrifft (Zentralheizung, Sonne, Wetterumschwung), kuerzt sich
+        # dabei heraus - uebrig bleibt eine Quelle im Raum selbst.
+        - name: "Holzofen Signal"
+          unique_id: holzofen_signal
+          unit_of_measurement: "K/h"
+          state_class: measurement
+          icon: mdi:fire
+          availability: >
+            {{ states('sensor.wohnzimmer_anstieg_1h') not in
+                 ['unknown','unavailable','none','']
+               and states('sensor.referenzraum_anstieg_1h') not in
+                 ['unknown','unavailable','none',''] }}
+          state: >
+            {{ ((states('sensor.wohnzimmer_anstieg_1h') | float(0))
+                - (states('sensor.referenzraum_anstieg_1h') | float(0))) | round(2) }}
+
+    - binary_sensor:
+        - name: "Holzofen aktiv"
+          unique_id: holzofen_aktiv
+          device_class: heat
+          icon: mdi:fireplace
+          # Bewusst OHNE delay_off. Das Nachgluehen steckt stattdessen im
+          # 2-Stunden-Maximumfenster von holzofen_signal_max_2h.
+          #
+          # Grund: delay_off verzoegert in HA auch den Uebergang
+          # unknown -> off. Nach jedem Neustart haette der Sensor zwei
+          # Stunden lang keinen definierten Zustand (nachgemessen: ein
+          # Zwilling ohne delay_off stand sofort auf "off", der mit
+          # delay_off blieb "unknown"). Die statistics-Plattform liest ihr
+          # Fenster dagegen beim Start aus dem Recorder nach und ist
+          # sofort richtig.
+          availability: >
+            {{ states('sensor.holzofen_signal_max_2h') not in
+               ['unknown','unavailable','none',''] }}
+          state: >
+            {% set spitze = states('sensor.holzofen_signal_max_2h') | float(0) %}
+            {% set s = states('input_number.holzofen_schwelle') | float(1.0) %}
+            {# Zweite Bedingung: nur in der Heizperiode. heizgradbedarf > 0
+               heisst Aussentemperatur unter der Heizgrenze - im Sommer ist
+               ein warmes Wohnzimmer schlicht Restwaerme. #}
+            {{ spitze >= s and (states('sensor.heizgradbedarf') | float(0)) > 0 }}
+          attributes:
+            signal_jetzt: "{{ states('sensor.holzofen_signal') }}"
+            signal_spitze_2h: "{{ states('sensor.holzofen_signal_max_2h') }}"
+
+  sensor:
+    # Anstieg als Statistik-Fenster statt derivative-Plattform: change
+    # liefert direkt "letzter minus erster Wert" ueber eine Stunde, also
+    # K/h ohne weitere Umrechnung. Die angezeigte Einheit bleibt dabei die
+    # der Quelle (°C) - der Zahlenwert ist trotzdem eine Rate pro Stunde.
+    - platform: statistics
+      name: "Wohnzimmer Anstieg 1h"
+      unique_id: wohnzimmer_anstieg_1h
+      entity_id: sensor.temperatur_wohnzimmer
+      state_characteristic: change
+      sampling_size: 500
+      max_age:
+        hours: 1
+
+    - platform: statistics
+      name: "Referenzraum Anstieg 1h"
+      unique_id: referenzraum_anstieg_1h
+      entity_id: sensor.temperatur_buro
+      state_characteristic: change
+      sampling_size: 500
+      max_age:
+        hours: 1
+
+    # Nachgluehfenster: der Ofen strahlt nach dem Abbrand noch stundenlang,
+    # waehrend die Anstiegsrate laengst auf null ist. value_max ueber 2 h
+    # haelt das Ereignis so lange fest, wie die Waerme wirkt.
+    - platform: statistics
+      name: "Holzofen Signal max 2h"
+      unique_id: holzofen_signal_max_2h
+      entity_id: sensor.holzofen_signal
+      state_characteristic: value_max
+      sampling_size: 1000
+      max_age:
+        hours: 2
+
+    - platform: history_stats
+      name: "Holzofen Stunden heute"
+      unique_id: holzofen_stunden_heute
+      entity_id: binary_sensor.holzofen_aktiv
+      state: "on"
+      type: time
+      start: "{{ today_at('00:00') }}"
+      end: "{{ now() }}"
+
+    - platform: history_stats
+      name: "Holzofen Stunden Monat"
+      unique_id: holzofen_stunden_monat
+      entity_id: binary_sensor.holzofen_aktiv
+      state: "on"
+      type: time
+      start: "{{ now().replace(day=1, hour=0, minute=0, second=0) }}"
+      end: "{{ now() }}"

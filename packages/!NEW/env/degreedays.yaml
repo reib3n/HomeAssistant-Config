@@ -1,0 +1,224 @@
+package_env_degreedays:
+  # =======================================================================
+  # HEIZ- UND KUEHLGRADTAGE
+  #
+  # Heizenergie laesst sich zwischen Jahren nur vergleichen, wenn man sie
+  # auf die Aussenkaelte normiert. Gradtage leisten das: sie summieren pro
+  # Tag, wie weit das Tagesmittel unter der Heizgrenze lag (Einheit Kd).
+  #
+  # Aufbau bewusst als Integral statt als Tagesmittel-Rechnung:
+  #   1. Template liefert den momentanen Gradbedarf in K
+  #   2. integration summiert ihn ueber die Zeit -> Kd (unit_time: d)
+  #   3. utility_meter schneidet daraus Tag / Monat / Jahr
+  # Das ist genauer als (Tmin+Tmax)/2, weil jede Temperaturaenderung
+  # gewichtet eingeht, und es braucht keinen Mitternachts-Trigger.
+  #
+  # Temperaturquelle ist sensor.temp_aussen_low (min aus Wetterstation und
+  # WGT-Aussenfuehler) - derselbe Sensor, auf dem auch die Wetter-Views
+  # basieren, damit die Zahlen zueinander passen.
+  # =======================================================================
+  input_number:
+    heizgrenze:
+      name: Heizgrenze
+      min: 8
+      max: 22
+      step: 0.5
+      unit_of_measurement: "°C"
+      icon: mdi:thermometer-chevron-down
+      # 15 C ist die in DE uebliche Heizgrenze fuer Verbrauchsabrechnungen.
+      # Bei gut gedaemmten Haeusern sind 12 C realistischer - hier
+      # anpassbar, ohne die Sensorik anzufassen.
+    heizung_grundlast:
+      name: Heizung Grundlast
+      min: 0
+      max: 20
+      step: 0.05
+      unit_of_measurement: "kWh/d"
+      icon: mdi:power-plug-outline
+      # Warmwasserbereitung am selben Zaehler - vom Betreiber mit rund
+      # 1.7 kWh/Tag bestaetigt und mit der Regression ueber Jan-Aug 2026
+      # deckungsgleich. Ohne Abzug ist die Kennzahl kWh/Kd systematisch zu
+      # hoch, und zwar umso mehr, je milder das Jahr war - genau der
+      # Vergleich, den sie eigentlich ermoeglichen soll.
+
+    heizung_kuehlfaktor:
+      name: Heizung Kühlfaktor
+      min: 0
+      max: 5
+      step: 0.005
+      unit_of_measurement: "kWh/Kd"
+      icon: mdi:snowflake
+      # Im Sommer kuehlt dieselbe Anlage ueber denselben Zaehler. Diese
+      # kWh gehoeren nicht in die Heizkennzahl, erzeugen aber auch keine
+      # Heizgradtage - ohne Abzug wuerde die Jahreskennzahl dadurch
+      # steigen, obwohl gar nicht geheizt wurde.
+      #
+      # 0.245 kWh/Kd aus der Regression Jan-Aug 2026 bei fixiertem
+      # Warmwasser von 1.7 kWh/Tag:
+      #   kWh = 1.041*HGT + 0.245*KGT + 1.7*Tage
+      # Kuehlen macht damit nur rund 45 kWh/Jahr aus - klein, aber es
+      # faellt genau in die Monate, in denen der Nenner gegen null geht.
+
+    kuehlgrenze:
+      name: Kühlgrenze
+      min: 18
+      max: 30
+      step: 0.5
+      unit_of_measurement: "°C"
+      icon: mdi:thermometer-chevron-up
+
+  template:
+    - sensor:
+        - name: "Heizgradbedarf"
+          unique_id: heizgradbedarf
+          unit_of_measurement: "K"
+          state_class: measurement
+          icon: mdi:snowflake-thermometer
+          availability: >
+            {{ states('sensor.temp_aussen_low') not in
+               ['unknown','unavailable','none',''] }}
+          state: >
+            {% set t = states('sensor.temp_aussen_low') | float %}
+            {% set g = states('input_number.heizgrenze') | float(15) %}
+            {{ [g - t, 0] | max | round(2) }}
+
+        - name: "Kühlgradbedarf"
+          unique_id: kuehlgradbedarf
+          unit_of_measurement: "K"
+          state_class: measurement
+          icon: mdi:sun-thermometer
+          availability: >
+            {{ states('sensor.temp_aussen_low') not in
+               ['unknown','unavailable','none',''] }}
+          state: >
+            {% set t = states('sensor.temp_aussen_low') | float %}
+            {% set g = states('input_number.kuehlgrenze') | float(21) %}
+            {{ [t - g, 0] | max | round(2) }}
+
+        # ---------------------------------------------------------------
+        # Die eigentliche Kennzahl: Stromverbrauch der Heizung je
+        # Heizgradtag. Erst dieser Quotient trennt "milder Winter" von
+        # "Anlage laeuft besser" - der reine kWh-Wert kann beides sein.
+        #
+        # Monatsbezug, weil Tageswerte zu stark schwanken (Speichermasse
+        # des Hauses, Warmwasser-Spitzen) und der Monat gleichzeitig frueh
+        # genug ein Signal gibt.
+        # ---------------------------------------------------------------
+        - name: "Heizenergie je Heizgradtag"
+          unique_id: heizenergie_je_heizgradtag
+          unit_of_measurement: "kWh/Kd"
+          state_class: measurement
+          icon: mdi:heat-wave
+          # Schwelle 5 Kd: darunter steht im Nenner faktisch null und der
+          # Quotient explodiert. Im Sommer ruht der Sensor deshalb - das
+          # ist kein Fehler, sondern Physik. August 2026 hatte 2.4 Kd.
+          # Wer eine ganzjaehrig belastbare Zahl will, nimmt die
+          # Jahresvariante unten.
+          availability: >
+            {{ states('sensor.heizgradtage_monat') | float(0) > 5 }}
+          state: >
+            {% set kwh = states('sensor.heizenergie_monat') | float(0) %}
+            {% set kd  = states('sensor.heizgradtage_monat') | float(0) %}
+            {% set grund = (states('input_number.heizung_grundlast') | float(0))
+                           * now().day %}
+            {{ ([kwh - grund, 0] | max / kd) | round(3) }}
+          attributes:
+            roh_ohne_grundlastabzug: >
+              {% set kd = states('sensor.heizgradtage_monat') | float(0) %}
+              {{ ((states('sensor.heizenergie_monat') | float(0)) / kd) | round(3)
+                 if kd > 5 else 0 }}
+
+        # ---------------------------------------------------------------
+        # Jahresvariante. Traegt schon im Sommer, weil der Nenner die
+        # Heizgradtage seit dem 1. Januar sind - damit ist sie die
+        # Kennzahl fuer den Vergleich ueber Jahre hinweg.
+        # ---------------------------------------------------------------
+        - name: "Heizenergie je Heizgradtag Jahr"
+          unique_id: heizenergie_je_heizgradtag_jahr
+          unit_of_measurement: "kWh/Kd"
+          state_class: measurement
+          icon: mdi:heat-wave
+          availability: >
+            {{ states('sensor.heizgradtage_jahr') | float(0) > 50 }}
+          state: >
+            {% set kwh = states('sensor.heizenergie_jahr') | float(0) %}
+            {% set kd  = states('sensor.heizgradtage_jahr') | float(0) %}
+            {% set grund = (states('input_number.heizung_grundlast') | float(0))
+                           * now().timetuple().tm_yday %}
+            {% set kuehl = (states('input_number.heizung_kuehlfaktor') | float(0))
+                           * (states('sensor.kuhlgradtage_jahr') | float(0)) %}
+            {{ ([kwh - grund - kuehl, 0] | max / kd) | round(3) }}
+          attributes:
+            roh_ohne_grundlastabzug: >
+              {% set kd = states('sensor.heizgradtage_jahr') | float(0) %}
+              {{ ((states('sensor.heizenergie_jahr') | float(0)) / kd) | round(3)
+                 if kd > 50 else 0 }}
+            grundlast_kwh: >
+              {{ ((states('input_number.heizung_grundlast') | float(0))
+                  * now().timetuple().tm_yday) | round(0) }}
+            kuehlanteil_kwh: >
+              {{ ((states('input_number.heizung_kuehlfaktor') | float(0))
+                  * (states('sensor.kuhlgradtage_jahr') | float(0))) | round(0) }}
+
+  sensor:
+    # Integral des Gradbedarfs. unit_time: d liefert direkt Kelvintage (Kd),
+    # also exakt die Einheit der klassischen Gradtagzahl - kein Teilen
+    # durch 24 noetig.
+    - platform: integration
+      source: sensor.heizgradbedarf
+      name: "Heizgradtage kumuliert"
+      unique_id: heizgradtage_kumuliert
+      unit_time: d
+      method: trapezoidal
+      round: 3
+
+    # Achtung: HA slugifiziert Umlaute ohne Transliteration - aus
+    # "Kuehlgradbedarf" wird sensor.kuhlgradbedarf (u, nicht ue).
+    # Die Quellangaben hier folgen dem echten Slug, nicht dem Namen.
+    - platform: integration
+      source: sensor.kuhlgradbedarf
+      name: "Kühlgradtage kumuliert"
+      unique_id: kuehlgradtage_kumuliert
+      unit_time: d
+      method: trapezoidal
+      round: 3
+
+  utility_meter:
+    heizgradtage_heute:
+      always_available: true
+      name: "Heizgradtage heute"
+      source: sensor.heizgradtage_kumuliert
+      cycle: daily
+    heizgradtage_monat:
+      always_available: true
+      name: "Heizgradtage Monat"
+      source: sensor.heizgradtage_kumuliert
+      cycle: monthly
+    heizgradtage_jahr:
+      always_available: true
+      name: "Heizgradtage Jahr"
+      source: sensor.heizgradtage_kumuliert
+      cycle: yearly
+    kuehlgradtage_monat:
+      always_available: true
+      name: "Kühlgradtage Monat"
+      source: sensor.kuhlgradtage_kumuliert
+      cycle: monthly
+    kuehlgradtage_jahr:
+      always_available: true
+      name: "Kühlgradtage Jahr"
+      source: sensor.kuhlgradtage_kumuliert
+      cycle: yearly
+
+    # Gegenstueck fuer den Quotienten oben. Quelle ist der Shelly Pro3EM
+    # am Heizkreis - also elektrische Energie, nicht Waermemenge.
+    heizenergie_monat:
+      always_available: true
+      name: "Heizenergie Monat"
+      source: sensor.pro3em_heizung_total_active_energy
+      cycle: monthly
+    heizenergie_jahr:
+      always_available: true
+      name: "Heizenergie Jahr"
+      source: sensor.pro3em_heizung_total_active_energy
+      cycle: yearly

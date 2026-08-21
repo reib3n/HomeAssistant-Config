@@ -1,0 +1,160 @@
+package_energy_pv:
+  # =======================================================================
+  # PV-PERFORMANCE
+  #
+  # Der absolute Tagesertrag sagt wenig ueber den Zustand der Anlage - er
+  # schwankt mit dem Wetter. Aussagekraeftig wird er erst im Verhaeltnis
+  # zur eingestrahlten Energie:
+  #
+  #   Performance Ratio = E_ist / (H_global * P_peak)
+  #
+  # H_global ist die Globalstrahlung in kWh/m2, P_peak die installierte
+  # Leistung in kWp. Der PR ist damit dimensionslos und liegt bei
+  # gesunden Anlagen ganzjaehrig bei 0.75-0.85. Faellt er ueber Wochen
+  # ab, ohne dass sich das Wetter aendert, sind Verschmutzung, Schnee,
+  # neuer Baumschatten oder Moduldegradation die Kandidaten - alles
+  # Dinge, die im reinen kWh-Verlauf im Wetterrauschen untergehen.
+  # =======================================================================
+  input_number:
+    pv_anlagenleistung_kwp:
+      name: PV Anlagenleistung
+      min: 1
+      max: 100
+      step: 0.1
+      unit_of_measurement: "kWp"
+      icon: mdi:solar-panel-large
+      # Startwert 3.3 kWp ist aus der eigenen Historie geschaetzt:
+      # AC-Spitze ~3.0 kW (Wechselrichter deckelt dort) und bester
+      # Tagesertrag 23.2 kWh am 15.06.2026 -> bei ~7 kWh/kWp fuer einen
+      # Juni-Bestwert in Sueddeutschland ergibt das rund 3.3 kWp DC.
+      # Bitte gegen das Typenschild pruefen: solange der Wert falsch ist,
+      # stimmt der ABSOLUTE PR nicht. Der zeitliche VERLAUF ist trotzdem
+      # aussagekraeftig, weil der Fehler ein konstanter Faktor ist.
+
+  template:
+    - sensor:
+        - name: "PV Performance Ratio"
+          unique_id: pv_performance_ratio
+          unit_of_measurement: "%"
+          state_class: measurement
+          icon: mdi:speedometer
+          # Erst ab 0.15 kWh/m2 rechnen. Frueh am Morgen stehen im Nenner
+          # winzige Werte, die den Quotienten ins Absurde treiben.
+          # 0.15 statt 0.3, damit der PR auch an trueben Wintertagen einen
+          # Wert liefert - dort kommen ueber den ganzen Tag teils nur
+          # 0.3-0.5 kWh/m2 zusammen.
+          availability: >
+            {{ states('sensor.globalstrahlung_heute') | float(0) > 0.15 }}
+          state: >
+            {% set ist  = (states('sensor.solaredge_garage_leistung_heute') | float(0)) / 1000 %}
+            {% set hgl  = states('sensor.globalstrahlung_heute') | float(0) %}
+            {% set kwp  = states('input_number.pv_anlagenleistung_kwp') | float(10) %}
+            {{ [100 * ist / (hgl * kwp), 200] | min | round(1) }}
+          attributes:
+            ertrag_kwh: >
+              {{ ((states('sensor.solaredge_garage_leistung_heute') | float(0)) / 1000) | round(2) }}
+            einstrahlung_kwh_m2: >
+              {{ states('sensor.globalstrahlung_heute') | float(0) | round(2) }}
+
+        # Spezifischer Ertrag: kWh je installiertem kWp. Die Kennzahl, mit
+        # der sich die Anlage gegen fremde Anlagen und gegen Vorjahre
+        # vergleichen laesst (Richtwert Sueddeutschland: ~1000 kWh/kWp/a).
+        - name: "PV Spezifischer Ertrag heute"
+          unique_id: pv_spezifischer_ertrag_heute
+          unit_of_measurement: "kWh/kWp"
+          state_class: measurement
+          icon: mdi:solar-power-variant
+          state: >
+            {% set ist = (states('sensor.solaredge_garage_leistung_heute') | float(0)) / 1000 %}
+            {% set kwp = states('input_number.pv_anlagenleistung_kwp') | float(10) %}
+            {{ (ist / kwp) | round(3) }}
+
+        # ---------------------------------------------------------------
+        # Prognoseguete von forecast.solar.
+        #
+        # Verglichen wird gegen den bis JETZT erwarteten Ertrag
+        # (Tagesprognose minus Restprognose), nicht gegen die volle
+        # Tagesprognose - sonst laege die Abweichung morgens
+        # zwangslaeufig bei -100 %.
+        # ---------------------------------------------------------------
+        - name: "PV Prognoseabweichung"
+          unique_id: pv_prognoseabweichung
+          unit_of_measurement: "%"
+          state_class: measurement
+          icon: mdi:chart-bell-curve-cumulative
+          availability: >
+            {% set p = states('sensor.energy_production_today') | float(0) %}
+            {% set r = states('sensor.energy_production_today_remaining') | float(0) %}
+            {{ (p - r) > 0.2 }}
+          state: >
+            {% set ist  = (states('sensor.solaredge_garage_leistung_heute') | float(0)) / 1000 %}
+            {% set p    = states('sensor.energy_production_today') | float(0) %}
+            {% set r    = states('sensor.energy_production_today_remaining') | float(0) %}
+            {% set soll = p - r %}
+            {{ [[100 * (ist - soll) / soll, -100] | max, 200] | min | round(1) }}
+          attributes:
+            erwartet_bisher: >
+              {{ ((states('sensor.energy_production_today') | float(0))
+                  - (states('sensor.energy_production_today_remaining') | float(0))) | round(2) }}
+
+        # -------------------------------------------------------------
+        # Anzeige-Sensoren mit korrekter Einheit.
+        #
+        # Die integration-Plattform setzt die Einheit als prefix+unit+time
+        # zusammen und kuerzt das "/m2" nicht mit: aus W/m2 wird formal
+        # "kW/m2h" statt "kWh/m2". Der ZAHLENWERT stimmt, nur das Label
+        # nicht - deshalb hier einmal sauber umetikettiert. Die rohen
+        # globalstrahlung_*-Sensoren bleiben als Rechenbasis bestehen.
+        # -------------------------------------------------------------
+        - name: "Globalstrahlung Tagessumme"
+          unique_id: globalstrahlung_tagessumme
+          unit_of_measurement: "kWh/m²"
+          state_class: total_increasing
+          icon: mdi:sun-wireless
+          availability: >
+            {{ states('sensor.globalstrahlung_heute') not in
+               ['unknown','unavailable','none',''] }}
+          state: "{{ states('sensor.globalstrahlung_heute') | float(0) | round(3) }}"
+
+        - name: "Globalstrahlung Monatssumme"
+          unique_id: globalstrahlung_monatssumme
+          unit_of_measurement: "kWh/m²"
+          state_class: total_increasing
+          icon: mdi:sun-wireless
+          availability: >
+            {{ states('sensor.globalstrahlung_monat') not in
+               ['unknown','unavailable','none',''] }}
+          state: "{{ states('sensor.globalstrahlung_monat') | float(0) | round(3) }}"
+
+  sensor:
+    # Globalstrahlung aufintegrieren: W/m2 ueber Stunden -> Wh/m2,
+    # unit_prefix k macht daraus kWh/m2.
+    #
+    # ACHTUNG Einheiten-Anzeige: HA setzt die Einheit stumpf aus Prefix +
+    # Quelleinheit + Zeiteinheit zusammen und zeigt deshalb "kW/m2h" an.
+    # Gemeint und numerisch korrekt ist kWh/m2 - der Zaehler steht nur an
+    # der falschen Stelle im String. Nicht "korrigieren", indem der Wert
+    # skaliert wird; die Zahl selbst stimmt.
+    # Eine Ueberschreibung ist nicht moeglich, weil der Sensor mangels
+    # passender device_class keine Unit-Conversion in der Registry anbietet.
+    - platform: integration
+      source: sensor.freudenstadt_sonneneinstrahlung
+      name: "Globalstrahlung kumuliert"
+      unique_id: globalstrahlung_kumuliert
+      unit_prefix: k
+      unit_time: h
+      method: trapezoidal
+      max_sub_interval: "00:10:00"
+      round: 4
+
+  utility_meter:
+    globalstrahlung_heute:
+      name: "Globalstrahlung heute"
+      source: sensor.globalstrahlung_kumuliert
+      cycle: daily
+      always_available: true
+    globalstrahlung_monat:
+      name: "Globalstrahlung Monat"
+      source: sensor.globalstrahlung_kumuliert
+      cycle: monthly
+      always_available: true

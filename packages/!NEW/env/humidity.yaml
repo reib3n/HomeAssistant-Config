@@ -1,0 +1,146 @@
+package_env_humidity:
+  # =======================================================================
+  # ABSOLUTE LUFTFEUCHTE UND LUEFTUNGSBEWERTUNG
+  #
+  # Relative Feuchte taugt nicht fuer die Frage "bringt Lueften was?",
+  # weil warme Luft mehr Wasser traegt als kalte: 60 % bei 22 C im Keller
+  # sind absolut deutlich mehr Wasser als 80 % bei 5 C draussen. Lueften
+  # trocknet genau dann, wenn die ABSOLUTE Feuchte draussen kleiner ist.
+  #
+  # Berechnung nach Magnus (Saettigungsdampfdruck ueber Wasser):
+  #   es = 6.112 * e^(17.62*T / (243.12+T))          [hPa]
+  #   AH = 216.7 * (RH/100 * es / (273.15+T))        [g/m3]
+  # Gueltig von -45 C bis +60 C mit < 0.4 % Fehler - fuer diesen Zweck
+  # weit genauer als noetig.
+  #
+  # Aussenreferenz bewusst aus der EIGENEN Station statt vom DWD: der
+  # Kellerabgleich haengt am Mikroklima am Haus, nicht an Freudenstadt.
+  # =======================================================================
+  template:
+    - sensor:
+        - name: "Absolute Feuchte Außen"
+          unique_id: absolute_feuchte_aussen
+          unit_of_measurement: "g/m³"
+          state_class: measurement
+          icon: mdi:water-outline
+          availability: >
+            {{ states('sensor.ads_wettertemp') not in ['unknown','unavailable','none','']
+               and states('sensor.ads_wetterhum') not in ['unknown','unavailable','none',''] }}
+          state: >
+            {% set t = states('sensor.ads_wettertemp') | float %}
+            {% set h = states('sensor.ads_wetterhum') | float %}
+            {% set es = 6.112 * (e ** (17.62 * t / (243.12 + t))) %}
+            {{ (216.7 * (h / 100 * es / (273.15 + t))) | round(2) }}
+
+        - name: "Taupunkt Außen"
+          unique_id: taupunkt_aussen
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          availability: >
+            {{ states('sensor.ads_wettertemp') not in ['unknown','unavailable','none','']
+               and states('sensor.ads_wetterhum') not in ['unknown','unavailable','none',''] }}
+          state: >
+            {% set t = states('sensor.ads_wettertemp') | float %}
+            {% set h = [states('sensor.ads_wetterhum') | float, 1] | max %}
+            {% set a = (17.62 * t / (243.12 + t)) + log(h / 100) %}
+            {{ (243.12 * a / (17.62 - a)) | round(1) }}
+
+        - name: "Absolute Feuchte Keller"
+          unique_id: absolute_feuchte_keller
+          unit_of_measurement: "g/m³"
+          state_class: measurement
+          icon: mdi:water-outline
+          availability: >
+            {{ states('sensor.mb_temp_keller') not in ['unknown','unavailable','none','']
+               and states('sensor.mb_hum_keller') not in ['unknown','unavailable','none',''] }}
+          state: >
+            {% set t = states('sensor.mb_temp_keller') | float %}
+            {% set h = states('sensor.mb_hum_keller') | float %}
+            {% set es = 6.112 * (e ** (17.62 * t / (243.12 + t))) %}
+            {{ (216.7 * (h / 100 * es / (273.15 + t))) | round(2) }}
+
+        - name: "Absolute Feuchte Werkstatt"
+          unique_id: absolute_feuchte_werkstatt
+          unit_of_measurement: "g/m³"
+          state_class: measurement
+          icon: mdi:water-outline
+          availability: >
+            {{ states('sensor.mb_temp_werkstatt') not in ['unknown','unavailable','none','']
+               and states('sensor.mb_hum_werkstatt') not in ['unknown','unavailable','none',''] }}
+          state: >
+            {% set t = states('sensor.mb_temp_werkstatt') | float %}
+            {% set h = states('sensor.mb_hum_werkstatt') | float %}
+            {% set es = 6.112 * (e ** (17.62 * t / (243.12 + t))) %}
+            {{ (216.7 * (h / 100 * es / (273.15 + t))) | round(2) }}
+
+        - name: "Absolute Feuchte Garage"
+          unique_id: absolute_feuchte_garage
+          unit_of_measurement: "g/m³"
+          state_class: measurement
+          icon: mdi:water-outline
+          availability: >
+            {{ states('sensor.mb_temp_garage') not in ['unknown','unavailable','none','']
+               and states('sensor.mb_hum_garage') not in ['unknown','unavailable','none',''] }}
+          state: >
+            {% set t = states('sensor.mb_temp_garage') | float %}
+            {% set h = states('sensor.mb_hum_garage') | float %}
+            {% set es = 6.112 * (e ** (17.62 * t / (243.12 + t))) %}
+            {{ (216.7 * (h / 100 * es / (273.15 + t))) | round(2) }}
+
+    # -------------------------------------------------------------------
+    # Lueftungsempfehlung je Raum.
+    #
+    # Schwelle 0.7 g/m3 statt 0: darunter liegt der Gewinn im Bereich der
+    # Sensortoleranz, und ein Fenster fuer 0.1 g/m3 zu oeffnen lohnt nicht.
+    # delay_off haelt die Empfehlung stabil, damit sie bei Messrauschen um
+    # die Schwelle nicht im Minutentakt flackert.
+    # -------------------------------------------------------------------
+    - binary_sensor:
+        - name: "Lüften sinnvoll Keller"
+          unique_id: lueften_sinnvoll_keller
+          icon: mdi:window-open-variant
+          availability: >
+            {{ states('sensor.absolute_feuchte_keller') not in ['unknown','unavailable','none','']
+               and states('sensor.absolute_feuchte_aussen') not in ['unknown','unavailable','none',''] }}
+          state: >
+            {{ (states('sensor.absolute_feuchte_keller') | float)
+               - (states('sensor.absolute_feuchte_aussen') | float) > 0.7 }}
+          delay_off:
+            minutes: 15
+          attributes:
+            differenz: >
+              {{ ((states('sensor.absolute_feuchte_keller') | float(0))
+                  - (states('sensor.absolute_feuchte_aussen') | float(0))) | round(2) }}
+
+        - name: "Lüften sinnvoll Werkstatt"
+          unique_id: lueften_sinnvoll_werkstatt
+          icon: mdi:window-open-variant
+          availability: >
+            {{ states('sensor.absolute_feuchte_werkstatt') not in ['unknown','unavailable','none','']
+               and states('sensor.absolute_feuchte_aussen') not in ['unknown','unavailable','none',''] }}
+          state: >
+            {{ (states('sensor.absolute_feuchte_werkstatt') | float)
+               - (states('sensor.absolute_feuchte_aussen') | float) > 0.7 }}
+          delay_off:
+            minutes: 15
+          attributes:
+            differenz: >
+              {{ ((states('sensor.absolute_feuchte_werkstatt') | float(0))
+                  - (states('sensor.absolute_feuchte_aussen') | float(0))) | round(2) }}
+
+        - name: "Lüften sinnvoll Garage"
+          unique_id: lueften_sinnvoll_garage
+          icon: mdi:window-open-variant
+          availability: >
+            {{ states('sensor.absolute_feuchte_garage') not in ['unknown','unavailable','none','']
+               and states('sensor.absolute_feuchte_aussen') not in ['unknown','unavailable','none',''] }}
+          state: >
+            {{ (states('sensor.absolute_feuchte_garage') | float)
+               - (states('sensor.absolute_feuchte_aussen') | float) > 0.7 }}
+          delay_off:
+            minutes: 15
+          attributes:
+            differenz: >
+              {{ ((states('sensor.absolute_feuchte_garage') | float(0))
+                  - (states('sensor.absolute_feuchte_aussen') | float(0))) | round(2) }}

@@ -40,3 +40,118 @@ package_recorder:
         # Spannung (m1_volt_blk*) und Leistungsfaktor (m1_fac_blk*) sind
         # Blockreads und werden bereits von den *_blk-Globs oben erfasst.
         - sensor.mb_solaredge_m1_ac_freq
+
+        # ==================================================================
+        # AUFRAEUMEN 08/2026 - Schreiblast senken
+        # 
+        # Ausgangslage: 10.0 Mio. states-Zeilen bei nur 10 Tagen Aufbewahrung,
+        # DB rund 2.5 GB. 73 % davon entfielen auf 45 Entities.
+        # 
+        # Ausgeschlossen wurde nur, was VIER Pruefungen ueberstanden hat:
+        #   1. kein has_sum-Zaehler       -> Energie-Dashboard unberuehrt
+        #   2. in keiner Graph-Karte      -> keine sichtbare Historie verloren
+        #   3. keine Quelle eines Helfers -> kein statistics/utility_meter/
+        #                                    integration haengt daran
+        #   4. nicht in .storage/energy   -> faengt Faelle wie
+        #      mb_solaredge_m1_ac_power_final_inverted ab: ein reiner W-Sensor
+        #      ohne has_sum, der trotzdem im Energie-Dashboard konfiguriert
+        #      ist und deshalb aufgezeichnet bleibt.
+        # 
+        # Wetterdaten bleiben vollstaendig erhalten (Vorgabe).
+        # 
+        # WICHTIG: Ein Ausschluss verhindert NICHT die Live-Anzeige im Dashboard
+        # und stoert keine Automation - beide lesen den aktuellen State. Er
+        # entfernt ausschliesslich Historie und Langzeitstatistik. Wirkt nur auf
+        # NEUE Daten; die bestehende DB schrumpft erst mit dem naechsten Purge.
+        # ==================================================================
+
+        # --- UniFi-Router-Diagnose: reine Geraetetelemetrie, historisch ohne Aussage.
+        - sensor.homeudm_cpu_utilization
+        - sensor.homeudm_memory_utilization
+
+        # --- System-Monitor RAM. Achtung: die _2-Variante steckt in einer Graph-Karte
+#       und bleibt deshalb aufgezeichnet.
+        - sensor.system_monitor_freier_speicher
+        - sensor.system_monitor_speicherauslastung
+
+        # --- SolarEdge Zaehler M1: Schein- und Blindleistung, Leistungsfaktor,
+#       Spannungen und Strom je Phase. Die WIRKleistung (_ac_power_final
+#       sowie _a/_b/_c_final) bleibt drin - sie speist Helfer, und
+#       _final_inverted haengt im Energie-Dashboard.
+        - sensor.mb_solaredge_m1_ac_current_a_final
+        - sensor.mb_solaredge_m1_ac_power_app_a_final
+        - sensor.mb_solaredge_m1_ac_power_app_b_final
+        - sensor.mb_solaredge_m1_ac_power_app_c_final
+        - sensor.mb_solaredge_m1_ac_power_app_final
+        - sensor.mb_solaredge_m1_ac_power_fac_a_final
+        - sensor.mb_solaredge_m1_ac_power_fac_b_final
+        - sensor.mb_solaredge_m1_ac_power_fac_c_final
+        - sensor.mb_solaredge_m1_ac_power_fac_final
+        - sensor.mb_solaredge_m1_ac_power_rea_a_final
+        - sensor.mb_solaredge_m1_ac_power_rea_b_final
+        - sensor.mb_solaredge_m1_ac_power_rea_c_final
+        - sensor.mb_solaredge_m1_ac_power_rea_final
+        - sensor.mb_solaredge_m1_ac_volt_a_final
+        - sensor.mb_solaredge_m1_ac_volt_b_final
+        - sensor.mb_solaredge_m1_ac_volt_c_final
+
+        # --- SolarEdge Wechselrichter Garage: DC-Details, Schein- und Blindleistung,
+#       Spannung, cos phi. Der Tagesertrag laeuft ueber den utility_meter
+#       aus der Lebensdauer-Energie und ist nicht betroffen.
+        - sensor.mb_solaredge_garage_ac_current_final
+        - sensor.mb_solaredge_garage_ac_pf_final
+        - sensor.mb_solaredge_garage_ac_va_final
+        - sensor.mb_solaredge_garage_ac_var_final
+        - sensor.mb_solaredge_garage_ac_voltage_final
+        - sensor.mb_solaredge_garage_dc_current_final
+        - sensor.mb_solaredge_garage_dc_power_final
+        - sensor.mb_solaredge_garage_dc_voltage_final
+        - sensor.mb_solaredge_garage_energy_now_final
+
+        # --- Shelly Pro3EM Heizung: Momentanleistungen je Phase und gesamt. Fuer die
+#       Heizkennzahl zaehlt allein total_active_energy - der bleibt drin.
+        - sensor.pro3em_heizung_phase_a_active_power
+        - sensor.pro3em_heizung_phase_a_apparent_power
+        - sensor.pro3em_heizung_phase_b_active_power
+        - sensor.pro3em_heizung_phase_b_apparent_power
+        - sensor.pro3em_heizung_phase_b_power_factor
+        - sensor.pro3em_heizung_phase_c_active_power
+        - sensor.pro3em_heizung_phase_c_apparent_power
+        - sensor.pro3em_heizung_phase_c_power_factor
+        - sensor.pro3em_heizung_total_active_power
+        - sensor.pro3em_heizung_total_apparent_power
+
+        # --- Shelly-EM-Kanaele: Momentanleistung, Spannung, cos phi. Die zugehoerigen
+#       _energy-Zaehler bleiben (Energie-Dashboard).
+        - sensor.it_power
+        - sensor.warmwasser_power
+        - sensor.warmwasser_power_factor
+        - sensor.warmwasser_voltage
+        - sensor.waschmaschine_voltage
+
+        # --- WGT: Luftvolumina stehen auf unknown, Drehzahlen werden nirgends ausgewertet.
+        - sensor.drehzahl_abluft_wgt
+        - sensor.drehzahl_zuluft_wgt
+        - sensor.wgt_abluft_total
+        - sensor.wgt_zuluft_total
+
+        # --- Momentanwerte der Netz- und PV-Berechnung. Die kWh-Zaehler dahinter bleiben
+#       unberuehrt; die Ueberschussregelung liest den Live-State und ist von
+#       der Aufzeichnung unabhaengig.
+        - sensor.calc_grid_export_now
+        - sensor.calc_grid_import_now
+        - sensor.pv_ueberschuss_mittel_15min
+
+        # --- Abgeleitete Boeen-Sensoren (statistics-Plattform ueber
+        #       sensor.ads_wetterwindspeed). Bewusste Ausnahme von der
+        #       Regel "Wetterdaten bleiben drin": beide sind RECHENERGEBNISSE
+        #       aus einem Sensor, der selbst aufgezeichnet wird - ihre
+        #       Historie enthaelt nichts, was sich nicht rekonstruieren
+        #       liesse. Sie stecken in keiner Graph-Karte; boe30min wird nur
+        #       live in automation.wetterwarnung_windboen gelesen, boe4h nur
+        #       als Momentanwert in der Windrose angezeigt. Beides bleibt
+        #       funktionsfaehig, weil ein Ausschluss den State nicht beruehrt.
+        #       Ersparnis: rund 5.800 Zeilen pro Tag.
+        - sensor.wetterwindspeedboe30min
+        - sensor.wetterwindspeedboe4h
+
