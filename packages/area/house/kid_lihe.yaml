@@ -27,7 +27,16 @@ package_area_house_kid_lihe:
           default_entity_id: cover.linus_sud_custom
           name: Rollladen Linus Süd Custom
           unique_id: "rollladen_linus_sud_custom"
-          position: "{{ states('sensor.cover_linus_sud_optimistic') }}"
+          # Gleicher Fall wie bei den Template-Lights: der Validator
+          # akzeptiert nur 0-100. Faellt die Quelle aus, landete bisher
+          # "unavailable" darin und HA loggte bei jedem Reload
+          # "Received invalid cover position".
+          availability: >
+            {{ states('sensor.cover_linus_sud_optimistic') not in
+               ['unknown','unavailable','none',''] }}
+          position: >
+            {% set p = states('sensor.cover_linus_sud_optimistic') %}
+            {{ p | int(0) if p not in ['unknown','unavailable','none',''] else 0 }}
     - sensor:
         - default_entity_id: sensor.cover_linus_sud_optimistic
           name: Rolladen Linus Süd optimistic Positiom

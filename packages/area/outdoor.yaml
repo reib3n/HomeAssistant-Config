@@ -26,7 +26,23 @@ package_area_outdoor:
           default_entity_id: light.mb_balkon
           name: Balkon
           level: "{{ (states('sensor.mb_light_balkon_bright') | int(0) ) }}"
-          state: "{{ (states('binary_sensor.mb_light_balkon_status')) }}"
+          # Zwei Absicherungen:
+          #
+          # availability meldet die Lampe sauber als nicht verfuegbar,
+          # wenn der Modbus-Wert fehlt - das ist die Anzeige-Ebene.
+          #
+          # state faengt denselben Fall zusaetzlich ab, weil der
+          # Zustandsvalidator nur on/off akzeptiert - alles andere wird
+          # hier auf off abgebildet. Ohne diese Absicherung loggte HA bei
+          # jedem Reload "Received invalid light state: unavailable".
+          # (Welche der beiden Massnahmen allein genuegen wuerde, ist
+          # nicht isoliert nachgemessen; beide sind fuer sich korrekt.)
+          availability: >
+            {{ states('binary_sensor.mb_light_balkon_status') not in
+               ['unknown','unavailable','none',''] }}
+          state: >
+            {% set s = states('binary_sensor.mb_light_balkon_status') %}
+            {{ s if s in ['on','off'] else 'off' }}
 
     - sensor:
         - unit_of_measurement: l

@@ -26,7 +26,23 @@ package_area_house_living:
           default_entity_id: light.mb_esszimmertisch
           name: Esszimmertisch
           level: "{{ (states('sensor.mb_light_esszimmertisch_bright') | int(0) ) }}"
-          state: "{{ (states('binary_sensor.mb_light_esszimmertisch_status')) }}"
+          # Zwei Absicherungen:
+          #
+          # availability meldet die Lampe sauber als nicht verfuegbar,
+          # wenn der Modbus-Wert fehlt - das ist die Anzeige-Ebene.
+          #
+          # state faengt denselben Fall zusaetzlich ab, weil der
+          # Zustandsvalidator nur on/off akzeptiert - alles andere wird
+          # hier auf off abgebildet. Ohne diese Absicherung loggte HA bei
+          # jedem Reload "Received invalid light state: unavailable".
+          # (Welche der beiden Massnahmen allein genuegen wuerde, ist
+          # nicht isoliert nachgemessen; beide sind fuer sich korrekt.)
+          availability: >
+            {{ states('binary_sensor.mb_light_esszimmertisch_status') not in
+               ['unknown','unavailable','none',''] }}
+          state: >
+            {% set s = states('binary_sensor.mb_light_esszimmertisch_status') %}
+            {{ s if s in ['on','off'] else 'off' }}
     - light:
         - unique_id: mb_esszimmer
           turn_on:
@@ -53,7 +69,23 @@ package_area_house_living:
           default_entity_id: light.mb_esszimmer
           name: Esszimmer
           level: "{{ (states('sensor.mb_light_esszimmer_bright') | int(0) ) }}"
-          state: "{{ (states('binary_sensor.mb_light_esszimmer_status')) }}"
+          # Zwei Absicherungen:
+          #
+          # availability meldet die Lampe sauber als nicht verfuegbar,
+          # wenn der Modbus-Wert fehlt - das ist die Anzeige-Ebene.
+          #
+          # state faengt denselben Fall zusaetzlich ab, weil der
+          # Zustandsvalidator nur on/off akzeptiert - alles andere wird
+          # hier auf off abgebildet. Ohne diese Absicherung loggte HA bei
+          # jedem Reload "Received invalid light state: unavailable".
+          # (Welche der beiden Massnahmen allein genuegen wuerde, ist
+          # nicht isoliert nachgemessen; beide sind fuer sich korrekt.)
+          availability: >
+            {{ states('binary_sensor.mb_light_esszimmer_status') not in
+               ['unknown','unavailable','none',''] }}
+          state: >
+            {% set s = states('binary_sensor.mb_light_esszimmer_status') %}
+            {{ s if s in ['on','off'] else 'off' }}
     - light:
         - unique_id: mb_wohnzimmer
           turn_on:
@@ -79,5 +111,26 @@ package_area_house_living:
                 value: "{{ brightness }}"
           default_entity_id: light.mb_wohnzimmer
           name: Wohnzimmer
-          level: "{{ (states('sensor.mb_light_wohnzimmer_bright') | int(0) ) }}"
-          state: "{{ (states('binary_sensor.mb_light_wohnzimmer_status')) }}"
+          # Achtung: die Quell-Entity heisst tatsaechlich "wohnnzimmer" mit
+          # doppeltem n - der Tippfehler steckt im name: des Modbus-Registers
+          # in bus/beckhoff.yaml. Bis der dort sauber umbenannt ist, muss die
+          # Referenz hier der Realitaet folgen, sonst bleibt die Helligkeit
+          # dauerhaft leer (states() lieferte bisher unknown -> int(0) -> 0).
+          level: "{{ (states('sensor.mb_light_wohnnzimmer_bright') | int(0) ) }}"
+          # Zwei Absicherungen:
+          #
+          # availability meldet die Lampe sauber als nicht verfuegbar,
+          # wenn der Modbus-Wert fehlt - das ist die Anzeige-Ebene.
+          #
+          # state faengt denselben Fall zusaetzlich ab, weil der
+          # Zustandsvalidator nur on/off akzeptiert - alles andere wird
+          # hier auf off abgebildet. Ohne diese Absicherung loggte HA bei
+          # jedem Reload "Received invalid light state: unavailable".
+          # (Welche der beiden Massnahmen allein genuegen wuerde, ist
+          # nicht isoliert nachgemessen; beide sind fuer sich korrekt.)
+          availability: >
+            {{ states('binary_sensor.mb_light_wohnzimmer_status') not in
+               ['unknown','unavailable','none',''] }}
+          state: >
+            {% set s = states('binary_sensor.mb_light_wohnzimmer_status') %}
+            {{ s if s in ['on','off'] else 'off' }}

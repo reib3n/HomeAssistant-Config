@@ -27,7 +27,16 @@ package_area_house_office:
           default_entity_id: cover.buro_custom
           name: Rollladen Büro Custom
           unique_id: "rollladen_buro_custom"
-          position: "{{ states('sensor.cover_buro_optimistic') }}"
+          # Gleicher Fall wie bei den Template-Lights: der Validator
+          # akzeptiert nur 0-100. Faellt die Quelle aus, landete bisher
+          # "unavailable" darin und HA loggte bei jedem Reload
+          # "Received invalid cover position".
+          availability: >
+            {{ states('sensor.cover_buro_optimistic') not in
+               ['unknown','unavailable','none',''] }}
+          position: >
+            {% set p = states('sensor.cover_buro_optimistic') %}
+            {{ p | int(0) if p not in ['unknown','unavailable','none',''] else 0 }}
     - sensor:
         - default_entity_id: sensor.cover_buro_optimistic
           name: Rolladen Büro optimistic Positiom
