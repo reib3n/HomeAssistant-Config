@@ -1969,6 +1969,9 @@
   use_blueprint:
     path: beschattung/beschattung_fenster.yaml
     input:
+      clarity_sensor: sensor.sonnenklarheit
+      clarity_close: 60
+      clarity_open: 45
       cover: cover.esszimmer_sud
       shade_button: button.esszimmer_sud_my_position
       azimuth_start: 130
@@ -1976,7 +1979,7 @@
       forecast_high_min: 23
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
-      indoor_target: 20
+      indoor_target: 24
       lux_open: 20000
       lux_close: 25000
 - id: '1785169603280'
@@ -1985,6 +1988,9 @@
   use_blueprint:
     path: beschattung/beschattung_fenster.yaml
     input:
+      clarity_sensor: sensor.sonnenklarheit
+      clarity_close: 60
+      clarity_open: 45
       cover: cover.kuche
       shade_button: button.kuche_my_position
       azimuth_start: 130
@@ -1992,7 +1998,7 @@
       forecast_high_min: 23
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
-      indoor_target: 20
+      indoor_target: 24
       lux_close: 25000
       lux_open: 20000
 - id: '1785217006507'
@@ -2034,13 +2040,16 @@
   use_blueprint:
     path: beschattung/beschattung_fenster.yaml
     input:
+      clarity_sensor: sensor.sonnenklarheit
+      clarity_close: 45
+      clarity_open: 35
       cover: cover.buro_custom
       azimuth_start: 85
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
       indoor_sensor: sensor.temperatur_buro
       forecast_sensor: sensor.forecast_weather_max_temp_today
-      indoor_target: 20
+      indoor_target: 24
       azimuth_end: 160
       lux_close: 10000
       lux_open: 8000
@@ -2052,6 +2061,9 @@
   use_blueprint:
     path: beschattung/beschattung_fenster.yaml
     input:
+      clarity_sensor: sensor.sonnenklarheit
+      clarity_close: 60
+      clarity_open: 45
       cover: cover.jalousie_esszimmer
       shade_button: button.esszimmer_jalousie_my_position
       azimuth_start: 210
@@ -2059,7 +2071,7 @@
       forecast_high_min: 23
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
-      indoor_target: 20
+      indoor_target: 24
       azimuth_end: 360
       lux_close: 3000
       lux_open: 1000
@@ -2073,6 +2085,9 @@
   use_blueprint:
     path: beschattung/beschattung_fenster.yaml
     input:
+      clarity_sensor: sensor.sonnenklarheit
+      clarity_close: 60
+      clarity_open: 45
       cover: cover.wohnzimmer_jalousie
       shade_button: button.wohnzimmer_jalousie_my_position
       azimuth_start: 210
@@ -2080,7 +2095,7 @@
       forecast_high_min: 23
       indoor_sensor: sensor.mb_temp_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
-      indoor_target: 20
+      indoor_target: 24
       azimuth_end: 360
       lux_close: 3000
       lux_open: 1000
@@ -2088,3 +2103,17 @@
       wind_threshold: 38
       keep_closed_below: 5
       elevation_min: 4
+- id: '1786514505830'
+  alias: Monitoring - Zisternenverbrauch Reset
+  description: ''
+  triggers:
+  - trigger: time
+    at: 02:00:00
+  conditions: []
+  actions:
+  - action: button.press
+    metadata: {}
+    target:
+      entity_id: button.zisterne_verbrauch_zurucksetzen
+    data: {}
+  mode: single

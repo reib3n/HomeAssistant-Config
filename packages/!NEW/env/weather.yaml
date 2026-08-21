@@ -18,6 +18,51 @@ package_weather:
               {% else %}
                 unbekannt
               {% endif %}
+    - sensor:
+        # ---------------------------------------------------------------
+        # Sonnenklarheit (Clear-Sky-Index)
+        #
+        # Gemessene Horizontal-Beleuchtungsstaerke im Verhaeltnis zu der,
+        # die bei wolkenlosem Himmel beim aktuellen Sonnenstand zu erwarten
+        # waere. 100 % = klarer Himmel, <25 % = Regen/dichte Bewoelkung.
+        #
+        # Der Witz gegenueber einer absoluten Lux-Schwelle: der Wert ist
+        # unabhaengig von der Sonnenhoehe. Eine tiefstehende Abendsonne
+        # liefert absolut wenig Lux, aber genauso ~100 % Klarheit wie die
+        # Mittagssonne -> taugt als Beschattungs-Gate auch abends im Westen.
+        #
+        # Referenzkurve 72000 * sin(elevation)^1.5 wurde gegen die eigene
+        # Historie von sensor.ads_wetterluxabove kalibriert (wolkenlose Tage
+        # 11./12./13./19.08.2026). Der Index bleibt damit ueber den ganzen
+        # Bereich von 4 deg bis 60 deg Sonnenhoehe flach bei 0.92-1.04.
+        #
+        # Bewusst NICHT ads_wetterluxwest: der Sensor deckelt hart bei
+        # 10000 lx und ist an sonnigen Nachmittagen dauerhaft in der
+        # Saettigung -> als Mass fuer direkte Sonne unbrauchbar.
+        # ---------------------------------------------------------------
+        - name: "Sonnenklarheit"
+          unique_id: sonnenklarheit
+          unit_of_measurement: "%"
+          state_class: measurement
+          icon: mdi:weather-sunny-alert
+          availability: >
+            {{ states('sensor.ads_wetterluxabove') not in
+               ['unknown','unavailable','none',''] }}
+          state: >
+            {% set el = state_attr('sun.sun','elevation') | float(-90) %}
+            {% set lux = states('sensor.ads_wetterluxabove') | float(0) %}
+            {% if el < 4 %}
+              0
+            {% else %}
+              {% set ref = 72000 * (sin(el * pi / 180)) ** 1.5 %}
+              {{ [ 100 * lux / ref, 150 ] | min | round(0) }}
+            {% endif %}
+          attributes:
+            sonnenhoehe: "{{ state_attr('sun.sun','elevation') | float(0) | round(1) }}"
+            referenz_klarhimmel: >
+              {% set el = state_attr('sun.sun','elevation') | float(-90) %}
+              {{ (72000 * (sin(el * pi / 180)) ** 1.5) | round(0) if el >= 4 else 0 }}
+
   # =======================================================================
   # STATISTICS SENSORS
   # =======================================================================

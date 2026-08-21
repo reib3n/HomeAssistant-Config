@@ -34,3 +34,51 @@ package_area_outdoor:
           name: Zisternenwasser Entnahme heute
           unique_id: "zisternenwasser_entnahme_heute"
           state: "{{ ((states.sensor.zisternenentnahme_heute.state | float(0) * 1000)) | round(0) }}"
+
+    # Zeigt an, ob gerade Wasser entnommen wird (rein informativ, hat
+    # keinen Einfluss mehr auf den Verbrauchszähler unten).
+    - trigger:
+        - trigger: state
+          entity_id: sensor.zisterne
+      binary_sensor:
+        - name: Zisterne Entnahme aktiv
+          unique_id: "zisterne_entnahme_aktiv"
+          device_class: running
+          icon: mdi:water-pump
+          state: >
+            {% set old = trigger.from_state.state | float(0) if trigger.from_state else 0 %}
+            {{ (trigger.to_state.state | float(0)) > old }}
+          delay_off:
+            minutes: 2
+
+    - button:
+        - name: Zisterne Verbrauch zurücksetzen
+          unique_id: "zisterne_verbrauch_reset"
+          icon: mdi:restart
+          press:
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.zisterne_entnahme_start
+              data:
+                value: "{{ states('sensor.zisterne') | float(0) }}"
+
+    - sensor:
+        - unit_of_measurement: l
+          default_entity_id: sensor.zisterne_verbrauch_aktuelle_entnahme
+          name: Zisterne Verbrauch aktuelle Entnahme
+          unique_id: "zisterne_verbrauch_aktuelle_entnahme"
+          device_class: water
+          state_class: total
+          icon: mdi:cup-water
+          state: >
+            {{ (((states('sensor.zisterne') | float(0)) - (states('input_number.zisterne_entnahme_start') | float(0))) * 1000) | round(0) }}
+          availability: "{{ states('sensor.zisterne') not in ['unknown', 'unavailable'] }}"
+
+  input_number:
+    zisterne_entnahme_start:
+      name: Zisterne Entnahme Start
+      min: 0
+      max: 1000000
+      step: 0.001
+      unit_of_measurement: "m³"
+      icon: mdi:water

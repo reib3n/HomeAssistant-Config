@@ -378,6 +378,7 @@ package_sps:
           precision: 3
           state_class: total_increasing
           data_type: int16
+          scan_interval: 5
         - name: "Status Garagentor"
           unique_id: "status_garagentor"
           address: 2025

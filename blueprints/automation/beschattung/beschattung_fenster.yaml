@@ -8,7 +8,12 @@ blueprint:
     Konzept:
       * Beschattet nur, wenn die Sonne dieses Fenster trifft UND der Tag laut
         Vorhersage heiß genug ist (Übergangszeit: Sonne heizt das Haus) UND es
-        hell genug ist. Ein bereits zu warmer Raum kann zusätzlich auslösen.
+        hell genug ist UND die Sonne tatsächlich durchkommt (Klarheits-Gate).
+        Ein bereits zu warmer Raum kann zusätzlich auslösen.
+      * Das Klarheits-Gate (Clear-Sky-Index) unterscheidet "hell" von "sonnig":
+        ein bedeckter Regentag ist absolut betrachtet hell genug, hat aber keine
+        direkte Sonne. Weil der Index auf den Sonnenstand normiert ist, sperrt
+        er die tiefstehende Abendsonne trotzdem nicht aus.
       * Fährt wieder hoch, wenn die direkte Sonne wegfällt oder die Lux abends
         unter die Schwelle fallen – ABER nie, wenn der Rollladen komplett
         geschlossen ist (Schläfer-Schutz) oder ein Sleep-Lock aktiv ist.
@@ -115,6 +120,48 @@ blueprint:
           default: 25000
           selector:
             number: { min: 0, max: 120000, step: 1000, unit_of_measurement: "lx", mode: box }
+
+    # ---------------------------------------------------------------
+    himmel:
+      name: Direkte Sonne / Bewölkung
+      icon: mdi:weather-partly-cloudy
+      collapsed: true
+      input:
+        clarity_sensor:
+          name: "Sonnenklarheit (%) – optional"
+          description: >
+            Clear-Sky-Index, z. B. sensor.sonnenklarheit: gemessene Helligkeit im
+            Verhältnis zum wolkenlosen Himmel beim aktuellen Sonnenstand.
+            100 % = klar, unter 25 % = Regen/dichte Bewölkung. Im Gegensatz zur
+            Lux-Schwelle ist der Wert unabhängig von der Sonnenhöhe und blockiert
+            deshalb Regentage, ohne die tiefstehende Abendsonne auszusperren.
+            Ohne Sensor entfällt das Gate (Verhalten wie bisher).
+          default: {}
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+        clarity_close:
+          name: Beschatten ab Klarheit (%)
+          description: >
+            Darunter wird nicht beschattet – die Sonne steht zwar richtig, kommt
+            aber nicht durch. Pro Fenster einstellen, der Wert ist
+            himmelsrichtungsabhängig: für Süd und West liegt der Index an klaren
+            Tagen bei 90-100 % (Schwelle 60), im Osten fällt er in den ersten
+            Morgenstunden durch Dunst auf 50-60 % ab und braucht deshalb eine
+            niedrigere Schwelle (45), sonst bleibt die Morgenbeschattung aus.
+          default: 60
+          selector:
+            number: { min: 0, max: 120, step: 5, unit_of_measurement: "%", mode: slider }
+        clarity_open:
+          name: Öffnen unter Klarheit (%)
+          description: >
+            Zieht dauerhaft Bewölkung auf, wird wieder geöffnet. Muss kleiner als
+            "Beschatten ab" sein (Hysterese) und sollte über dem Regenwert liegen
+            (gemessen: bis 27 %), damit bei Regen auch wirklich geöffnet wird.
+          default: 45
+          selector:
+            number: { min: 0, max: 120, step: 5, unit_of_measurement: "%", mode: slider }
 
     # ---------------------------------------------------------------
     saison:
@@ -228,6 +275,9 @@ variables:
   lux_sensor: !input lux_sensor
   lux_close: !input lux_close
   lux_open: !input lux_open
+  clarity_sensor: !input clarity_sensor
+  clarity_close: !input clarity_close
+  clarity_open: !input clarity_open
   forecast_sensor: !input forecast_sensor
   forecast_high_min: !input forecast_high_min
   indoor_sensor: !input indoor_sensor
@@ -243,6 +293,7 @@ variables:
   # --- Optionale Inputs erkennen ---
   has_button: "{{ shade_button is string and shade_button | length > 0 }}"
   has_indoor: "{{ indoor_sensor is string and indoor_sensor | length > 0 }}"
+  has_clarity: "{{ clarity_sensor is string and clarity_sensor | length > 0 }}"
   has_contact: "{{ contact_sensor is string and contact_sensor | length > 0 }}"
   has_wind: "{{ wind_sensor is string and wind_sensor | length > 0 }}"
   has_sleep: "{{ sleep_lock is string and sleep_lock | length > 0 }}"
@@ -260,6 +311,16 @@ variables:
   lux: "{{ states(lux_sensor) | float(0) }}"
   forecast_high: "{{ states(forecast_sensor) | float(0) }}"
   indoor: "{{ states(indoor_sensor) | float(-99) if has_indoor else -99 }}"
+
+  # --- Klarheits-Gate (direkte Sonne statt nur "hell") ---
+  # Faellt der Sensor aus, wird das Gate bewusst offen gelassen: dann gilt
+  # wieder das alte Verhalten (Lux + Waerme) statt gar keiner Beschattung.
+  clarity_valid: >
+    {{ has_clarity and states(clarity_sensor) not in
+       ['unknown','unavailable','none',''] }}
+  clarity: "{{ states(clarity_sensor) | float(0) if clarity_valid else -1 }}"
+  sun_direct: "{{ (not clarity_valid) or clarity >= clarity_close }}"
+  clarity_gone: "{{ clarity_valid and clarity < clarity_open }}"
 
   # --- Wärme-Gate ---
   # Heißer Tag laut Vorhersage ODER Raum schon über Ziel. Innentemperatur ist
@@ -290,9 +351,9 @@ variables:
 
   # --- Wunsch-Aktion ---
   want_shade: >
-    {{ geo and heat_gate and (lux >= lux_close) and not contact_open }}
+    {{ geo and heat_gate and sun_direct and (lux >= lux_close) and not contact_open }}
   want_open: >
-    {{ (not geo) or (lux < lux_open) or heat_gone }}
+    {{ (not geo) or (lux < lux_open) or heat_gone or clarity_gone }}
   # nur senden, wenn nötig (schont Tahoma/RTS; bei fehlender Position wird ggf. wiederholt)
   need_shade_cmd: "{{ pos is none or (pos | float(100)) > shade_position + 5 }}"
 
