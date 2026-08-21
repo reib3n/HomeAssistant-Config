@@ -1,4 +1,4 @@
-package_area_office:
+package_area_house_office:
   template:
     - cover:
         - device_class: shutter

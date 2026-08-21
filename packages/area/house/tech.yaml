@@ -1,4 +1,4 @@
-package_area_tech:
+package_area_house_tech:
   template:
     - sensor:
         - default_entity_id: sensor.status_spulmaschine

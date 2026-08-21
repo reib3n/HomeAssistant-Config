@@ -1,4 +1,4 @@
-package_area_kid_lihe:
+package_area_house_kid_lihe:
   template:
     - cover:
         - device_class: shutter

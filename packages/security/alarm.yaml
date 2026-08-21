@@ -1,4 +1,4 @@
-package_security:
+package_security_alarm:
   template:
     - alarm_control_panel:
         - arm_away:

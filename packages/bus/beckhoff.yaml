@@ -1,4 +1,4 @@
-package_sps:
+package_bus_beckhoff:
   ads:
     ip_address: !secret beckhoff_ip
     device: !secret beckhoff_ads_device

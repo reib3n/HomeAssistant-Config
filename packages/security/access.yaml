@@ -1,4 +1,4 @@
-package_access:
+package_security_access:
   template:
     - lock:
         - name: Haustür

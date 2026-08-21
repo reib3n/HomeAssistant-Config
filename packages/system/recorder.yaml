@@ -1,4 +1,4 @@
-package_recorder:
+package_system_recorder:
   # -------------------------------------------------------------------
   # Recorder-Tuning
   # Ziel: Schreiblast/DB-Größe senken, ohne für Charts/Energie relevante

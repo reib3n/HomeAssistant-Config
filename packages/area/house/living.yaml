@@ -1,4 +1,4 @@
-package_area_living:
+package_area_house_living:
   template:
     - light:
         - unique_id: mb_esszimmertisch
