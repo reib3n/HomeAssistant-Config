@@ -225,7 +225,12 @@ package_bus_beckhoff:
           address: 2008
           scan_interval: 5
           data_type: int16
-        - name: "mb_light_Wohnnzimmer_bright"
+        # Anzeigename korrigiert (war "Wohnnzimmer" mit doppeltem n).
+        # unique_id bleibt bewusst mit Tippfehler stehen: er ist der
+        # Schluessel der Entity-Registry - ihn zu aendern wuerde eine neue
+        # Entity erzeugen und die Historie abhaengen. Die Entity-ID selbst
+        # wurde stattdessen in der Registry umbenannt.
+        - name: "mb_light_Wohnzimmer_bright"
           unique_id: "mb_light_wohnnzimmer_bright"
           address: 2009
           scan_interval: 5

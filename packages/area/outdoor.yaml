@@ -79,7 +79,8 @@ package_area_outdoor:
                 value: "{{ states('sensor.zisterne') | float(0) }}"
 
     - sensor:
-        - unit_of_measurement: l
+        # Grossgeschriebenes L: device_class water akzeptiert nur L, nicht l.
+        - unit_of_measurement: L
           default_entity_id: sensor.zisterne_verbrauch_aktuelle_entnahme
           name: Zisterne Verbrauch aktuelle Entnahme
           unique_id: "zisterne_verbrauch_aktuelle_entnahme"

@@ -111,12 +111,7 @@ package_area_house_living:
                 value: "{{ brightness }}"
           default_entity_id: light.mb_wohnzimmer
           name: Wohnzimmer
-          # Achtung: die Quell-Entity heisst tatsaechlich "wohnnzimmer" mit
-          # doppeltem n - der Tippfehler steckt im name: des Modbus-Registers
-          # in bus/beckhoff.yaml. Bis der dort sauber umbenannt ist, muss die
-          # Referenz hier der Realitaet folgen, sonst bleibt die Helligkeit
-          # dauerhaft leer (states() lieferte bisher unknown -> int(0) -> 0).
-          level: "{{ (states('sensor.mb_light_wohnnzimmer_bright') | int(0) ) }}"
+          level: "{{ (states('sensor.mb_light_wohnzimmer_bright') | int(0) ) }}"
           # Zwei Absicherungen:
           #
           # availability meldet die Lampe sauber als nicht verfuegbar,

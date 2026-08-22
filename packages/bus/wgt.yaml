@@ -300,16 +300,21 @@ package_bus_wgt:
           unique_id: "wgt_betriebsstunden_wp_kuehlen"
 
       switches:
-        # Basis-Defaults via Anchor (&SW_HOLD). Der erste Eintrag ist real + dient als Vorlage.
-        - &SW_HOLD
+        # Basis-Defaults via Anchor (&SW_HOLD). Der Anker traegt bewusst NUR die
+        # gemeinsamen Schluessel - genau wie &TEMP_C und &INT16 weiter oben.
+        # Frueher hing er am gesamten ersten Eintrag samt name/address/unique_id;
+        # die wurden bei jeder Verwendung ueberschrieben, was HA bei jedem Start
+        # als "duplicate key" protokollierte (28 Warnungen). Funktional war das
+        # korrekt, aber die Meldungen verdeckten echte Probleme.
+        - <<: &SW_HOLD
+            slave: 1
+            write_type: holdings
+            command_on: 1
+            command_off: 0
+            verify:
+              delay: 5
           name: "Stoßlüften aktivieren"
           address: 111
-          slave: 1
-          write_type: holdings # korrigiert (vorher: holdings)
-          command_on: 1
-          command_off: 0
-          verify:
-            delay: 5
           unique_id: "switch_wgt_stosslueften_aktivieren"
 
         - <<: *SW_HOLD
@@ -327,9 +332,17 @@ package_bus_wgt:
           address: 441
           unique_id: "switch_wgt_zusatzheizungen_wohnzimmer"
 
-        - <<: *SW_HOLD
-          name: "Zusatzheizungen Büro"
+        # Bewusst OHNE Anker ausgeschrieben: dieser Schalter braucht
+        # verify.delay 10 statt der 5 aus &SW_HOLD. Ein Override auf den
+        # Anker ist funktional korrekt, wird von HA aber bei jedem Start
+        # als "duplicate key" gemeldet. Ausgeschrieben ist es dieselbe
+        # Konfiguration ohne das Lograuschen.
+        - name: "Zusatzheizungen Büro"
           address: 442
+          slave: 1
+          write_type: holdings
+          command_on: 1
+          command_off: 0
           verify:
             delay: 10
           unique_id: "switch_wgt_zusatzheizungen_buero"
