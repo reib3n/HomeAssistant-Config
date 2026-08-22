@@ -62,6 +62,47 @@ package_env_water_balance:
       # Im Fruehjahr und nach der Ernte eher 0.6-0.8 - hier nachziehbar.
 
   template:
+    # ---------------------------------------------------------------
+    # Fuellstand zu Tagesbeginn - Bezugspunkt fuer den Zulaufabgleich.
+    #
+    # Bewusst ein Trigger-Template und KEIN statistics-Fenster: die
+    # statistics-Plattform sampelt jede Abfrage der Quelle, nicht jede
+    # Aenderung. Nachgemessen liefert sensor.zisterne 50 Werte pro Minute,
+    # also 72.000 am Tag - ein 24-h-Fenster braeuchte einen entsprechend
+    # grossen Puffer, und mit zu kleinem lieferte es still falsche Werte
+    # (age_coverage_ratio 0.09 statt 1.0). Ein Trigger feuert einmal
+    # taeglich und hat das Problem nicht.
+    #
+    # Kein homeassistant-start-Trigger: Trigger-Templates stellen ihren
+    # letzten Zustand nach einem Neustart selbst wieder her. Ein
+    # Start-Trigger wuerde den Bezugspunkt bei jedem Neustart auf den
+    # aktuellen Stand setzen und den Tageszulauf verfaelschen.
+    # ---------------------------------------------------------------
+    - trigger:
+        - trigger: time
+          at: "00:00:00"
+        - trigger: homeassistant
+          event: start
+      sensor:
+        - name: "Zisterne Füllstand Tagesbeginn"
+          unique_id: zisterne_fuellstand_tagesbeginn
+          unit_of_measurement: "L"
+          state_class: measurement
+          icon: mdi:clock-start
+          # Der Start-Trigger uebernimmt den aktuellen Stand NUR, wenn noch
+          # keiner gespeichert ist - sonst bliebe der Sensor nach dem
+          # Anlegen bis Mitternacht leer und der Zulaufabgleich tot.
+          # Existiert bereits ein Wert, bleibt er unangetastet, damit ein
+          # Neustart mitten am Tag den Bezugspunkt nicht verschiebt.
+          state: >
+            {% set alt = this.state if this is defined else none %}
+            {% if trigger.platform == 'time'
+                  or alt in [none,'unknown','unavailable','none',''] %}
+              {{ states('sensor.mb_zisterne_liter') | float(0) | round(0) }}
+            {% else %}
+              {{ alt }}
+            {% endif %}
+
     - sensor:
         - name: "ET0 Rate"
           unique_id: et0_rate
@@ -122,41 +163,43 @@ package_env_water_balance:
                 - (states('sensor.et0_monat') | float(0))) | round(2) }}
 
         # ---------------------------------------------------------------
-        # Reichweite der Zisterne beim Verbrauch der letzten 7 Tage.
+        # Reichweite der Zisterne beim bisherigen Monatsverbrauch.
         #
-        # Bezug auf 7 Tage statt auf heute, weil die Tagesentnahme je nach
-        # Giessrhythmus zwischen 0 und mehreren hundert Litern springt und
-        # eine Tagesbasis damit sinnlose Werte liefert.
+        # Basis ist ein utility_meter und BEWUSST kein statistics-Fenster:
+        # sensor.zisterne ist ein Modbus-Register, das alle paar Sekunden
+        # abgetastet wird, und die statistics-Plattform sampelt jede
+        # Abtastung - nicht nur jede Aenderung. Ein 7-Tage-Fenster braeuchte
+        # rund 121.000 Puffereintraege; mit den urspruenglich gesetzten 5000
+        # deckte der Puffer nur ~4 % des Zeitraums ab und lieferte still
+        # 0,0 statt des echten Verbrauchs (age_coverage_ratio 0.02).
+        # Ein utility_meter zaehlt ereignisbasiert und kennt das Problem
+        # nicht.
         #
-        # Basis ist bewusst sensor.zisternenentnahme_7_tage (statistics,
-        # rollierend) und NICHT ein utility_meter mit cycle: weekly:
-        #   - Ein frisch angelegter utility_meter startet bei null und
-        #     kennt die Vergangenheit nicht. Bis zur naechsten Entnahme
-        #     bliebe die Reichweite tagelang unverfuegbar.
-        #   - cycle: weekly setzt zudem Montag frueh hart zurueck, danach
-        #     waere der Mittelwert bis Mitte der Woche unbrauchbar.
-        # Die statistics-Plattform liest ihr Fenster beim Start aus dem
-        # Recorder nach und liefert deshalb sofort einen echten Wert.
+        # Monatsbezug statt Woche, weil der Monatswechsel seltener stoert
+        # als der Wochenwechsel. Am Monatsersten ist der Wert duenn - dann
+        # greift die Untergrenze in der availability.
         # ---------------------------------------------------------------
         - name: "Zisterne Reichweite"
           unique_id: zisterne_reichweite
           unit_of_measurement: "d"
           state_class: measurement
           icon: mdi:calendar-clock
-          # Ohne nennenswerte Entnahme ist die Reichweite nicht definiert.
-          # Das muss ueber availability laufen: ein state_class-Sensor darf
-          # keinen Nicht-Zahl-State wie "unknown" zurueckgeben.
           availability: >
+            {% set tage = now().day %}
+            {% set l = (states('sensor.zisternenentnahme_monat') | float(0)) * 1000 / tage %}
             {{ states('sensor.mb_zisterne_liter') not in
                  ['unknown','unavailable','none','']
-               and ((states('sensor.zisternenentnahme_7_tage') | float(0)) * 1000 / 7) >= 1 }}
+               and l >= 1 }}
           state: >
             {% set liter = states('sensor.mb_zisterne_liter') | float(0) %}
-            {% set woche = (states('sensor.zisternenentnahme_7_tage') | float(0)) * 1000 %}
-            {{ [liter / (woche / 7), 999] | min | round(1) }}
+            {% set proTag = (states('sensor.zisternenentnahme_monat') | float(0))
+                            * 1000 / now().day %}
+            {{ [liter / proTag, 999] | min | round(1) }}
           attributes:
             entnahme_pro_tag: >
-              {{ (((states('sensor.zisternenentnahme_7_tage') | float(0)) * 1000) / 7) | round(0) }}
+              {{ (((states('sensor.zisternenentnahme_monat') | float(0)) * 1000)
+                  / now().day) | round(0) }}
+            basis_tage: "{{ now().day }}"
 
         # ---------------------------------------------------------------
         # Soll-Ist-Abgleich des Zisternenzulaufs.
@@ -171,30 +214,31 @@ package_env_water_balance:
         # zurueck, deutet das auf verstopften Filter, verlegte Fallrohre
         # oder einen Ueberlauf, den man sonst nie bemerkt.
         # ---------------------------------------------------------------
-        - name: "Zisterne Zulauf 24h"
-          unique_id: zisterne_zulauf_24h
+        - name: "Zisterne Zulauf heute"
+          unique_id: zisterne_zulauf_heute
           unit_of_measurement: "L"
           state_class: measurement
           icon: mdi:water-plus
           # Entity-ID ohne "ue": HA slugifiziert Umlaute ohne
           # Transliteration, aus "Fuellstand" wird _fullstand_.
           availability: >
-            {{ states('sensor.zisterne_fullstand_24h') not in
+            {{ states('sensor.zisterne_fullstand_tagesbeginn') not in
                  ['unknown','unavailable','none','']
-               and states('sensor.zisternenentnahme_24h') not in
+               and states('sensor.mb_zisterne_liter') not in
                  ['unknown','unavailable','none',''] }}
           state: >
-            {% set dl = states('sensor.zisterne_fullstand_24h') | float(0) %}
-            {% set de = (states('sensor.zisternenentnahme_24h') | float(0)) * 1000 %}
+            {% set dl = (states('sensor.mb_zisterne_liter') | float(0))
+                        - (states('sensor.zisterne_fullstand_tagesbeginn') | float(0)) %}
+            {% set de = (states('sensor.zisternenentnahme_heute') | float(0)) * 1000 %}
             {{ [dl + de, 0] | max | round(0) }}
 
-        - name: "Zisterne Zulauf erwartet 24h"
-          unique_id: zisterne_zulauf_erwartet_24h
+        - name: "Zisterne Zulauf erwartet heute"
+          unique_id: zisterne_zulauf_erwartet_heute
           unit_of_measurement: "L"
           state_class: measurement
           icon: mdi:water-outline
           state: >
-            {{ ((states('sensor.regen_24h') | float(0))
+            {{ ((states('sensor.regen_heute') | float(0))
                 * (states('input_number.dach_wirksame_flaeche') | float(0))) | round(0) }}
 
         # Wirkungsgrad nur bei nennenswertem Regen und nicht voller
@@ -205,12 +249,12 @@ package_env_water_balance:
           state_class: measurement
           icon: mdi:filter-check
           availability: >
-            {{ (states('sensor.regen_24h') | float(0)) >= 3
+            {{ (states('sensor.regen_heute') | float(0)) >= 3
                and (states('sensor.mb_zisterne_proz') | float(100)) < 90
-               and (states('sensor.zisterne_zulauf_erwartet_24h') | float(0)) > 0 }}
+               and (states('sensor.zisterne_zulauf_erwartet_heute') | float(0)) > 0 }}
           state: >
-            {% set ist  = states('sensor.zisterne_zulauf_24h') | float(0) %}
-            {% set soll = states('sensor.zisterne_zulauf_erwartet_24h') | float(0) %}
+            {% set ist  = states('sensor.zisterne_zulauf_heute') | float(0) %}
+            {% set soll = states('sensor.zisterne_zulauf_erwartet_heute') | float(0) %}
             {{ [100 * ist / soll, 300] | min | round(0) }}
 
         # ---------------------------------------------------------------
@@ -315,49 +359,6 @@ package_env_water_balance:
                  if bedarf > 1 else 'unbegrenzt' }}
 
   sensor:
-    # Rollierende 7-Tage-Entnahme aus dem Zisternen-Zaehler.
-    # state_characteristic: change = Differenz zwischen erstem und letztem
-    # Wert im Fenster, bei einem total_increasing-Zaehler also exakt der
-    # Verbrauch. sampling_size grosszuegig: sensor.zisterne erzeugt rund
-    # 1600 States pro Woche, 5000 deckt das mit Reserve ab.
-    # 24-h-Fenster fuer den Zulaufabgleich. change = letzter minus erster
-    # Wert im Fenster, beim Fuellstand also auch negativ (Entnahme).
-    - platform: statistics
-      name: "Zisterne Füllstand 24h"
-      unique_id: zisterne_fuellstand_24h
-      entity_id: sensor.mb_zisterne_liter
-      state_characteristic: change
-      sampling_size: 3000
-      max_age:
-        hours: 24
-
-    - platform: statistics
-      name: "Zisternenentnahme 24h"
-      unique_id: zisternenentnahme_24h
-      entity_id: sensor.zisterne
-      state_characteristic: change
-      sampling_size: 3000
-      max_age:
-        hours: 24
-
-    - platform: statistics
-      name: "Regen 24h"
-      unique_id: regen_24h
-      entity_id: sensor.ads_wetterrain
-      state_characteristic: change
-      sampling_size: 3000
-      max_age:
-        hours: 24
-
-    - platform: statistics
-      name: "Zisternenentnahme 7 Tage"
-      unique_id: zisternenentnahme_7_tage
-      entity_id: sensor.zisterne
-      state_characteristic: change
-      sampling_size: 5000
-      max_age:
-        days: 7
-
     # ET0-Rate aufintegrieren. Quelle liefert mm/h, unit_time h -> mm.
     # max_sub_interval erzwingt Zwischenschritte, weil die DWD-Strahlung
     # nur stuendlich aktualisiert und die Riemann-Summe sonst zu grob
@@ -390,6 +391,14 @@ package_env_water_balance:
 
     # Regen aus der eigenen Station. sensor.ads_wetterrain ist ein
     # aufsteigender Zaehler in mm - passt direkt als utility_meter-Quelle.
+    # Basis der Reichweite. Ereignisbasiert statt gepuffert - siehe
+    # Begruendung beim Sensor "Zisterne Reichweite" oben.
+    zisternenentnahme_monat:
+      always_available: true
+      name: "Zisternenentnahme Monat"
+      source: sensor.zisterne
+      cycle: monthly
+
     regen_heute:
       always_available: true
       name: "Regen heute"
