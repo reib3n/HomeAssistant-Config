@@ -21,3 +21,7 @@
 # Python build artifacts (auto-generated)
 __pycache__/
 *.py[cod]
+
+# Rohdaten-Sicherung entfernter Statistik-Ausreisser (kein Config-Bestandteil)
+/ausreisser_backup_*.json
+/ausreisser_loeschen.sql
