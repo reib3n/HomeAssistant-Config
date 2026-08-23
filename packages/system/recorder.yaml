@@ -49,7 +49,10 @@ package_system_recorder:
         # 
         # Ausgeschlossen wurde nur, was VIER Pruefungen ueberstanden hat:
         #   1. kein has_sum-Zaehler       -> Energie-Dashboard unberuehrt
-        #   2. in keiner Graph-Karte      -> keine sichtbare Historie verloren
+        #   2. in keiner Dashboard-Karte  -> keine sichtbare Historie verloren.
+        #      Nicht nur Graph-Karten pruefen: auch eine Tile-Karte zeigt im
+        #      More-Info-Dialog einen Verlauf. Genau daran sind die drei
+        #      Startseiten-Kacheln PV/Import/Export zunaechst durchgerutscht.
         #   3. keine Quelle eines Helfers -> kein statistics/utility_meter/
         #                                    integration haengt daran
         #   4. nicht in .storage/energy   -> faengt Faelle wie
@@ -106,7 +109,8 @@ package_system_recorder:
         - sensor.mb_solaredge_garage_dc_current_final
         - sensor.mb_solaredge_garage_dc_power_final
         - sensor.mb_solaredge_garage_dc_voltage_final
-        - sensor.mb_solaredge_garage_energy_now_final
+        # sensor.mb_solaredge_garage_energy_now_final NICHT ausschliessen:
+        # Tile "PV Garage" auf der Startseite (Ueberblick).
 
         # --- Shelly Pro3EM Heizung: Momentanleistungen je Phase und gesamt. Fuer die
 #       Heizkennzahl zaehlt allein total_active_energy - der bleibt drin.
@@ -138,8 +142,8 @@ package_system_recorder:
         # --- Momentanwerte der Netz- und PV-Berechnung. Die kWh-Zaehler dahinter bleiben
 #       unberuehrt; die Ueberschussregelung liest den Live-State und ist von
 #       der Aufzeichnung unabhaengig.
-        - sensor.calc_grid_export_now
-        - sensor.calc_grid_import_now
+        # calc_grid_export_now / calc_grid_import_now NICHT ausschliessen:
+        # Tiles "Strom Import"/"Strom Export" auf der Startseite (Ueberblick).
         - sensor.pv_ueberschuss_mittel_15min
 
         # --- Abgeleitete Boeen-Sensoren (statistics-Plattform ueber
