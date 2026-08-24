@@ -191,8 +191,23 @@ blueprint:
               filter:
                 - domain: sensor
                   device_class: temperature
+        indoor_target_sensor:
+          name: Innentemperatur-Ziel als Sensor (optional)
+          description: >
+            Liefert die Komfort-Obergrenze als Entity statt als feste Zahl. Gedacht
+            fuer sensor.komfort_obergrenze_* (WGT-Zieltemperatur + Offset), damit
+            Beschattung und Sommersteuerung nachweislich dieselbe Schwelle benutzen
+            und sich nicht widersprechen koennen. Ist er gesetzt, wird der feste
+            Wert unten ignoriert - faellt er aus (Modbus weg), greift er wieder.
+          default: {}
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+                  device_class: temperature
         indoor_target:
           name: Innentemperatur-Ziel (°C)
+          description: Fester Rueckfallwert. Wird nur verwendet, wenn oben kein Sensor gesetzt ist oder dieser gerade keinen Zahlenwert liefert.
           default: 23
           selector:
             number: { min: 15, max: 30, step: 0.5, unit_of_measurement: "°C", mode: box }
@@ -282,6 +297,7 @@ variables:
   forecast_high_min: !input forecast_high_min
   indoor_sensor: !input indoor_sensor
   indoor_target: !input indoor_target
+  indoor_target_sensor: !input indoor_target_sensor
   temp_hysterese: !input temp_hysterese
   contact_sensor: !input contact_sensor
   wind_sensor: !input wind_sensor
@@ -293,6 +309,7 @@ variables:
   # --- Optionale Inputs erkennen ---
   has_button: "{{ shade_button is string and shade_button | length > 0 }}"
   has_indoor: "{{ indoor_sensor is string and indoor_sensor | length > 0 }}"
+  has_target_sensor: "{{ indoor_target_sensor is string and indoor_target_sensor | length > 0 }}"
   has_clarity: "{{ clarity_sensor is string and clarity_sensor | length > 0 }}"
   has_contact: "{{ contact_sensor is string and contact_sensor | length > 0 }}"
   has_wind: "{{ wind_sensor is string and wind_sensor | length > 0 }}"
@@ -327,10 +344,16 @@ variables:
   # Beschleuniger (nie Blocker); die Außentemperatur wird bewusst nicht geprüft
   # (sie ist morgens am Ostfenster kühl, obwohl der Tag heiß wird).
   season_ok: "{{ forecast_high >= forecast_high_min }}"
-  heat_gate: "{{ season_ok or (has_indoor and indoor >= indoor_target) }}"
+  # Komfort-Obergrenze: bevorzugt aus dem Sensor, sonst der feste Wert. Der
+  # float()-Default faengt unknown/unavailable ab, damit ein Modbus-Aussetzer
+  # die Beschattung nicht laehmt, sondern auf das alte Verhalten zurueckfaellt.
+  indoor_target_eff: >
+    {{ states(indoor_target_sensor) | float(indoor_target)
+       if has_target_sensor else indoor_target }}
+  heat_gate: "{{ season_ok or (has_indoor and indoor >= indoor_target_eff) }}"
   heat_gone: >
     {{ (not season_ok)
-       and ((not has_indoor) or indoor < indoor_target - temp_hysterese) }}
+       and ((not has_indoor) or indoor < indoor_target_eff - temp_hysterese) }}
 
   # --- Zustände / Overrides ---
   pos: "{{ state_attr(cover,'current_position') }}"

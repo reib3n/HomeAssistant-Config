@@ -30,6 +30,114 @@ package_building_hvac:
       has_date: true
       has_time: true
       icon: mdi:snowflake-check
+    wgt_handbetrieb_bis:
+      name: "WGT Handbetrieb bis"
+      has_date: true
+      has_time: true
+      icon: mdi:hand-back-right-off-outline
+
+  ################################################################################################
+  #
+  # 1c) KOMFORT-OFFSET
+  #
+  # Aufschlag auf die WGT-Zieltemperatur je Raum. Die Zielwerte sind
+  # HEIZ-Sollwerte (Stand 08/2026: 20 C, Linus-Henry 18 C) - direkt als
+  # Kuehlschwelle genommen wuerde die Anlage praktisch permanent laufen.
+  # Erst Soll + Offset ergibt die Komfort-OBERgrenze.
+  #
+  # 4 K reproduziert exakt die 24 C, die vorher in allen fuenf
+  # Beschattungs-Automationen von Hand standen.
+  ################################################################################################
+  input_number:
+    wgt_komfort_offset:
+      name: "Komfort-Offset über Zieltemperatur"
+      min: 0
+      max: 8
+      step: 0.5
+      unit_of_measurement: "K"
+      icon: mdi:thermometer-plus
+
+    # Eigene Saison-Grenzen, absichtlich NICHT input_number.heizgrenze /
+    # kuehlgrenze mitbenutzt: die beiden sind fuer die Gradtag-Abrechnung
+    # getunt (13 / 18 C aus der Regression Jan-Aug 2026). Wer sie dort mal
+    # nachzieht, wuerde sonst ungewollt die Saison verschieben.
+    #
+    # Empfohlen 13 / 18 C.
+    #
+    # Die Grenzen spannen den Bereich, den das 7-Tage-Mittel hier real
+    # durchlaeuft (gemessen 03/2025-08/2026, n=11092 Stundenwerte):
+    #   Minimum -6.4 C | 1. Perz. -5.1 | 25. Perz. 5.2 | Median 11.1
+    #   75. Perz. 17.0 | 90. Perz. 21.4 | Maximum 26.7 C
+    # Eine Heizgrenze unter rund 2 C ist praktisch nicht sinnvoll - die
+    # Heizsaison begaenne dann erst nach einer Frostwoche. Einstellbar ist
+    # sie trotzdem, die Grenzen sind Leitplanken, keine Empfehlung.
+    #
+    # Erstlauf: beide starten auf ihrem Minimum, also -5 / 10. Der Guard im
+    # binary_sensor haelt die Heizgrenze immer mindestens 1 K unter der
+    # Kuehlgrenze, das Deadband ist damit gueltig. Beim aktuellen Mittel von
+    # 17.7 C ergibt das Sommerbetrieb - die richtige Seite.
+    wgt_saison_heizgrenze:
+      name: "Saison Heizgrenze"
+      min: -5
+      max: 20
+      step: 0.5
+      unit_of_measurement: "°C"
+      icon: mdi:snowflake-thermometer
+
+    wgt_saison_kuehlgrenze:
+      name: "Saison Kühlgrenze"
+      min: 10
+      max: 25
+      step: 0.5
+      unit_of_measurement: "°C"
+      icon: mdi:sun-thermometer
+
+    # Ab welchem VORHERGESAGTEN Tageshoechstwert die Anlage im Sommer
+    # komplett abgeschaltet wird (Betriebsart 0), statt nur zu lueften.
+    #
+    # Hintergrund: an heissen Tagen holt schon die blosse Lueftung Warmluft
+    # ins Haus - deshalb wird dann ganz abgeschaltet, und das funktioniert
+    # in der Praxis gut. An milden Tagen ist dasselbe Abschalten aber
+    # unnoetig und kostet Luftwechsel. Der Schwellwert trennt beides.
+    #
+    # Greift nur im Sommerbetrieb: in der Heizsaison und bei Heizbedarf
+    # laeuft die Anlage ohnehin auf heat und wird nie abgeschaltet.
+    wgt_lueftung_aus_ab:
+      name: "Lüftung aus ab Tageshöchstwert"
+      min: 20
+      max: 40
+      step: 0.5
+      unit_of_measurement: "°C"
+      icon: mdi:fan-off
+
+    # Wie lange die Automatik nach einer Bedienung am Handteil ruht.
+    wgt_handbetrieb_dauer:
+      name: "Handbetrieb Nachlaufzeit"
+      min: 1
+      max: 24
+      step: 1
+      unit_of_measurement: "h"
+      icon: mdi:hand-back-right-outline
+
+  ################################################################################################
+  #
+  # 1d) HANDBETRIEB-ERKENNUNG
+  #
+  # Die Automation merkt sich hier, welchen Modus sie zuletzt selbst
+  # geschrieben hat. Weicht climate.wgtmode_template davon ab, hat jemand
+  # am Bedienteil oder in der UI eingegriffen -> Automatik ruht bis
+  # wgt_handbetrieb_bis.
+  #
+  # Bewusst NICHT ueber climate.wgtmode_template.last_changed: ein
+  # Modbus-Aussetzer setzt last_changed zurueck und saehe wie eine
+  # Handbedienung aus. Siehe denselben Grund bei wgt_kuehlung_start.
+  ################################################################################################
+  input_text:
+    wgt_automatik_soll:
+      name: "WGT zuletzt von der Automatik geschrieben"
+      max: 20
+      icon: mdi:robot-outline
+
 
   ################################################################################################
   #
@@ -49,6 +157,40 @@ package_building_hvac:
       max_age:
         minutes: 15
       precision: 0
+
+  ################################################################################################
+  #
+  # 1f) GLEITENDES AUSSENTEMPERATUR-MITTEL (Saison-Erkennung)
+  #
+  # Zweistufig, und zwar aus einem gemessenen Grund: sensor.temp_aussen_low
+  # aendert sich 3001-mal pro Tag. Ein statistics-Sensor mit max_age 7 Tage
+  # muesste dafuer rund 21.000 Samples puffern. Der time_throttle davor
+  # laesst nur einen Wert pro Stunde durch -> 168 Samples.
+  #
+  # Warum 7 Tage: mit 48-h-Mittel schaltet die Saison bei denselben Grenzen
+  # 16-mal in 1.3 Jahren um, davon 6-mal mitten in den Sommer (sommerliche
+  # Kaltlufteinbrueche ziehen das kurze Mittel unter die Heizgrenze). Ab
+  # 168 h liefert JEDES getestete Deadband 3 Umschaltungen und keine
+  # Sommer-Fehlschaltung - das Ergebnis haengt dann nicht mehr an der
+  # exakten Schwelle, und genau das ist der Grund fuer diese Fensterlaenge.
+  ################################################################################################
+    - platform: filter
+      name: "Aussentemp gedrosselt"
+      unique_id: "aussentemp_gedrosselt"
+      entity_id: sensor.temp_aussen_low
+      filters:
+        - filter: time_throttle
+          window_size: "01:00:00"
+
+    - platform: statistics
+      name: "Aussentemp Mittel 7d"
+      unique_id: "aussentemp_mittel_7d"
+      entity_id: sensor.aussentemp_gedrosselt
+      state_characteristic: mean
+      sampling_size: 200
+      max_age:
+        days: 7
+      precision: 1
 
   ################################################################################################
   #
@@ -325,6 +467,267 @@ package_building_hvac:
             Lufttemperatur: >-
               {% set v = states('sensor.temperatur_nach_ne') %}
               {% if is_number(v) %}{{ v ~ '°C' }}{% else %}-{% endif %}
+
+
+        # -------------------------------------------------------------------
+        # KOMFORT-OBERGRENZE JE RAUM
+        #
+        # Eine Schwelle, zwei Verbraucher: die Sommersteuerung (ueber
+        # sensor.wgt_max_ueberschreitung) und die Beschattung (ueber
+        # indoor_target_sensor im Blueprint). Solange beide dieselbe Zahl
+        # lesen, koennen sie sich nicht mehr widersprechen - genau der
+        # Fall vom 23.08.2026, als die WP ein 21.6-C-Haus gekuehlt hat,
+        # waehrend die Beschattung es aufheizen lassen wollte.
+        #
+        # Absolute Untergrenze 22 C: schuetzt gegen einen versehentlich zu
+        # kleinen Offset und gegen den allerersten Start, bei dem der
+        # input_number noch auf dem Minimum steht. Bei Offset 4 bindet sie
+        # nur bei Linus-Henry (18 + 4 = 22).
+        #
+        # Nur diese fuenf Raeume: Diele, WC EG und Bad OG heizen sich anders
+        # auf als Wohnraeume und sollen die zentrale Kuehlung nicht ausloesen.
+        # -------------------------------------------------------------------
+        - name: "Komfort Obergrenze Wohnzimmer"
+          unique_id: "komfort_obergrenze_wohnzimmer"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: mdi:thermometer-chevron-up
+          availability: "{{ is_number(states('sensor.zieltemperatur_wohnzimmer')) }}"
+          state: >-
+            {{ [ (states('sensor.zieltemperatur_wohnzimmer') | float
+                  + states('input_number.wgt_komfort_offset') | float(4)),
+                 22.0 ] | max | round(1) }}
+
+        - name: "Komfort Obergrenze Büro"
+          unique_id: "komfort_obergrenze_buro"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: mdi:thermometer-chevron-up
+          availability: "{{ is_number(states('sensor.zieltemperatur_buro')) }}"
+          state: >-
+            {{ [ (states('sensor.zieltemperatur_buro') | float
+                  + states('input_number.wgt_komfort_offset') | float(4)),
+                 22.0 ] | max | round(1) }}
+
+        - name: "Komfort Obergrenze Schlafzimmer"
+          unique_id: "komfort_obergrenze_schlafzimmer"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: mdi:thermometer-chevron-up
+          availability: "{{ is_number(states('sensor.zieltemperatur_schlafzimmer')) }}"
+          state: >-
+            {{ [ (states('sensor.zieltemperatur_schlafzimmer') | float
+                  + states('input_number.wgt_komfort_offset') | float(4)),
+                 22.0 ] | max | round(1) }}
+
+        - name: "Komfort Obergrenze Erik"
+          unique_id: "komfort_obergrenze_erik"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: mdi:thermometer-chevron-up
+          availability: "{{ is_number(states('sensor.zieltemperatur_erik')) }}"
+          state: >-
+            {{ [ (states('sensor.zieltemperatur_erik') | float
+                  + states('input_number.wgt_komfort_offset') | float(4)),
+                 22.0 ] | max | round(1) }}
+
+        - name: "Komfort Obergrenze Linus-Henry"
+          unique_id: "komfort_obergrenze_linus_henry"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: mdi:thermometer-chevron-up
+          availability: "{{ is_number(states('sensor.zieltemperatur_linus_henry')) }}"
+          state: >-
+            {{ [ (states('sensor.zieltemperatur_linus_henry') | float
+                  + states('input_number.wgt_komfort_offset') | float(4)),
+                 22.0 ] | max | round(1) }}
+
+        # -------------------------------------------------------------------
+        # GROESSTE UEBERSCHREITUNG UEBER ALLE RAEUME
+        #
+        # Bewusst NICHT "niedrigste Zieltemperatur": das wuerde die
+        # Temperatur des einen Raums mit dem Sollwert eines anderen
+        # vergleichen und Linus-Henry (Soll 18 C) zum Diktator ueber die
+        # zentrale Kuehlung machen. Verglichen wird je Raum gegen die
+        # EIGENE Obergrenze, das Maximum entscheidet.
+        #
+        # >= 0 bedeutet: mindestens ein Raum ist ueber seiner Obergrenze.
+        # Raeume mit unlesbarem Ist- oder Sollwert fallen still heraus;
+        # faellt der ganze Modbus aus, wird der Sensor unavailable und die
+        # Sommersteuerung fasst nichts an (Plausibilitaets-Condition dort).
+        # -------------------------------------------------------------------
+        - name: "WGT Max Ueberschreitung"
+          unique_id: "wgt_max_ueberschreitung"
+          unit_of_measurement: "K"
+          state_class: measurement
+          icon: mdi:thermometer-alert
+          availability: >-
+            {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.komfort_obergrenze_wohnzimmer'),
+                 ('Büro', 'sensor.temperatur_buro', 'sensor.komfort_obergrenze_buro'),
+                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.komfort_obergrenze_schlafzimmer'),
+                 ('Erik', 'sensor.temperatur_erik', 'sensor.komfort_obergrenze_erik'),
+                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.komfort_obergrenze_linus_henry') ] %}
+            {% set ns = namespace(ok = false) %}
+            {% for name, ist, grenze in raeume %}
+              {% if is_number(states(ist)) and is_number(states(grenze)) %}
+                {% set ns.ok = true %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.ok }}
+          state: >-
+            {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.komfort_obergrenze_wohnzimmer'),
+                 ('Büro', 'sensor.temperatur_buro', 'sensor.komfort_obergrenze_buro'),
+                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.komfort_obergrenze_schlafzimmer'),
+                 ('Erik', 'sensor.temperatur_erik', 'sensor.komfort_obergrenze_erik'),
+                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.komfort_obergrenze_linus_henry') ] %}
+            {% set ns = namespace(max_d = -99.0) %}
+            {% for name, ist, grenze in raeume %}
+              {% if is_number(states(ist)) and is_number(states(grenze)) %}
+                {% set d = states(ist) | float - states(grenze) | float %}
+                {% if d > ns.max_d %}{% set ns.max_d = d %}{% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.max_d | round(1) }}
+          attributes:
+            Raum: >-
+              {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.komfort_obergrenze_wohnzimmer'),
+                 ('Büro', 'sensor.temperatur_buro', 'sensor.komfort_obergrenze_buro'),
+                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.komfort_obergrenze_schlafzimmer'),
+                 ('Erik', 'sensor.temperatur_erik', 'sensor.komfort_obergrenze_erik'),
+                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.komfort_obergrenze_linus_henry') ] %}
+              {% set ns = namespace(max_d = -99.0, raum = '-') %}
+              {% for name, ist, grenze in raeume %}
+                {% if is_number(states(ist)) and is_number(states(grenze)) %}
+                  {% set d = states(ist) | float - states(grenze) | float %}
+                  {% if d > ns.max_d %}{% set ns.max_d = d %}{% set ns.raum = name %}{% endif %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.raum }}
+
+        # -------------------------------------------------------------------
+        # GROESSTE UNTERSCHREITUNG - Heizbedarf
+        #
+        # Spiegelbild von wgt_max_ueberschreitung, aber ueber ALLE ACHT
+        # Raeume: fuer die Kuehlfreigabe sollen Diele, WC und Bad nicht
+        # mitreden, beim Heizbedarf sehr wohl.
+        #
+        # Zweck: die Saison-Erkennung hat asymmetrische Fehlerrichtungen.
+        # "Faelschlich Winter" heisst nur, dass nicht gekuehlt wird.
+        # "Faelschlich Sommer" in einem Kaelteeinbruch hiesse, dass das Haus
+        # auskuehlt. Deshalb heizt die Sommersteuerung bei Unterschreitung
+        # unabhaengig von der Saison - der zweite Zweig neben heizsaison.
+        #
+        # Schwelle 1.0 K mit Hysterese bis 0.0 K, gemessen begruendet: ein
+        # Raum liegt im Juli/August nur an 0.6 % der Stunden mehr als 1.0 K
+        # unter Soll, bei 0.5 K waeren es 8-9 % - das wuerde im Hochsommer
+        # staendig zwischen Heizen und Kuehlen umschalten. In den kritischen
+        # Uebergangsmonaten ist das Signal dagegen kraeftig: Oktober 44 %,
+        # November 60 %, Dezember 45 % der Stunden ueber 1.0 K.
+        # -------------------------------------------------------------------
+        - name: "WGT Max Unterschreitung"
+          unique_id: "wgt_max_unterschreitung"
+          unit_of_measurement: "K"
+          state_class: measurement
+          icon: mdi:thermometer-low
+          availability: >-
+            {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.zieltemperatur_wohnzimmer'),
+                 ('Büro', 'sensor.temperatur_buro', 'sensor.zieltemperatur_buro'),
+                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.zieltemperatur_schlafzimmer'),
+                 ('Erik', 'sensor.temperatur_erik', 'sensor.zieltemperatur_erik'),
+                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.zieltemperatur_linus_henry'),
+                 ('Diele', 'sensor.temperatur_diele', 'sensor.zieltemperatur_diele'),
+                 ('WC EG', 'sensor.temperatur_wc_eg', 'sensor.zieltemperatur_wc_eg'),
+                 ('Bad OG', 'sensor.temperatur_bad_og', 'sensor.zieltemperatur_bad_og') ] %}
+            {% set ns = namespace(ok = false) %}
+            {% for name, ist, soll in raeume %}
+              {% if is_number(states(ist)) and is_number(states(soll)) %}
+                {% set ns.ok = true %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.ok }}
+          state: >-
+            {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.zieltemperatur_wohnzimmer'),
+                 ('Büro', 'sensor.temperatur_buro', 'sensor.zieltemperatur_buro'),
+                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.zieltemperatur_schlafzimmer'),
+                 ('Erik', 'sensor.temperatur_erik', 'sensor.zieltemperatur_erik'),
+                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.zieltemperatur_linus_henry'),
+                 ('Diele', 'sensor.temperatur_diele', 'sensor.zieltemperatur_diele'),
+                 ('WC EG', 'sensor.temperatur_wc_eg', 'sensor.zieltemperatur_wc_eg'),
+                 ('Bad OG', 'sensor.temperatur_bad_og', 'sensor.zieltemperatur_bad_og') ] %}
+            {% set ns = namespace(max_d = -99.0) %}
+            {% for name, ist, soll in raeume %}
+              {% if is_number(states(ist)) and is_number(states(soll)) %}
+                {% set d = states(soll) | float - states(ist) | float %}
+                {% if d > ns.max_d %}{% set ns.max_d = d %}{% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.max_d | round(1) }}
+          attributes:
+            Raum: >-
+              {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.zieltemperatur_wohnzimmer'),
+                 ('Büro', 'sensor.temperatur_buro', 'sensor.zieltemperatur_buro'),
+                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.zieltemperatur_schlafzimmer'),
+                 ('Erik', 'sensor.temperatur_erik', 'sensor.zieltemperatur_erik'),
+                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.zieltemperatur_linus_henry'),
+                 ('Diele', 'sensor.temperatur_diele', 'sensor.zieltemperatur_diele'),
+                 ('WC EG', 'sensor.temperatur_wc_eg', 'sensor.zieltemperatur_wc_eg'),
+                 ('Bad OG', 'sensor.temperatur_bad_og', 'sensor.zieltemperatur_bad_og') ] %}
+              {% set ns = namespace(max_d = -99.0, raum = '-') %}
+              {% for name, ist, soll in raeume %}
+                {% if is_number(states(ist)) and is_number(states(soll)) %}
+                  {% set d = states(soll) | float - states(ist) | float %}
+                  {% if d > ns.max_d %}{% set ns.max_d = d %}{% set ns.raum = name %}{% endif %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.raum }}
+
+
+    - binary_sensor:
+        # -------------------------------------------------------------------
+        # HEIZSAISON
+        #
+        # Ersetzt den fruehen input_boolean.sommersteuerung_luftung. Der war
+        # kein Saison-Schalter, sondern ein Uebergriffsschutz: die
+        # Sommersteuerung kann nur off/fan_only/cool schreiben, nie heat -
+        # also musste im Winter von Hand verhindert werden, dass sie das
+        # manuell gesetzte heat ueberschreibt. Jetzt entscheidet sie selbst.
+        #
+        # Deadband mit Selbsthaltung ueber 'this': unter der Heizgrenze an,
+        # ueber der Kuehlgrenze aus, DAZWISCHEN bleibt der Zustand stehen.
+        # Damit gibt es keinen Zitterbereich im Fruehjahr und Herbst.
+        #
+        # Kaltstart: der statistics-Sensor ist nach einem Neustart leer und
+        # braucht Tage, bis er den Zeitraum abdeckt. Solange
+        # age_coverage_ratio unter 0.3 liegt (rund 2 Tage), wird NICHT neu
+        # entschieden, sondern der alte Zustand gehalten. Ohne vorherigen
+        # Zustand ergibt 'this.state != off' -> an, also Heizsaison: dann
+        # ruehrt die Sommersteuerung nichts an. Bewusst die sichere Seite.
+        # -------------------------------------------------------------------
+        - name: "Heizsaison"
+          unique_id: "heizsaison"
+          icon: >-
+            {{ 'mdi:fire' if is_state('binary_sensor.heizsaison','on') else 'mdi:weather-sunny' }}
+          state: >-
+            {% set m = states('sensor.aussentemp_mittel_7d') | float(-99) %}
+            {% set cov = state_attr('sensor.aussentemp_mittel_7d','age_coverage_ratio') | float(0) %}
+            {% set kg = states('input_number.wgt_saison_kuehlgrenze') | float(18) %}
+            {# Heizgrenze immer mindestens 1 K unter der Kuehlgrenze halten,
+               sonst waere das Deadband invertiert und der Sensor wuerde flattern. #}
+            {% set hg = [ states('input_number.wgt_saison_heizgrenze') | float(13), kg - 1 ] | min %}
+            {% if m == -99 or cov < 0.3 %}{{ this.state != 'off' }}
+            {% elif m < hg %}true
+            {% elif m > kg %}false
+            {% else %}{{ this.state == 'on' }}{% endif %}
+          attributes:
+            Mittel_7d: "{{ states('sensor.aussentemp_mittel_7d') }}"
+            Abdeckung: >-
+              {{ (state_attr('sensor.aussentemp_mittel_7d','age_coverage_ratio')
+                  | float(0) * 100) | round(0) }} %
 
     ################################################################################################
     #

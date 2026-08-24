@@ -1022,36 +1022,91 @@
   mode: single
 - id: '1749890412696'
   alias: WGT - Sommersteuerung
-  description: Sommerklimatisierung. Draußen kälter -> freie Kühlung (nur lüften).
-    Draußen wärmer + PV-Überschuss -> WP-Kühlung. Sonst Anlage aus. Der Zielmodus
-    wird nur geschrieben, wenn er vom Ist-Zustand abweicht.
+  description: 'Ganzjaehrige Betriebsart-Steuerung der WGT. Ersetzt den frueheren
+    input_boolean.sommersteuerung_luftung: der war kein Saison-Schalter, sondern ein
+    Uebergriffsschutz, weil diese Automation nur off/fan_only/cool schreiben konnte
+    und im Winter das manuell gesetzte heat ueberschrieben haette. Jetzt entscheidet
+    binary_sensor.heizsaison (7-Tage-Aussenmittel mit Deadband) und die Automation
+    schreibt heat selbst. Reihenfolge: Handbetrieb -> Heizsaison ODER Heizbedarf ->
+    freie Kuehlung -> WP-Kuehlung -> Ruhezustand. Beide Kuehlzweige haengen am
+    Kuehlbedarf; ohne das wuerde nach einer Heizphase bei 6 C aussen die freie
+    Kuehlung starten. Ruhezustand ist NICHT pauschal off: komplett abgeschaltet wird
+    nur, wenn der vorhergesagte Tageshoechstwert ueber
+    input_number.wgt_lueftung_aus_ab liegt - dann holt schon blosses Lueften Warmluft
+    ins Haus. Sonst fan_only, damit der Luftwechsel an milden Tagen weiterlaeuft. Geheizt wird also auch dann, wenn die
+    Saison-Erkennung faelschlich auf Sommer steht - Heizbedarf aus
+    sensor.wgt_max_unterschreitung (ab 1.0 K unter Soll, Hysterese bis 0.0 K).
+    Kuehlbedarf aus sensor.wgt_max_ueberschreitung, dieselbe Schwelle liest die
+    Beschattung.'
   triggers:
   - trigger: time_pattern
     minutes: /15
+  - alias: Saisonwechsel sofort umsetzen, nicht erst zum naechsten Viertelstundentakt
+    trigger: state
+    entity_id: binary_sensor.heizsaison
+    to:
+    - 'on'
+    - 'off'
   conditions:
-  - condition: state
-    entity_id: input_boolean.sommersteuerung_luftung
-    state: 'on'
-    alias: Wenn Sommersteuerung aktiv ist
   - alias: Messwerte plausibel (sonst nichts anfassen)
     condition: template
     value_template: '{{ is_number(states(''sensor.temp_aussen_low'')) and is_number(states(''sensor.temperatur_wohnzimmer''))
-      and has_value(''climate.wgtmode_template'') }}'
+      and is_number(states(''sensor.wgt_max_ueberschreitung'')) and is_number(states(''sensor.wgt_max_unterschreitung''))
+      and has_value(''binary_sensor.heizsaison'') and has_value(''climate.wgtmode_template'')
+      }}'
   actions:
   - variables:
+      ist_modus: '{{ states(''climate.wgtmode_template'') }}'
+      zuletzt: '{{ states(''input_text.wgt_automatik_soll'') }}'
+      hand_bis: '{{ state_attr(''input_datetime.wgt_handbetrieb_bis'', ''timestamp'') }}'
+  - variables:
+      hand_neu: '{{ zuletzt not in [''unknown'', ''unavailable'', ''''] and ist_modus
+        != zuletzt and is_state(''input_boolean.urlaubsmodus'', ''off'') }}'
+      hand_aktiv: '{{ hand_bis is number and now().timestamp() < hand_bis }}'
+  - alias: Bedienung am Handteil erkannt -> Nachlauf starten und aussteigen
+    if:
+    - condition: template
+      value_template: '{{ hand_neu }}'
+    then:
+    - action: input_datetime.set_datetime
+      target:
+        entity_id: input_datetime.wgt_handbetrieb_bis
+      data:
+        timestamp: '{{ now().timestamp() + (states(''input_number.wgt_handbetrieb_dauer'')
+          | float(3)) * 3600 }}'
+    - alias: Handmodus uebernehmen, damit derselbe Eingriff nicht dauernd neu zaehlt
+      action: input_text.set_value
+      target:
+        entity_id: input_text.wgt_automatik_soll
+      data:
+        value: '{{ ist_modus }}'
+    - stop: Handbedienung erkannt - Automatik ruht bis zum Ablauf des Nachlaufs
+  - alias: Nachlauf nach Handbedienung noch aktiv -> nichts tun
+    condition: template
+    value_template: '{{ not hand_aktiv }}'
+  - variables:
+      heizsaison: '{{ is_state(''binary_sensor.heizsaison'', ''on'') }}'
       t_aussen: '{{ states(''sensor.temp_aussen_low'') | float }}'
       t_innen: '{{ states(''sensor.temperatur_wohnzimmer'') | float }}'
       kuehlt: '{{ is_state(''climate.wgtmode_template'', ''cool'') }}'
+      heizt: '{{ is_state(''climate.wgtmode_template'', ''heat'') }}'
       pv_mittel: '{{ states(''sensor.pv_ueberschuss_mittel_15min'') | float(0) }}'
+      ueberschr: '{{ states(''sensor.wgt_max_ueberschreitung'') | float(-99) }}'
+      unterschr: '{{ states(''sensor.wgt_max_unterschreitung'') | float(-99) }}'
+      forecast_hoch: '{{ states(''sensor.forecast_weather_max_temp_today'') | float(99) }}'
+      aus_ab: '{{ states(''input_number.wgt_lueftung_aus_ab'') | float(25) }}'
   - variables:
       pv_frei: '{{ pv_mittel > 150 if kuehlt else pv_mittel > 600 }}'
+      kuehl_bedarf: '{{ ueberschr >= (-1.0 if kuehlt else 0.0) }}'
+      heiz_bedarf: '{{ unterschr >= (0.0 if heizt else 1.0) }}'
       kuehl_laufzeit: '{{ (now().timestamp() - state_attr(''input_datetime.wgt_kuehlung_start'',
         ''timestamp'')) if (kuehlt and state_attr(''input_datetime.wgt_kuehlung_start'',
         ''timestamp'') is number) else 99999 }}'
   - variables:
-      ziel: '{% if t_aussen < t_innen - 0.5 %}fan_only {% elif pv_frei and is_state(''input_boolean.urlaubsmodus'',
-        ''off'') %}cool {% elif kuehlt and kuehl_laufzeit < 1200 %}cool {% else %}off{%
-        endif %}'
+      ziel: '{% if heizsaison or heiz_bedarf %}heat{% elif kuehl_bedarf and t_aussen
+        < t_innen - 0.5 %}fan_only{% elif kuehl_bedarf and pv_frei and is_state(''input_boolean.urlaubsmodus'',
+        ''off'') %}cool{% elif kuehlt and kuehl_laufzeit < 1200 %}cool{% elif forecast_hoch
+        >= aus_ab %}off{% else %}fan_only{% endif %}'
   - alias: Nur bei echter Änderung schreiben
     condition: template
     value_template: '{{ not is_state(''climate.wgtmode_template'', ziel) }}'
@@ -1071,6 +1126,12 @@
       hvac_mode: '{{ ziel }}'
     target:
       entity_id: climate.wgtmode_template
+  - alias: Geschriebenen Modus merken (Grundlage der Handbetrieb-Erkennung)
+    action: input_text.set_value
+    target:
+      entity_id: input_text.wgt_automatik_soll
+    data:
+      value: '{{ ziel }}'
   mode: single
 - id: '1749996238572'
   alias: EnergySave - Accesspoints
@@ -1978,6 +2039,7 @@
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
       indoor_sensor: sensor.mb_temp_wohnzimmer
+      indoor_target_sensor: sensor.komfort_obergrenze_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 24
       lux_open: 20000
@@ -1997,6 +2059,7 @@
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
       indoor_sensor: sensor.mb_temp_wohnzimmer
+      indoor_target_sensor: sensor.komfort_obergrenze_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 24
       lux_close: 25000
@@ -2048,6 +2111,7 @@
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
       indoor_sensor: sensor.temperatur_buro
+      indoor_target_sensor: sensor.komfort_obergrenze_buro
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 24
       azimuth_end: 160
@@ -2070,6 +2134,7 @@
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
       indoor_sensor: sensor.mb_temp_wohnzimmer
+      indoor_target_sensor: sensor.komfort_obergrenze_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 24
       azimuth_end: 360
@@ -2094,6 +2159,7 @@
       lux_sensor: sensor.wetterluxtotal
       forecast_high_min: 23
       indoor_sensor: sensor.mb_temp_wohnzimmer
+      indoor_target_sensor: sensor.komfort_obergrenze_wohnzimmer
       forecast_sensor: sensor.forecast_weather_max_temp_today
       indoor_target: 24
       azimuth_end: 360
