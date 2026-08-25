@@ -3,6 +3,12 @@ package_system_recorder:
   # Recorder-Tuning
   # Ziel: Schreiblast/DB-Größe senken, ohne für Charts/Energie relevante
   # Sensoren zu verlieren. purge_keep_days bleibt beim HA-Default (10).
+  #
+  # ACHTUNG bei purge_keep_days: sensor.aussentemp_mittel_7d (packages/building/
+  # hvac.yaml) fuellt seinen 7-Tage-Puffer nach einem Neustart aus dem Recorder
+  # auf. Unter 8 Tagen Aufbewahrung bleibt er unter der Abdeckungsschwelle, und
+  # binary_sensor.heizsaison haengt nach jedem Neustart tagelang fest - die
+  # Anlage heizt dann im Sommer weiter. Siehe Entscheidung (19) dort.
   # -------------------------------------------------------------------
   recorder:
     # Zustände gebündelt alle 30 s in einem Rutsch schreiben statt sofort.

@@ -884,6 +884,12 @@
         hvac_mode: fan_only
       target:
         entity_id: climate.wgtmode_template
+    - alias: Der Sommersteuerung melden, dass dieser Wechsel gewollt war
+      action: input_text.set_value
+      target:
+        entity_id: input_text.wgt_automatik_soll
+      data:
+        value: fan_only
   mode: single
 - id: '1749365112915'
   alias: Urlaub - Lichtsteuerung
@@ -1035,25 +1041,37 @@
     input_number.wgt_lueftung_aus_ab liegt - dann holt schon blosses Lueften Warmluft
     ins Haus. Sonst fan_only, damit der Luftwechsel an milden Tagen weiterlaeuft. Geheizt wird also auch dann, wenn die
     Saison-Erkennung faelschlich auf Sommer steht - Heizbedarf aus
-    sensor.wgt_max_unterschreitung (ab 1.0 K unter Soll, Hysterese bis 0.0 K).
+    sensor.wgt_max_unterschreitung (ab 1.5 K unter Soll, Hysterese bis 0.5 K -
+    beide Schwellen bewusst NEBEN dem Punkt, an dem die WGT die Raeume parkt).
+    Im Urlaub wird nicht gekuehlt, die Lueftung laeuft normal weiter.
     Kuehlbedarf aus sensor.wgt_max_ueberschreitung, dieselbe Schwelle liest die
-    Beschattung.'
+    Beschattung. Die 30 s Entprellung am Saison-Trigger sind Absicht - bei einem
+    template.reload wechselt heizsaison ueber unavailable, waehrend andere
+    Template-Sensoren noch nicht zurueck sind. Ohne das Warten entscheidet die
+    Automation auf halb geladenen Daten - am 25.08.2026 um 23.26 Uhr schaltete sie
+    die Anlage ab, weil die Vorhersage zwei Sekunden lang unavailable war. Aus
+    demselben Grund steht der Vorhersage-Sensor jetzt in der Plausibilitaets-Bedingung.
+    Einschaltschwelle PV 1000 W = gemessene Last 601 W + Weiterlauf-Schwelle 150 W +
+    Reserve. Mit den frueheren 600 W lag die Schwelle genau auf der Last, die Kuehlung
+    war sofort nach dem Anlaufen nicht mehr gratis und hing nur an der Mindestlaufzeit -
+    9 von 14 Kuehlphasen dauerten exakt 30 Minuten.'
   triggers:
   - trigger: time_pattern
     minutes: /15
-  - alias: Saisonwechsel sofort umsetzen, nicht erst zum naechsten Viertelstundentakt
+  - alias: Saisonwechsel zeitnah umsetzen (30 s entprellt)
     trigger: state
     entity_id: binary_sensor.heizsaison
     to:
     - 'on'
     - 'off'
+    for: '00:00:30'
   conditions:
   - alias: Messwerte plausibel (sonst nichts anfassen)
     condition: template
     value_template: '{{ is_number(states(''sensor.temp_aussen_low'')) and is_number(states(''sensor.temperatur_wohnzimmer''))
       and is_number(states(''sensor.wgt_max_ueberschreitung'')) and is_number(states(''sensor.wgt_max_unterschreitung''))
-      and has_value(''binary_sensor.heizsaison'') and has_value(''climate.wgtmode_template'')
-      }}'
+      and is_number(states(''sensor.forecast_weather_max_temp_today'')) and has_value(''binary_sensor.heizsaison'')
+      and has_value(''climate.wgtmode_template'') }}'
   actions:
   - variables:
       ist_modus: '{{ states(''climate.wgtmode_template'') }}'
@@ -1061,7 +1079,7 @@
       hand_bis: '{{ state_attr(''input_datetime.wgt_handbetrieb_bis'', ''timestamp'') }}'
   - variables:
       hand_neu: '{{ zuletzt not in [''unknown'', ''unavailable'', ''''] and ist_modus
-        != zuletzt and is_state(''input_boolean.urlaubsmodus'', ''off'') }}'
+        != zuletzt }}'
       hand_aktiv: '{{ hand_bis is number and now().timestamp() < hand_bis }}'
   - alias: Bedienung am Handteil erkannt -> Nachlauf starten und aussteigen
     if:
@@ -1088,25 +1106,26 @@
       heizsaison: '{{ is_state(''binary_sensor.heizsaison'', ''on'') }}'
       t_aussen: '{{ states(''sensor.temp_aussen_low'') | float }}'
       t_innen: '{{ states(''sensor.temperatur_wohnzimmer'') | float }}'
-      kuehlt: '{{ is_state(''climate.wgtmode_template'', ''cool'') }}'
-      heizt: '{{ is_state(''climate.wgtmode_template'', ''heat'') }}'
+      kuehlt: '{{ ist_modus == ''cool'' }}'
+      heizt: '{{ ist_modus == ''heat'' }}'
       pv_mittel: '{{ states(''sensor.pv_ueberschuss_mittel_15min'') | float(0) }}'
       ueberschr: '{{ states(''sensor.wgt_max_ueberschreitung'') | float(-99) }}'
       unterschr: '{{ states(''sensor.wgt_max_unterschreitung'') | float(-99) }}'
-      forecast_hoch: '{{ states(''sensor.forecast_weather_max_temp_today'') | float(99) }}'
+      forecast_hoch: '{{ states(''sensor.forecast_weather_max_temp_today'') | float(0) }}'
       aus_ab: '{{ states(''input_number.wgt_lueftung_aus_ab'') | float(25) }}'
   - variables:
-      pv_frei: '{{ pv_mittel > 150 if kuehlt else pv_mittel > 600 }}'
+      pv_frei: '{{ pv_mittel > 150 if kuehlt else pv_mittel > 1000 }}'
       kuehl_bedarf: '{{ ueberschr >= (-1.0 if kuehlt else 0.0) }}'
-      heiz_bedarf: '{{ unterschr >= (0.0 if heizt else 1.0) }}'
+      heiz_bedarf: '{{ unterschr >= (0.5 if heizt else 1.5) }}'
       kuehl_laufzeit: '{{ (now().timestamp() - state_attr(''input_datetime.wgt_kuehlung_start'',
         ''timestamp'')) if (kuehlt and state_attr(''input_datetime.wgt_kuehlung_start'',
         ''timestamp'') is number) else 99999 }}'
   - variables:
       ziel: '{% if heizsaison or heiz_bedarf %}heat{% elif kuehl_bedarf and t_aussen
         < t_innen - 0.5 %}fan_only{% elif kuehl_bedarf and pv_frei and is_state(''input_boolean.urlaubsmodus'',
-        ''off'') %}cool{% elif kuehlt and kuehl_laufzeit < 1200 %}cool{% elif forecast_hoch
-        >= aus_ab %}off{% else %}fan_only{% endif %}'
+        ''off'') %}cool{% elif kuehlt and kuehl_laufzeit < 1200 and is_state(''input_boolean.urlaubsmodus'',
+        ''off'') %}cool{% elif forecast_hoch >= aus_ab %}off{% else %}fan_only{% endif
+        %}'
   - alias: Nur bei echter Änderung schreiben
     condition: template
     value_template: '{{ not is_state(''climate.wgtmode_template'', ziel) }}'

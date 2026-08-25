@@ -1,3 +1,230 @@
+# =============================================================================
+# AGENT-BRIEFING  (fuer KI-Agents, die diese Heiz-/Kuehllogik aendern)
+# =============================================================================
+# Lies diesen Block, BEVOR du unten etwas aenderst. Er haelt fest, warum die
+# Logik so aussieht, wie sie aussieht. Die Begruendungen stammen aus Messungen
+# an der echten Anlage, nicht aus Annahmen - die Zahlen stehen dabei.
+#
+# UMGANG MIT DIESEN VORGABEN
+#   Der Benutzer darf jede Entscheidung hier revidieren; sie sind Stand des
+#   Wissens, kein Gesetz. Aber: Wenn eine neue Anweisung einer der unten
+#   festgehaltenen Entscheidungen widerspricht, weise den Benutzer darauf hin,
+#   nenne die betroffene Nummer und ihre Begruendung, und lass ihn entscheiden.
+#   Setze die Aenderung dann um und aktualisiere diesen Block mit.
+#
+# WO DIE LOGIK LIEGT
+#   Diese Datei    Helfer, abgeleitete Sensoren, binary_sensor.heizsaison,
+#                  die neun climate-Entities.
+#   automations.yaml  "WGT - Sommersteuerung" - die eigentliche
+#                  Zielmodus-Bestimmung. Ohne sie ist alles hier tot.
+#   scripts.yaml   wgt_mode_2 - schreibt die Modbus-Register je Modus.
+#   packages/bus/wgt.yaml  Hub und Register (bewusst getrennt).
+#   blueprints/.../beschattung_fenster.yaml  liest ueber indoor_target_sensor
+#                  DIESELBE Komfort-Obergrenze. Siehe (1).
+#
+# -----------------------------------------------------------------------------
+# GRUNDIDEE
+#   HA besitzt die BETRIEBSART der WGT (heat / cool / fan_only / off), nicht die
+#   Raumregelung. Die Zieltemperatur je Raum haelt die WGT selbst ein; HA
+#   entscheidet nur, in welchem Betriebszustand sie das tun darf.
+#   Daraus folgt: HA ist KEIN zweiter Thermostat. Wer hier eine Raumregelung
+#   nachbaut, kaempft gegen den Regler im Geraet.
+#
+# -----------------------------------------------------------------------------
+# ENTSCHEIDUNGEN
+#
+# (1) EINE SCHWELLE FUER KUEHLUNG UND BESCHATTUNG. NICHT ENTKOPPELN.
+#     sensor.komfort_obergrenze_<raum> = WGT-Zieltemperatur + Offset. Sie wird
+#     von der Sommersteuerung (ueber wgt_max_ueberschreitung) UND von der
+#     Beschattung (ueber indoor_target_sensor) gelesen.
+#     Grund: am 23.08.2026 kuehlte die Waermepumpe ein 21,6 C warmes Haus,
+#     waehrend die Beschattung die Jalousien offen liess, damit die Sonne
+#     heizt. Zwei Regelkreise mit getrennten Meinungen ueber denselben Raum.
+#     Wenn du hier etwas aenderst, pruefe IMMER die Beschattung mit.
+#
+# (2) DIE WGT-ZIELTEMPERATUREN SIND HEIZ-SOLLWERTE, KEINE OBERGRENZEN.
+#     Stand 08/2026: 20 C ueberall, Linus-Henry 18 C. Direkt als Kuehlschwelle
+#     genommen laeuft die Anlage praktisch permanent - alle acht Raeume lagen
+#     zum Messzeitpunkt darueber. Erst Soll + Offset ergibt eine Obergrenze.
+#     Der Offset 4 K reproduziert exakt die 24 C, die vorher in allen fuenf
+#     Beschattungs-Automationen von Hand standen.
+#     Die Sollwerte sind NICHT statisch, nur selten verstellt (Wohnzimmer seit
+#     07/2024 auf 20 C, einmal drei Tage auf 19 C). Deshalb lohnt die Ableitung.
+#
+# (3) VERGLICHEN WIRD JE RAUM GEGEN DIE EIGENE GRENZE, DANN DAS MAXIMUM.
+#     NICHT "niedrigste Zieltemperatur aller Raeume". Das wuerde die Temperatur
+#     des einen Raums mit dem Sollwert eines anderen vergleichen und
+#     Linus-Henry (Soll 18 C) zum Diktator ueber die zentrale Kuehlung machen.
+#
+# (4) KUEHLSEITE FUENF RAEUME, HEIZSEITE ACHT.
+#     wgt_max_ueberschreitung: Wohnzimmer, Buero, Schlafzimmer, Erik,
+#     Linus-Henry. Diele, WC EG und Bad OG heizen sich anders auf und sollen
+#     die zentrale Kuehlung nicht ausloesen.
+#     wgt_max_unterschreitung: alle acht. Beim Schutz vor Auskuehlen soll das
+#     Bad sehr wohl mitreden.
+#
+# (5) ABSOLUTE UNTERGRENZE 22 C IN DER KOMFORT-OBERGRENZE.
+#     Schuetzt gegen einen versehentlich zu kleinen Offset und gegen den
+#     Erstlauf, bei dem der input_number auf seinem Minimum steht. Bei Offset
+#     4 K bindet sie nur bei Linus-Henry (18 + 4 = 22).
+#
+# (6) PV-UEBERSCHUSS IST DIE ERLAUBNIS ZU KUEHLEN, NICHT DER GRUND.
+#     Frueher fragte der cool-Zweig ausschliesslich nach PV-Ueberschuss und
+#     hatte gar keine Temperaturbedingung - das war die Ursache von (1).
+#     kuehl_bedarf muss zusaetzlich erfuellt sein. Nicht zurueckbauen.
+#
+# (7) DIE SAISON KOMMT AUS EINEM 7-TAGE-MITTEL. NICHT VERKUERZEN.
+#     Gemessen ueber 03/2025-08/2026: mit 48-h-Mittel schaltet die Saison bei
+#     denselben Grenzen 16-mal in 1,3 Jahren um, davon SECHSMAL mitten in den
+#     Sommer - sommerliche Kaltlufteinbrueche ziehen das kurze Mittel unter die
+#     Heizgrenze. Ab 168 h liefert JEDES getestete Deadband 3 Umschaltungen und
+#     keine Fehlschaltung. Diese Unempfindlichkeit gegen die Schwellenwahl ist
+#     der eigentliche Grund fuer die Fensterlaenge, nicht die Traegheit.
+#
+# (8) DIE MITTELWERTKETTE IST ZWEISTUFIG. NICHT DIREKT VERDRAHTEN.
+#     sensor.temp_aussen_low aendert sich 3001-mal pro Tag (gemessen). Ein
+#     statistics-Sensor mit max_age 7 Tage muesste rund 21.000 Samples puffern.
+#     Der time_throttle davor laesst einen Wert pro Stunde durch -> 168 Samples.
+#
+# (9) EIGENE SAISON-GRENZEN, NICHT input_number.heizgrenze / kuehlgrenze.
+#     Die beiden sind fuer die Gradtag-Abrechnung getunt (packages/env/
+#     degreedays.yaml, aus der Regression Jan-Aug 2026). Wer sie dort nachzieht,
+#     soll nicht ungewollt die Saison verschieben.
+#     Der Stellbereich der Saison-Heizgrenze (-5 bis 20 C) spannt bewusst den
+#     Bereich, den das 7-Tage-Mittel real durchlaeuft: gemessen -6,4 bis
+#     +26,7 C, Median 11,1 C.
+#
+# (10) OHNE VORZUSTAND WIRD AUS DEN DATEN ENTSCHIEDEN, NICHT GERATEN.
+#     binary_sensor.heizsaison haelt bei duenner Pufferabdeckung (< 0,15) den
+#     alten Zustand - aber nur, wenn es einen gibt.
+#     Grund: am 24.08.2026 wurde der Sensor neu angelegt, sah 'unknown', wertete
+#     das ueber 'this.state != off' als Heizsaison und liess die Anlage zwei
+#     Tage lang im August heizen.
+#     WICHTIG fuer kuenftige Aenderungen: welcher Default sicher ist, hat sich
+#     mit dem Umbau auf ganzjaehrige Steuerung GEDREHT. Solange heizsaison=on
+#     nur bedeutete "Automation ruehrt nichts an", war 'on' vorsichtig. Seit die
+#     Automation daraufhin aktiv heat schreibt, ist 'off' die vorsichtige Wahl -
+#     eine zu frueh gesetzte Sommer-Entscheidung faengt (11) ab, eine zu lange
+#     gehaltene Heizsaison faengt niemand ab.
+#
+# (11) HEIZBEDARF IST EIN ECHTER ZWEIG, KEIN VETO.
+#     Frueher hielt er nur den Ist-Modus fest. Stand der schon auf off, kuehlte
+#     das Haus aus und die Automatik sah zu. Jetzt wird geheizt, unabhaengig
+#     von der Saison.
+#     Schwelle 1,5 K, Hysterese bis 0,5 K. BEIDE Schwellen liegen bewusst neben
+#     dem Punkt, an dem die WGT die Raeume parkt - das war ein Fehler in der
+#     ersten Fassung (1,0 / 0,0). Weil max() ueber acht Raeume fast immer >= 0
+#     ist, war die Loslass-Bedingung im Mai nur an 22 % der Stunden erfuellt und
+#     an 21 % sogar im Juli. Da der Heizzweig ZUERST geprueft wird, sperrte ein
+#     eingerastetes heat die Kuehlung fuers ganze Haus, und der Saisonwechsel
+#     auf Sommer lief ins Leere.
+#     Gemessene Anteile der Stunden mit max(Soll - Ist) >= Schwelle:
+#       >= 1,5 K (Start)  Jul 0,1 % | Aug 0,0 % | Nov 38 %  -> im Sommer still,
+#                         als Sicherheitsnetz im Winter trotzdem scharf
+#       >= 0,5 K (Ende)   Jul 7,9 % | Aug 9,1 %  -> laesst zuverlaessig los
+#     NICHT auf 0,0 zurueckdrehen.
+#     Dieser Zweig ist das Sicherheitsnetz unter (7) und (10). Nicht entfernen.
+#
+# (12) BEIDE KUEHLZWEIGE HAENGEN AM KUEHLBEDARF - AUCH fan_only.
+#     Die freie Kuehlung fragte urspruenglich nur "draussen kuehler als
+#     drinnen". Solange die Automation nur im Sommer lief, war das harmlos.
+#     Ganzjaehrig haette sie nach dem Ende einer Heizphase bei 6 C aussen
+#     Kaltluft ins Haus geblasen.
+#
+# (13) DER RUHEZUSTAND IST NICHT PAUSCHAL off.
+#     Komplett abgeschaltet (Betriebsart 0) wird nur, wenn der VORHERGESAGTE
+#     Tageshoechstwert ueber wgt_lueftung_aus_ab liegt - dann holt schon blosses
+#     Lueften Warmluft ins Haus, und genau das will der Benutzer verhindern.
+#     Sonst fan_only, damit der Luftwechsel an milden Tagen weiterlaeuft.
+#     Bewusst die Vorhersage und nicht die aktuelle Aussentemperatur: sonst
+#     liefe die Anlage den halben Vormittag, um mittags doch abzuschalten.
+#     In der Heizsaison ist das unerreichbar - (11) kommt vorher.
+#
+# (14) HANDBETRIEB WIRD UEBER SOLL-IST ERKANNT, NICHT UEBER last_changed.
+#     input_text.wgt_automatik_soll haelt fest, was die Automation zuletzt
+#     selbst geschrieben hat. Weicht climate.wgtmode_template davon ab, war es
+#     das Bedienteil oder die UI -> Nachlauf, kein Ueberschreiben.
+#     Grund: ein Modbus-Aussetzer (30.07.2026, 55 s) setzt last_changed zurueck
+#     und saehe wie eine Handbedienung aus. Aus demselben Grund ist auch
+#     wgt_kuehlung_start ein input_datetime und nicht last_changed.
+#
+# (18) DIE PV-EINSCHALTSCHWELLE MUSS UEBER DER LAST LIEGEN, NICHT AUF IHR.
+#     Gemessen an der Kuehlphase vom 19.08.2026 (405 min), Grundlast des Zaehlers
+#     (1.7 kWh/Tag) abgezogen: die WP zieht beim Kuehlen 601 W.
+#     Frueher stand die Einschaltschwelle auf 600 W - also genau auf der Last. Der
+#     Ueberschuss war damit in dem Moment aufgebraucht, in dem die Pumpe anlief,
+#     die Weiterlauf-Schwelle von 150 W sofort verletzt, und nur die
+#     Mindestlaufzeit hielt die Kuehlung noch. Signatur in den Daten: 9 von 14
+#     Kuehlphasen dauerten exakt 30 Minuten (20 min Mindestlaufzeit im
+#     15-Minuten-Raster).
+#     Jetzt 1000 W = Last 601 + Weiterlauf 150 + Reserve. Wer die Schwelle senkt,
+#     baut das Takten wieder ein. Die 150 W bleiben, sie sind richtig definiert:
+#     "speist trotz laufender Pumpe noch 150 W ein".
+#
+# (19) DIE SAISON HAENGT AN recorder.purge_keep_days.
+#     sensor.aussentemp_mittel_7d fuellt seinen Puffer nach einem Neustart aus dem
+#     Recorder auf. Das funktioniert nur, solange dort mehr als 7 Tage Historie von
+#     sensor.aussentemp_gedrosselt liegen. purge_keep_days steht auf dem HA-Default
+#     von 10 - faellt der Wert unter 8, bleibt der Puffer nach jedem Neustart unter
+#     der Abdeckungsschwelle und die Saison-Erkennung haengt tagelang fest (siehe
+#     den Vorfall in (10)). Wer in packages/system/recorder.yaml aufraeumt: hier
+#     nachsehen.
+#
+# (17) IM URLAUB WIRD NICHT GEKUEHLT, ABER GELUEFTET.
+#     Sowohl der WP-Zweig als auch die Mindestlaufzeit pruefen urlaubsmodus.
+#     fan_only und die freie Kuehlung laufen dagegen normal weiter - so vom
+#     Benutzer gewuenscht. Die Handbetriebs-Erkennung ist im Urlaub NICHT
+#     abgeschaltet (war sie frueher, siehe (A)).
+#
+# (15) ES GIBT KEINEN SAISON-SCHALTER MEHR.
+#     input_boolean.sommersteuerung_luftung ist entfallen. Er war kein
+#     Saison-Schalter, sondern ein Uebergriffsschutz: die Automation konnte nur
+#     off/fan_only/cool schreiben und haette im Winter das von Hand gesetzte
+#     heat ueberschrieben. Mit (10) und (11) ist er ueberfluessig.
+#     Nicht als "Automatik aus"-Boolean wieder einfuehren, ohne den Benutzer zu
+#     fragen - (14) ist der vorgesehene Ausweg.
+#
+# (16) DIE WGT NIMMT FREIGABEN NUR IN PASSENDER BETRIEBSART AN.
+#     Verifiziert am 30.07.2026. Deshalb schreibt wgt_mode_2 erst Register 100,
+#     wartet auf die Rueckmeldung und gibt erst dann frei (231/232). Beim
+#     Abschalten umgekehrt. Reihenfolge dort nicht umstellen.
+#
+# -----------------------------------------------------------------------------
+# BEKANNTE LUECKEN (offen, bewusst nicht geloest)
+#
+# (A) EIN FEHLGESCHLAGENER MODBUS-SCHREIBVORGANG IST VON EINER HANDBEDIENUNG
+#     NICHT UNTERSCHEIDBAR. Beides zeigt sich als Abweichung zwischen
+#     wgt_automatik_soll und dem Ist-Modus und loest den Nachlauf aus (14).
+#     Aus demselben Grund muss JEDE andere Automation, die den Modus schreibt,
+#     wgt_automatik_soll mitsetzen - "Urlaub - Geraetesteuerung WGT" tut das.
+#     Wer eine weitere hinzufuegt und das vergisst, legt die Automatik lahm.
+#     Die Automatik ruht dann, ohne dass jemand etwas getan hat. Deshalb steht
+#     input_datetime.wgt_handbetrieb_bis sichtbar auf dem Dashboard
+#     (System -> Lueftung) und nicht im Verborgenen.
+#
+# (B) UNGEPRUEFT: OB DIE WGT BEI BETRIEBSART 0 NOCH GRUNDLUEFTUNG FAEHRT.
+#     Der Benutzer schaltet an heissen Tagen bewusst komplett ab und ist damit
+#     zufrieden, siehe (13). Ob dabei jeder Luftwechsel steht oder eine
+#     Grundstufe weiterlaeuft, ist aus der Konfiguration nicht ableitbar und
+#     wurde nicht am Geraet nachgesehen. Falls sich herausstellt, dass gar nicht
+#     mehr gelueftet wird: fan_only als Ruhezustand statt off, oder eine
+#     Mindest-Aussentemperatur statt des Kuehlbedarfs in (12).
+#
+# (C) input_number-HELFER STARTEN AUF IHREM MINIMUM.
+#     Nach einer Neuanlage stehen wgt_komfort_offset, beide Saison-Grenzen,
+#     wgt_lueftung_aus_ab und wgt_handbetrieb_dauer auf dem jeweiligen min und
+#     muessen von Hand gesetzt werden. 'initial:' waere die naheliegende
+#     Loesung, ueberschreibt aber bei JEDEM Neustart eine manuelle Aenderung -
+#     deshalb nicht verwendet. Die Minima sind stattdessen so gewaehlt, dass der
+#     Erstlauf-Zustand nichts kaputt macht; (5) und der Guard in heizsaison
+#     fangen den Rest ab.
+#
+# (D) t_innen IN DER fan_only-BEDINGUNG IST NUR DAS WOHNZIMMER.
+#     Kuehl- und Heizbedarf gehen ueber fuenf bzw. acht Raeume, der Vergleich
+#     "draussen kuehler als drinnen" aber weiterhin ueber
+#     sensor.temperatur_wohnzimmer allein. Inkonsistent. Sauber waere der
+#     waermste der fuenf Kuehl-Raeume. Vom Benutzer nicht beauftragt.
+# =============================================================================
 package_building_hvac:
   # -------------------------------------------------------------------
   # Package: Heizung, Kuehlung, Lueftung (Schwoerer WGT)
@@ -495,9 +722,9 @@ package_building_hvac:
           icon: mdi:thermometer-chevron-up
           availability: "{{ is_number(states('sensor.zieltemperatur_wohnzimmer')) }}"
           state: >-
-            {{ [ (states('sensor.zieltemperatur_wohnzimmer') | float
-                  + states('input_number.wgt_komfort_offset') | float(4)),
-                 22.0 ] | max | round(1) }}
+            {% set soll = states('sensor.zieltemperatur_wohnzimmer') | float(none) %}
+            {{ [ soll + states('input_number.wgt_komfort_offset') | float(4),
+                 22.0 ] | max | round(1) if soll is not none else none }}
 
         - name: "Komfort Obergrenze Büro"
           unique_id: "komfort_obergrenze_buro"
@@ -507,9 +734,9 @@ package_building_hvac:
           icon: mdi:thermometer-chevron-up
           availability: "{{ is_number(states('sensor.zieltemperatur_buro')) }}"
           state: >-
-            {{ [ (states('sensor.zieltemperatur_buro') | float
-                  + states('input_number.wgt_komfort_offset') | float(4)),
-                 22.0 ] | max | round(1) }}
+            {% set soll = states('sensor.zieltemperatur_buro') | float(none) %}
+            {{ [ soll + states('input_number.wgt_komfort_offset') | float(4),
+                 22.0 ] | max | round(1) if soll is not none else none }}
 
         - name: "Komfort Obergrenze Schlafzimmer"
           unique_id: "komfort_obergrenze_schlafzimmer"
@@ -519,9 +746,9 @@ package_building_hvac:
           icon: mdi:thermometer-chevron-up
           availability: "{{ is_number(states('sensor.zieltemperatur_schlafzimmer')) }}"
           state: >-
-            {{ [ (states('sensor.zieltemperatur_schlafzimmer') | float
-                  + states('input_number.wgt_komfort_offset') | float(4)),
-                 22.0 ] | max | round(1) }}
+            {% set soll = states('sensor.zieltemperatur_schlafzimmer') | float(none) %}
+            {{ [ soll + states('input_number.wgt_komfort_offset') | float(4),
+                 22.0 ] | max | round(1) if soll is not none else none }}
 
         - name: "Komfort Obergrenze Erik"
           unique_id: "komfort_obergrenze_erik"
@@ -531,9 +758,9 @@ package_building_hvac:
           icon: mdi:thermometer-chevron-up
           availability: "{{ is_number(states('sensor.zieltemperatur_erik')) }}"
           state: >-
-            {{ [ (states('sensor.zieltemperatur_erik') | float
-                  + states('input_number.wgt_komfort_offset') | float(4)),
-                 22.0 ] | max | round(1) }}
+            {% set soll = states('sensor.zieltemperatur_erik') | float(none) %}
+            {{ [ soll + states('input_number.wgt_komfort_offset') | float(4),
+                 22.0 ] | max | round(1) if soll is not none else none }}
 
         - name: "Komfort Obergrenze Linus-Henry"
           unique_id: "komfort_obergrenze_linus_henry"
@@ -543,9 +770,9 @@ package_building_hvac:
           icon: mdi:thermometer-chevron-up
           availability: "{{ is_number(states('sensor.zieltemperatur_linus_henry')) }}"
           state: >-
-            {{ [ (states('sensor.zieltemperatur_linus_henry') | float
-                  + states('input_number.wgt_komfort_offset') | float(4)),
-                 22.0 ] | max | round(1) }}
+            {% set soll = states('sensor.zieltemperatur_linus_henry') | float(none) %}
+            {{ [ soll + states('input_number.wgt_komfort_offset') | float(4),
+                 22.0 ] | max | round(1) if soll is not none else none }}
 
         # -------------------------------------------------------------------
         # GROESSTE UEBERSCHREITUNG UEBER ALLE RAEUME
@@ -566,48 +793,33 @@ package_building_hvac:
           unit_of_measurement: "K"
           state_class: measurement
           icon: mdi:thermometer-alert
-          availability: >-
-            {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.komfort_obergrenze_wohnzimmer'),
-                 ('Büro', 'sensor.temperatur_buro', 'sensor.komfort_obergrenze_buro'),
-                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.komfort_obergrenze_schlafzimmer'),
-                 ('Erik', 'sensor.temperatur_erik', 'sensor.komfort_obergrenze_erik'),
-                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.komfort_obergrenze_linus_henry') ] %}
-            {% set ns = namespace(ok = false) %}
-            {% for name, ist, grenze in raeume %}
-              {% if is_number(states(ist)) and is_number(states(grenze)) %}
-                {% set ns.ok = true %}
-              {% endif %}
-            {% endfor %}
-            {{ ns.ok }}
+          # Kein availability-Template: laesst sich KEIN Raum lesen, liefert der
+          # State none und die Entitaet wird unknown. Das spart einen dritten
+          # Durchlauf derselben Raumliste; die Automation prueft ohnehin mit
+          # is_number().
           state: >-
-            {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.komfort_obergrenze_wohnzimmer'),
-                 ('Büro', 'sensor.temperatur_buro', 'sensor.komfort_obergrenze_buro'),
-                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.komfort_obergrenze_schlafzimmer'),
-                 ('Erik', 'sensor.temperatur_erik', 'sensor.komfort_obergrenze_erik'),
-                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.komfort_obergrenze_linus_henry') ] %}
-            {% set ns = namespace(max_d = -99.0) %}
-            {% for name, ist, grenze in raeume %}
-              {% if is_number(states(ist)) and is_number(states(grenze)) %}
-                {% set d = states(ist) | float - states(grenze) | float %}
-                {% if d > ns.max_d %}{% set ns.max_d = d %}{% endif %}
+            {% set raeume = ['wohnzimmer', 'buro', 'schlafzimmer', 'erik', 'linus_henry'] %}
+            {% set ns = namespace(d = none) %}
+            {% for r in raeume %}
+              {% set ist = states('sensor.temperatur_' ~ r) | float(none) %}
+              {% set ref = states('sensor.komfort_obergrenze_' ~ r) | float(none) %}
+              {% if ist is not none and ref is not none and (ns.d is none or ist - ref > ns.d) %}
+                {% set ns.d = ist - ref %}
               {% endif %}
             {% endfor %}
-            {{ ns.max_d | round(1) }}
+            {{ ns.d | round(1) if ns.d is not none else none }}
           attributes:
             Raum: >-
-              {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.komfort_obergrenze_wohnzimmer'),
-                 ('Büro', 'sensor.temperatur_buro', 'sensor.komfort_obergrenze_buro'),
-                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.komfort_obergrenze_schlafzimmer'),
-                 ('Erik', 'sensor.temperatur_erik', 'sensor.komfort_obergrenze_erik'),
-                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.komfort_obergrenze_linus_henry') ] %}
-              {% set ns = namespace(max_d = -99.0, raum = '-') %}
-              {% for name, ist, grenze in raeume %}
-                {% if is_number(states(ist)) and is_number(states(grenze)) %}
-                  {% set d = states(ist) | float - states(grenze) | float %}
-                  {% if d > ns.max_d %}{% set ns.max_d = d %}{% set ns.raum = name %}{% endif %}
+              {% set raeume = ['wohnzimmer', 'buro', 'schlafzimmer', 'erik', 'linus_henry'] %}
+              {% set ns = namespace(d = none, r = none) %}
+              {% for r in raeume %}
+                {% set ist = states('sensor.temperatur_' ~ r) | float(none) %}
+                {% set ref = states('sensor.komfort_obergrenze_' ~ r) | float(none) %}
+                {% if ist is not none and ref is not none and (ns.d is none or ist - ref > ns.d) %}
+                  {% set ns.d = ist - ref %}{% set ns.r = r %}
                 {% endif %}
               {% endfor %}
-              {{ ns.raum }}
+              {{ state_attr('sensor.temperatur_' ~ ns.r, 'friendly_name') if ns.r else '-' }}
 
         # -------------------------------------------------------------------
         # GROESSTE UNTERSCHREITUNG - Heizbedarf
@@ -634,58 +846,33 @@ package_building_hvac:
           unit_of_measurement: "K"
           state_class: measurement
           icon: mdi:thermometer-low
-          availability: >-
-            {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.zieltemperatur_wohnzimmer'),
-                 ('Büro', 'sensor.temperatur_buro', 'sensor.zieltemperatur_buro'),
-                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.zieltemperatur_schlafzimmer'),
-                 ('Erik', 'sensor.temperatur_erik', 'sensor.zieltemperatur_erik'),
-                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.zieltemperatur_linus_henry'),
-                 ('Diele', 'sensor.temperatur_diele', 'sensor.zieltemperatur_diele'),
-                 ('WC EG', 'sensor.temperatur_wc_eg', 'sensor.zieltemperatur_wc_eg'),
-                 ('Bad OG', 'sensor.temperatur_bad_og', 'sensor.zieltemperatur_bad_og') ] %}
-            {% set ns = namespace(ok = false) %}
-            {% for name, ist, soll in raeume %}
-              {% if is_number(states(ist)) and is_number(states(soll)) %}
-                {% set ns.ok = true %}
-              {% endif %}
-            {% endfor %}
-            {{ ns.ok }}
+          # Kein availability-Template: laesst sich KEIN Raum lesen, liefert der
+          # State none und die Entitaet wird unknown. Das spart einen dritten
+          # Durchlauf derselben Raumliste; die Automation prueft ohnehin mit
+          # is_number().
           state: >-
-            {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.zieltemperatur_wohnzimmer'),
-                 ('Büro', 'sensor.temperatur_buro', 'sensor.zieltemperatur_buro'),
-                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.zieltemperatur_schlafzimmer'),
-                 ('Erik', 'sensor.temperatur_erik', 'sensor.zieltemperatur_erik'),
-                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.zieltemperatur_linus_henry'),
-                 ('Diele', 'sensor.temperatur_diele', 'sensor.zieltemperatur_diele'),
-                 ('WC EG', 'sensor.temperatur_wc_eg', 'sensor.zieltemperatur_wc_eg'),
-                 ('Bad OG', 'sensor.temperatur_bad_og', 'sensor.zieltemperatur_bad_og') ] %}
-            {% set ns = namespace(max_d = -99.0) %}
-            {% for name, ist, soll in raeume %}
-              {% if is_number(states(ist)) and is_number(states(soll)) %}
-                {% set d = states(soll) | float - states(ist) | float %}
-                {% if d > ns.max_d %}{% set ns.max_d = d %}{% endif %}
+            {% set raeume = ['wohnzimmer', 'buro', 'schlafzimmer', 'erik', 'linus_henry', 'diele', 'wc_eg', 'bad_og'] %}
+            {% set ns = namespace(d = none) %}
+            {% for r in raeume %}
+              {% set ist = states('sensor.temperatur_' ~ r) | float(none) %}
+              {% set ref = states('sensor.zieltemperatur_' ~ r) | float(none) %}
+              {% if ist is not none and ref is not none and (ns.d is none or ref - ist > ns.d) %}
+                {% set ns.d = ref - ist %}
               {% endif %}
             {% endfor %}
-            {{ ns.max_d | round(1) }}
+            {{ ns.d | round(1) if ns.d is not none else none }}
           attributes:
             Raum: >-
-              {% set raeume = [ ('Wohnzimmer', 'sensor.temperatur_wohnzimmer', 'sensor.zieltemperatur_wohnzimmer'),
-                 ('Büro', 'sensor.temperatur_buro', 'sensor.zieltemperatur_buro'),
-                 ('Schlafzimmer', 'sensor.temperatur_schlafzimmer', 'sensor.zieltemperatur_schlafzimmer'),
-                 ('Erik', 'sensor.temperatur_erik', 'sensor.zieltemperatur_erik'),
-                 ('Linus-Henry', 'sensor.temperatur_linus_henry', 'sensor.zieltemperatur_linus_henry'),
-                 ('Diele', 'sensor.temperatur_diele', 'sensor.zieltemperatur_diele'),
-                 ('WC EG', 'sensor.temperatur_wc_eg', 'sensor.zieltemperatur_wc_eg'),
-                 ('Bad OG', 'sensor.temperatur_bad_og', 'sensor.zieltemperatur_bad_og') ] %}
-              {% set ns = namespace(max_d = -99.0, raum = '-') %}
-              {% for name, ist, soll in raeume %}
-                {% if is_number(states(ist)) and is_number(states(soll)) %}
-                  {% set d = states(soll) | float - states(ist) | float %}
-                  {% if d > ns.max_d %}{% set ns.max_d = d %}{% set ns.raum = name %}{% endif %}
+              {% set raeume = ['wohnzimmer', 'buro', 'schlafzimmer', 'erik', 'linus_henry', 'diele', 'wc_eg', 'bad_og'] %}
+              {% set ns = namespace(d = none, r = none) %}
+              {% for r in raeume %}
+                {% set ist = states('sensor.temperatur_' ~ r) | float(none) %}
+                {% set ref = states('sensor.zieltemperatur_' ~ r) | float(none) %}
+                {% if ist is not none and ref is not none and (ns.d is none or ref - ist > ns.d) %}
+                  {% set ns.d = ref - ist %}{% set ns.r = r %}
                 {% endif %}
               {% endfor %}
-              {{ ns.raum }}
-
+              {{ state_attr('sensor.temperatur_' ~ ns.r, 'friendly_name') if ns.r else '-' }}
 
     - binary_sensor:
         # -------------------------------------------------------------------
@@ -701,25 +888,42 @@ package_building_hvac:
         # ueber der Kuehlgrenze aus, DAZWISCHEN bleibt der Zustand stehen.
         # Damit gibt es keinen Zitterbereich im Fruehjahr und Herbst.
         #
-        # Kaltstart: der statistics-Sensor ist nach einem Neustart leer und
-        # braucht Tage, bis er den Zeitraum abdeckt. Solange
-        # age_coverage_ratio unter 0.3 liegt (rund 2 Tage), wird NICHT neu
-        # entschieden, sondern der alte Zustand gehalten. Ohne vorherigen
-        # Zustand ergibt 'this.state != off' -> an, also Heizsaison: dann
-        # ruehrt die Sommersteuerung nichts an. Bewusst die sichere Seite.
+        # Kaltstart. Beim ALLERERSTEN Anlegen ist der statistics-Sensor leer
+        # und es gibt keinen Vorzustand. Dann wird aus den vorhandenen Daten
+        # entschieden, statt einen Default zu raten - genau das ist am
+        # 24.08.2026 schiefgegangen: der Sensor hielt 'on' und die Anlage
+        # heizte zwei Tage lang im August.
+        #
+        # Welcher Default sicher ist, hat sich mit dem Umbau gedreht. Solange
+        # heizsaison=on nur bedeutete "Automation ruehrt nichts an", war 'on'
+        # die vorsichtige Wahl. Seit die Automation daraufhin aktiv heat
+        # schreibt, ist es die riskante: eine zu frueh gesetzte Sommer-
+        # Entscheidung faengt heiz_bedarf ab (heizt bei wirklich kalten
+        # Raeumen unabhaengig von der Saison), eine zu lange gehaltene
+        # Heizsaison faengt niemand ab.
+        #
+        # Die 0.15 (rund 25 h) greifen deshalb nur noch, wenn es einen
+        # Vorzustand zu halten gibt. Ein kuerzeres Fenster ist fuer diese
+        # Anlaufphase vertretbar, weil eine Fehlentscheidung folgenlos
+        # korrigiert wird - im Dauerbetrieb liegt die Abdeckung bei 1.0 und
+        # die Schwelle spielt keine Rolle mehr.
         # -------------------------------------------------------------------
         - name: "Heizsaison"
           unique_id: "heizsaison"
           icon: >-
-            {{ 'mdi:fire' if is_state('binary_sensor.heizsaison','on') else 'mdi:weather-sunny' }}
+            {# 'this' statt is_state(): eine Selbstreferenz erzeugt einen Listener
+               auf die eigene Entitaet und laesst das Icon einen Zyklus nachhinken. #}
+            {{ 'mdi:fire' if this.state == 'on' else 'mdi:weather-sunny' }}
           state: >-
-            {% set m = states('sensor.aussentemp_mittel_7d') | float(-99) %}
+            {% set m = states('sensor.aussentemp_mittel_7d') | float(none) %}
             {% set cov = state_attr('sensor.aussentemp_mittel_7d','age_coverage_ratio') | float(0) %}
             {% set kg = states('input_number.wgt_saison_kuehlgrenze') | float(18) %}
             {# Heizgrenze immer mindestens 1 K unter der Kuehlgrenze halten,
                sonst waere das Deadband invertiert und der Sensor wuerde flattern. #}
             {% set hg = [ states('input_number.wgt_saison_heizgrenze') | float(13), kg - 1 ] | min %}
-            {% if m == -99 or cov < 0.3 %}{{ this.state != 'off' }}
+            {% set bekannt = this.state in ['on', 'off'] %}
+            {% if cov < 0.15 and bekannt %}{{ this.state == 'on' }}
+            {% elif m is none %}false
             {% elif m < hg %}true
             {% elif m > kg %}false
             {% else %}{{ this.state == 'on' }}{% endif %}
