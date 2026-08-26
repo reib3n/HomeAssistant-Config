@@ -60,6 +60,12 @@
 #     wgt_max_ueberschreitung: Wohnzimmer, Buero, Schlafzimmer, Erik,
 #     Linus-Henry. Diele, WC EG und Bad OG heizen sich anders auf und sollen
 #     die zentrale Kuehlung nicht ausloesen.
+#     ACHTUNG: sensor.komfort_obergrenze_* gibt es seit 26.08.2026 fuer ALLE
+#     ACHT Raeume - als ablesbare Schwelle je Raum und fuer raumbezogene
+#     Automationen. Die Kuehl-Beschraenkung haengt allein an der Raumliste in
+#     wgt_max_ueberschreitung, nicht daran, welche Sensoren es gibt. Einen
+#     Raum dort zu ergaenzen, nur weil sein Sensor existiert, hebt diese
+#     Entscheidung auf - vorher nachfragen.
 #     wgt_max_unterschreitung: alle acht. Beim Schutz vor Auskuehlen soll das
 #     Bad sehr wohl mitreden.
 #
@@ -711,8 +717,11 @@ package_building_hvac:
         # input_number noch auf dem Minimum steht. Bei Offset 4 bindet sie
         # nur bei Linus-Henry (18 + 4 = 22).
         #
-        # Nur diese fuenf Raeume: Diele, WC EG und Bad OG heizen sich anders
-        # auf als Wohnraeume und sollen die zentrale Kuehlung nicht ausloesen.
+        # Es gibt sie fuer ALLE ACHT Raeume. Dass Diele, WC EG und Bad OG die
+        # zentrale Kuehlung nicht ausloesen duerfen, steckt NICHT darin, welche
+        # Sensoren existieren, sondern allein in der Raumliste von
+        # sensor.wgt_max_ueberschreitung weiter unten - siehe Briefing (4).
+        # Wer hier einen Raum ergaenzt, aendert die Kuehlung also NICHT mit.
         # -------------------------------------------------------------------
         - name: "Komfort Obergrenze Wohnzimmer"
           unique_id: "komfort_obergrenze_wohnzimmer"
@@ -771,6 +780,47 @@ package_building_hvac:
           availability: "{{ is_number(states('sensor.zieltemperatur_linus_henry')) }}"
           state: >-
             {% set soll = states('sensor.zieltemperatur_linus_henry') | float(none) %}
+            {{ [ soll + states('input_number.wgt_komfort_offset') | float(4),
+                 22.0 ] | max | round(1) if soll is not none else none }}
+
+        # Die folgenden drei sind bewusst NICHT Teil der Kuehl-Raumliste
+        # (Briefing 4). Sie existieren, damit jeder Raum eine ablesbare
+        # Komfort-Obergrenze hat und raumbezogene Automationen - etwa die
+        # Beschattung Bad OG - dieselbe Schwelle lesen koennen wie die
+        # Sommersteuerung, statt eine eigene Zahl zu erfinden.
+        - name: "Komfort Obergrenze Bad OG"
+          unique_id: "komfort_obergrenze_bad_og"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: mdi:thermometer-chevron-up
+          availability: "{{ is_number(states('sensor.zieltemperatur_bad_og')) }}"
+          state: >-
+            {% set soll = states('sensor.zieltemperatur_bad_og') | float(none) %}
+            {{ [ soll + states('input_number.wgt_komfort_offset') | float(4),
+                 22.0 ] | max | round(1) if soll is not none else none }}
+
+        - name: "Komfort Obergrenze Diele"
+          unique_id: "komfort_obergrenze_diele"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: mdi:thermometer-chevron-up
+          availability: "{{ is_number(states('sensor.zieltemperatur_diele')) }}"
+          state: >-
+            {% set soll = states('sensor.zieltemperatur_diele') | float(none) %}
+            {{ [ soll + states('input_number.wgt_komfort_offset') | float(4),
+                 22.0 ] | max | round(1) if soll is not none else none }}
+
+        - name: "Komfort Obergrenze WC EG"
+          unique_id: "komfort_obergrenze_wc_eg"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+          icon: mdi:thermometer-chevron-up
+          availability: "{{ is_number(states('sensor.zieltemperatur_wc_eg')) }}"
+          state: >-
+            {% set soll = states('sensor.zieltemperatur_wc_eg') | float(none) %}
             {{ [ soll + states('input_number.wgt_komfort_offset') | float(4),
                  22.0 ] | max | round(1) if soll is not none else none }}
 
