@@ -1,0 +1,47 @@
+package_area_house_beschattung_heute:
+  # Ein Merker pro Fenster: "wurde heute schon beschattet". Wird von der
+  # Beschattung-Automation (Blueprint beschattung/beschattung_fenster.yaml)
+  # gesetzt/zurueckgesetzt und dient dort dazu, das Waerme-Gate fuer die
+  # Oeffnen-Flanke zu umgehen, wenn die Automation dieses Fenster heute schon
+  # angefasst hat (siehe Briefing-Punkt 12 im Blueprint).
+  #
+  # Fuer alle 12 Beschattungs-Fenster angelegt, auch fuer die sechs, die noch
+  # auf der alten Zeitfenster-Logik laufen und dieses Blueprint (noch) nicht
+  # nutzen - dort bleibt der Helper vorerst unbenutzt.
+  input_boolean:
+    beschattung_heute_wohnzimmer:
+      name: "Beschattung heute: Wohnzimmer"
+      icon: mdi:weather-sunny-off
+    beschattung_heute_esszimmer_sud:
+      name: "Beschattung heute: Esszimmer Süd"
+      icon: mdi:weather-sunny-off
+    beschattung_heute_esszimmer_west:
+      name: "Beschattung heute: Esszimmer West"
+      icon: mdi:weather-sunny-off
+    beschattung_heute_kuche:
+      name: "Beschattung heute: Küche"
+      icon: mdi:weather-sunny-off
+    beschattung_heute_buro:
+      name: "Beschattung heute: Büro"
+      icon: mdi:weather-sunny-off
+    beschattung_heute_bad_og:
+      name: "Beschattung heute: Bad (OG)"
+      icon: mdi:weather-sunny-off
+    beschattung_heute_linus_sud:
+      name: "Beschattung heute: LiHe Süd"
+      icon: mdi:weather-sunny-off
+    beschattung_heute_linus_west:
+      name: "Beschattung heute: LiHe West"
+      icon: mdi:weather-sunny-off
+    beschattung_heute_technikraum:
+      name: "Beschattung heute: Technikraum"
+      icon: mdi:weather-sunny-off
+    beschattung_heute_hobby_sud:
+      name: "Beschattung heute: Hobby Süd"
+      icon: mdi:weather-sunny-off
+    beschattung_heute_hobby_west:
+      name: "Beschattung heute: Hobby West"
+      icon: mdi:weather-sunny-off
+    beschattung_heute_erik_west:
+      name: "Beschattung heute: Erik West"
+      icon: mdi:weather-sunny-off

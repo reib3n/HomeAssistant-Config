@@ -43,6 +43,7 @@ blueprint:
           domain:
           - switch
           multiple: false
+          reorder: false
     appliance_power_sensor:
       name: Appliance Power Consumption
       description: '(*REQUIRED)
@@ -55,6 +56,7 @@ blueprint:
           domain:
           - sensor
           multiple: false
+          reorder: false
     appliance_starting_power_threshold:
       name: Starting power threshold
       description: '(*REQUIRED)
@@ -98,6 +100,7 @@ blueprint:
           domain:
           - input_number
           multiple: false
+          reorder: false
     appliance_state_machine:
       name: Appliance State Machine
       description: '(*REQUIRED | Helper | Name: <i><strong><your_appliance_name>_state_machine</strong></i>
@@ -111,6 +114,7 @@ blueprint:
           domain:
           - input_select
           multiple: false
+          reorder: false
     appliance_job_cycle:
       name: Appliance Job Cycle
       description: '(*REQUIRED | Helper | Name: <i><strong><your_appliance_name>_job_cycle</strong></i>
@@ -132,6 +136,7 @@ blueprint:
           domain:
           - input_boolean
           multiple: false
+          reorder: false
     delayed_job_completion_timer:
       name: Delayed Job Completion timer
       description: '(*REQUIRED | Helper | Name: <i><strong><your_appliance_name>_delayed_job_completion_timer</i></strong>
@@ -146,6 +151,7 @@ blueprint:
           domain:
           - timer
           multiple: false
+          reorder: false
     automation_self_trigger:
       name: Automation Self-triggering entity
       description: '(*REQUIRED | Helper | Name: <i><strong><your_appliance_name>_automation_self_trigger</i></strong>
@@ -166,6 +172,7 @@ blueprint:
           domain:
           - input_boolean
           multiple: false
+          reorder: false
     delayed_job_completion_duration:
       name: Delayed Job Completion duration
       description: '(OPTIONAL | Helper | <i><strong>Suggested: 0, Default: 0 | DISABLED</strong></i>)
