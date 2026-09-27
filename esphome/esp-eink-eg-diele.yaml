@@ -12,6 +12,7 @@ esphome:
 
 esp32:
   board: esp32dev
+  watchdog_timeout: 30s   # Spielraum fuer Display-Refresh (Standard 5s → Task-WDT-Crash)
   framework:
     type: esp-idf
     advanced:
@@ -419,6 +420,7 @@ display:
   - platform: waveshare_epaper
     id: eink_display
     model: 7.50in-bv3-bwr
+    data_rate: 10MHz      # statt 2MHz → kuerzere Blockade; bei Pixelfehlern auf 4MHz
     cs_pin: GPIO15
     dc_pin: GPIO27
     busy_pin: GPIO25
