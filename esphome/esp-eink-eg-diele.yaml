@@ -22,7 +22,9 @@ esp32:
 # System / Communication
 # ---------------------------------------------------------
 logger:
-  # baud_rate: 0  # (optional) disable serial logs → faster boot
+  level: DEBUG
+  hardware_uart: UART0   # USB-Serial (CP2102/CH340) → Web-Serial im Browser
+  baud_rate: 115200
 
 api:
   encryption:
@@ -35,6 +37,11 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  power_save_mode: none   # kein Modem-Sleep → keine Latenz-/Paketverluste
+  output_power: 17dB      # leicht reduziert, entlastet Versorgung bei TX-Spitzen
+
+debug:
+  update_interval: 5min
 
 time:
   - platform: homeassistant
@@ -230,12 +237,16 @@ font:
 # Sensors (numeric)
 # ---------------------------------------------------------
 sensor:
-#  - platform: wifi_signal
-#    id: wifisignal
-#    name: "eInk-EG-Diele - WiFi Signal Strength"
-#    unit_of_measurement: "dBm"
-#    entity_category: diagnostic
-#    update_interval: 60s
+  - platform: wifi_signal
+    id: wifisignal
+    name: "eInk-EG-Diele - WiFi Signal Strength"
+    unit_of_measurement: "dBm"
+    entity_category: diagnostic
+    update_interval: 60s
+
+  - platform: uptime
+    name: "eInk-EG-Diele - Uptime"
+    entity_category: diagnostic
 
   - platform: homeassistant
     entity_id: sensor.temp_aussen_low
@@ -265,6 +276,20 @@ sensor:
 # Text sensors (strings)
 # ---------------------------------------------------------
 text_sensor:
+  # --- Diagnose ---
+  - platform: wifi_info
+    bssid:
+      name: "eInk-EG-Diele - WiFi BSSID"
+      entity_category: diagnostic
+    ssid:
+      name: "eInk-EG-Diele - WiFi SSID"
+      entity_category: diagnostic
+
+  - platform: debug
+    reset_reason:
+      name: "eInk-EG-Diele - Reset Reason"
+      entity_category: diagnostic
+
   # --- Date / current weather condition ---
   - platform: homeassistant
     entity_id: sensor.weekday_german
@@ -386,7 +411,7 @@ text_sensor:
 spi:
   clk_pin: GPIO13
   mosi_pin: GPIO14
-  miso_pin: GPIO12
+#  miso_pin: GPIO12  # Strapping-Pin, Display ist write-only → nicht nötig
   type: single
 #  miso_pin: GPIO12  # Optional, aber explizit auf einen ungenutzten Pin legen (z. B. GPIO12)
 
