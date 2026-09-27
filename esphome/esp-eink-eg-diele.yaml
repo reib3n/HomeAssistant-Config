@@ -5,9 +5,16 @@ esphome:
   name: "esp-eink-eg-diele"
   friendly_name: eInk Diele EG
   on_boot:
-    priority: 800
+    priority: -100
     then:
-      - delay: 150s
+      # Warten bis API + Zeit da sind (max. 3 min), dann kurz auf HA-Sensorwerte warten
+      - wait_until:
+          condition:
+            and:
+              - api.connected:
+              - time.has_time:
+          timeout: 180s
+      - delay: 10s
       - script.execute: refresh_display
 
 esp32:
@@ -23,11 +30,12 @@ esp32:
 # System / Communication
 # ---------------------------------------------------------
 logger:
-  level: DEBUG
+  level: INFO            # Warnungen (z. B. "took a long time") und Crashes bleiben sichtbar
   hardware_uart: UART0   # USB-Serial (CP2102/CH340) → Web-Serial im Browser
   baud_rate: 115200
 
 api:
+  reboot_timeout: 60min   # HA-Updates/Backups nicht mit Reboot beantworten (Standard 15min)
   encryption:
     key: !secret api_key
 
@@ -42,11 +50,17 @@ wifi:
   output_power: 17dB      # leicht reduziert, entlastet Versorgung bei TX-Spitzen
 
 debug:
-  update_interval: 5min
+  update_interval: 60min
 
 time:
   - platform: homeassistant
     id: homeassistant_time
+    on_time:
+      # Refresh zur vollen und halben Stunde (statt Intervall ab Boot)
+      - seconds: 0
+        minutes: /30
+        then:
+          - script.execute: refresh_display
 
 sun:
   latitude: !secret latitude
@@ -63,15 +77,9 @@ button:
     name: "eInk-EG-Diele - Refresh Screen"
     entity_category: config
     on_press:
+      # Manuell: Farbschema setzen und immer aktualisieren (auch nachts)
+      - script.execute: set_display_color_by_time
       - component.update: eink_display
-
-# ---------------------------------------------------------
-# Scheduled actions
-# ---------------------------------------------------------
-interval:
-  - interval: 30min
-    then:
-      - script.execute: refresh_display
 
 # ---------------------------------------------------------
 # Colors (panel channels depend on Waveshare model)
@@ -98,7 +106,12 @@ script:
     mode: queued
     then:
       - lambda: |-
-          int hour = id(homeassistant_time).now().hour;
+          auto now = id(homeassistant_time).now();
+          if (!now.is_valid()) {
+            ESP_LOGW("display", "Zeit noch nicht gueltig, Refresh uebersprungen");
+            return;
+          }
+          int hour = now.hour;
           if (hour >= 6 && hour <= 23) {
             id(set_display_color_by_time).execute();
             id(eink_display).update();
@@ -109,7 +122,9 @@ script:
     mode: restart
     then:
       - lambda: |-
-          int hour = id(homeassistant_time).now().hour;
+          auto now = id(homeassistant_time).now();
+          if (!now.is_valid()) return;   // Farben unveraendert lassen
+          int hour = now.hour;
           if (hour >= 6 && hour < 12) {
             id(COLOR_TEXT) = Color(0, 0, 0, 0);     // White (check panel interpretation)
             id(COLOR_BG)   = Color(255, 0, 0, 0);   // Red
@@ -437,7 +452,7 @@ display:
       // -----------------------------------------------------
       // Weather icons map (Key ↔ MDI glyph)
       // -----------------------------------------------------
-      std::map<std::string, std::string> weather_icon_map{
+      static const std::map<std::string, std::string> weather_icon_map{
         {"cloudy", "\U000F0590"},
         {"cloudy-alert", "\U000F0F2F"},
         {"cloudy-arrow-right", "\U000F0E6E"},
@@ -496,8 +511,9 @@ display:
         const char *key = (cond_ts != nullptr && cond_ts->has_state() && valid_text(cond_ts->state))
                             ? cond_ts->state.c_str()
                             : "unknown";
-        return weather_icon_map.count(key) ? weather_icon_map[key].c_str()
-                                           : weather_icon_map["cloudy"].c_str();
+        auto it_icon = weather_icon_map.find(key);
+        return it_icon != weather_icon_map.end() ? it_icon->second.c_str()
+                                                 : weather_icon_map.at("cloudy").c_str();
       };
 
       // -----------------------------------------------------
@@ -512,10 +528,8 @@ display:
       // -----------------------------------------------------
       // Current weather (icon)
       // -----------------------------------------------------
-      std::string weather = check_state(id(weather_condition_now), "weather_condition_now")
-                              ? id(weather_condition_now).state
-                              : "cloudy";
-      it.printf(35, 150, id(font_150_mdi), COLOR_TEXT, "%s", weather_icon_map[weather].c_str());
+      check_state(id(weather_condition_now), "weather_condition_now");
+      it.printf(35, 150, id(font_150_mdi), COLOR_TEXT, "%s", safe_icon(id(weather_condition_now)));
 
       // -----------------------------------------------------
       // Daily values: max/min temp, outside temp, humidity, UV
