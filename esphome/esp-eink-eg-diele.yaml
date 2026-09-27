@@ -15,6 +15,9 @@ esphome:
               - time.has_time:
           timeout: 180s
       - delay: 10s
+      # Sonnenzeiten sofort berechnen (sonst erst nach dem regulaeren Update-Intervall)
+      - component.update: next_sunrise
+      - component.update: next_sunset
       - script.execute: refresh_display
 
 esp32:
