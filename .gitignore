@@ -22,10 +22,8 @@
 __pycache__/
 *.py[cod]
 
-# Rohdaten-Sicherung entfernter Statistik-Ausreisser (kein Config-Bestandteil)
-/ausreisser_backup_*.json
-/ausreisser_loeschen.sql
-
-# Upstream-Quellen mit fest eingebauten API-Keys (loesen GitHub Push Protection aus, fuer uns irrelevant)
-custom_components/waste_collection_schedule/waste_collection_schedule/source/dunedin_govt_nz.py
-custom_components/waste_collection_schedule/waste_collection_schedule/source/codc_govt_nz.py
+# Von HACS verwaltet und jederzeit ueber HACS wiederherstellbar (auch in den
+# HA-Backups enthalten). Nicht versionieren: Fremdcode, und Upstream-Quellen
+# mit fest eingebauten API-Keys loesten die GitHub Push Protection aus.
+/custom_components/
+/www/community/
