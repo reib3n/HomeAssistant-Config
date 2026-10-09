@@ -81,24 +81,56 @@ button:
     entity_category: config
     on_press:
       # Manuell: Farbschema setzen und immer aktualisieren (auch nachts)
-      - script.execute: set_display_color_by_time
+      - script.execute: set_display_colors
       - component.update: eink_display
 
 # ---------------------------------------------------------
 # Colors (panel channels depend on Waveshare model)
+#   Color(0,0,0,0)   = Weiss
+#   Color(0,0,0,255) = Schwarz
+#   Color(255,0,0,0) = Rot
+# Werte werden in set_display_colors je nach Theme gesetzt.
 # ---------------------------------------------------------
 color:
   - id: COLOR_TEXT
     red: 0%
     green: 0%
     blue: 0%
-    white: 0%
+    white: 100%
 
   - id: COLOR_BG
     red: 0%
     green: 0%
     blue: 0%
+    white: 0%
+
+  # Linien, Warnsymbol, Frost, Muell heute
+  - id: COLOR_ACCENT
+    red: 0%
+    green: 0%
+    blue: 0%
     white: 100%
+
+  # Kopfbalken (Datum/Wochentag)
+  - id: COLOR_HEADER_BG
+    red: 0%
+    green: 0%
+    blue: 0%
+    white: 0%
+
+  - id: COLOR_HEADER_TEXT
+    red: 0%
+    green: 0%
+    blue: 0%
+    white: 100%
+
+# Zuletzt angezeigtes Theme - Refresh nur bei echtem Wechsel,
+# nicht bei jedem erneuten Senden desselben Werts (z. B. nach Reconnect)
+globals:
+  - id: last_theme
+    type: std::string
+    restore_value: no
+    initial_value: '""'
 
 # ---------------------------------------------------------
 # Scripts (display refresh & time-of-day color logic)
@@ -116,28 +148,33 @@ script:
           }
           int hour = now.hour;
           if (hour >= 6 && hour <= 23) {
-            id(set_display_color_by_time).execute();
+            id(set_display_colors).execute();
             id(eink_display).update();
           }
 
-  # Set text/background color based on time of day
-  - id: set_display_color_by_time
+  # Farben nach Theme aus HA (sensor.eink_diele_theme):
+  #   dunkel - reines Schwarz auf Weiss, kein Rot (Rot verliert bei wenig
+  #            Licht am meisten Kontrast)
+  #   hell   - Schwarz auf Weiss, Rot als Akzent
+  #   morgen - wie hell, plus roter Kopfbalken mit weisser Schrift
+  # Grundflaeche immer Weiss: E-Paper reflektiert nur, im lichtarmen Gang
+  # ist Schwarz auf Weiss der staerkste Kontrast.
+  # Unbekanntes Theme (HA nicht erreichbar) -> wie "dunkel".
+  - id: set_display_colors
     mode: restart
     then:
       - lambda: |-
-          auto now = id(homeassistant_time).now();
-          if (!now.is_valid()) return;   // Farben unveraendert lassen
-          int hour = now.hour;
-          if (hour >= 6 && hour < 12) {
-            id(COLOR_TEXT) = Color(0, 0, 0, 0);     // White (check panel interpretation)
-            id(COLOR_BG)   = Color(255, 0, 0, 0);   // Red
-          } else if (hour >= 12 && hour < 20) {
-            id(COLOR_TEXT) = Color(0, 0, 0, 0);     // White
-            id(COLOR_BG)   = Color(0, 0, 0, 255);   // Black
-          } else {
-            id(COLOR_TEXT) = Color(0, 0, 0, 255);   // Black
-            id(COLOR_BG)   = Color(0, 0, 0, 0);     // White
-          }
+          const Color WHITE = Color(0, 0, 0, 0);
+          const Color BLACK = Color(0, 0, 0, 255);
+          const Color RED   = Color(255, 0, 0, 0);
+          std::string theme = id(eink_theme).has_state() ? id(eink_theme).state : "";
+          bool farbig = (theme == "hell" || theme == "morgen");
+          id(COLOR_BG)          = WHITE;
+          id(COLOR_TEXT)        = BLACK;
+          id(COLOR_ACCENT)      = farbig ? RED : BLACK;
+          id(COLOR_HEADER_BG)   = (theme == "morgen") ? RED : WHITE;
+          id(COLOR_HEADER_TEXT) = (theme == "morgen") ? WHITE : BLACK;
+          ESP_LOGI("display", "Theme: %s", theme.empty() ? "(unbekannt)" : theme.c_str());
 
 # ---------------------------------------------------------
 # Fonts (Gotham + MDI)
@@ -308,6 +345,19 @@ text_sensor:
     reset_reason:
       name: "eInk-EG-Diele - Reset Reason"
       entity_category: diagnostic
+
+  # --- Display-Theme aus HA (dunkel / hell / morgen) ---
+  # Bei Wechsel sofort neu zeichnen (refresh_display prueft 06-23 Uhr).
+  # Der erste Wert nach dem Boot loest keinen Refresh aus - das macht on_boot.
+  - platform: homeassistant
+    entity_id: sensor.eink_diele_theme
+    id: eink_theme
+    on_value:
+      - lambda: |-
+          bool erster = id(last_theme).empty();
+          bool neu = (x != id(last_theme));
+          id(last_theme) = x;
+          if (neu && !erster) id(refresh_display).execute();
 
   # --- Date / current weather condition ---
   - platform: homeassistant
@@ -520,13 +570,15 @@ display:
       };
 
       // -----------------------------------------------------
-      // Header: date & weekday
+      // Header: date & weekday (Balken nur im Theme "morgen" farbig)
       // -----------------------------------------------------
+      it.filled_rectangle(0, 0, 480, 118, COLOR_HEADER_BG);
+
       if (check_state(id(date), "date"))
-        it.printf(240, 30, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, id(date).state.c_str());
+        it.printf(240, 30, id(font_medium_bold), COLOR_HEADER_TEXT, TextAlign::TOP_CENTER, id(date).state.c_str());
 
       if (check_state(id(weekday), "weekday"))
-        it.printf(240, 60, id(font_large_bold), COLOR_TEXT, TextAlign::TOP_CENTER, id(weekday).state.c_str());
+        it.printf(240, 60, id(font_large_bold), COLOR_HEADER_TEXT, TextAlign::TOP_CENTER, id(weekday).state.c_str());
 
       // -----------------------------------------------------
       // Current weather (icon)
@@ -539,19 +591,20 @@ display:
       // -----------------------------------------------------
       it.printf(270, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0143");
       if (check_state(id(temp_max_today), "temp_max_today"))
-        it.printf(283, 130, id(font_16_book), COLOR_TEXT, "%2.0f°C", id(temp_max_today).state);
+        it.printf(283, 130, id(font_medium_bold), COLOR_TEXT, "%2.0f°C", id(temp_max_today).state);
       else
-        it.printf(283, 130, id(font_16_book), COLOR_TEXT, "--°C");
+        it.printf(283, 130, id(font_medium_bold), COLOR_TEXT, "--°C");
 
       it.printf(345, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0140");
       if (check_state(id(temp_min_today), "temp_min_today"))
-        it.printf(357, 130, id(font_16_book), COLOR_TEXT, "%2.0f°C", id(temp_min_today).state);
+        it.printf(357, 130, id(font_medium_bold), COLOR_TEXT, "%2.0f°C", id(temp_min_today).state);
       else
-        it.printf(357, 130, id(font_16_book), COLOR_TEXT, "--°C");
+        it.printf(357, 130, id(font_medium_bold), COLOR_TEXT, "--°C");
 
       it.printf(250, 155, id(font_54_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
       if (check_state(id(out_temp), "out_temp"))
-        it.printf(280, 155, id(font_large_bold), COLOR_TEXT, "%2.0f°C", id(out_temp).state);
+        it.printf(280, 155, id(font_large_bold), id(out_temp).state <= 0.5f ? COLOR_ACCENT : COLOR_TEXT,
+                  "%2.0f°C", id(out_temp).state);
       else
         it.printf(280, 155, id(font_large_bold), COLOR_TEXT, "--°C");
 
@@ -562,9 +615,9 @@ display:
         it.printf(280, 225, id(font_54_book), COLOR_TEXT, "--%%");
 
       if (check_state(id(out_uv), "out_uv"))
-        it.printf(80, 290, id(font_16_book), COLOR_TEXT, "UV: %2.0f", id(out_uv).state);
+        it.printf(80, 290, id(font_medium_bold), COLOR_TEXT, "UV: %2.0f", id(out_uv).state);
       else
-        it.printf(80, 290, id(font_16_book), COLOR_TEXT, "UV: --");
+        it.printf(80, 290, id(font_medium_bold), COLOR_TEXT, "UV: --");
 
       // -----------------------------------------------------
       // Sunrise / sunset
@@ -572,9 +625,9 @@ display:
       it.printf(42, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059C");
       auto sunrise = id(next_sunrise).state;
       if (sunrise.length() >= 5)
-        it.printf(58, 130, id(font_16_book), COLOR_TEXT, sunrise.substr(0, 5).c_str());
+        it.printf(58, 130, id(font_medium_bold), COLOR_TEXT, sunrise.substr(0, 5).c_str());
       else {
-        it.printf(58, 130, id(font_16_book), COLOR_TEXT, "--:--");
+        it.printf(58, 130, id(font_medium_bold), COLOR_TEXT, "--:--");
         ESP_LOGW("display", "Missing sensor value: next_sunrise");
         data_missing = true;
       }
@@ -582,9 +635,9 @@ display:
       it.printf(117, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059B");
       auto sunset = id(next_sunset).state;
       if (sunset.length() >= 5)
-        it.printf(133, 130, id(font_16_book), COLOR_TEXT, sunset.substr(0, 5).c_str());
+        it.printf(133, 130, id(font_medium_bold), COLOR_TEXT, sunset.substr(0, 5).c_str());
       else {
-        it.printf(133, 130, id(font_16_book), COLOR_TEXT, "--:--");
+        it.printf(133, 130, id(font_medium_bold), COLOR_TEXT, "--:--");
         ESP_LOGW("display", "Missing sensor value: next_sunset");
         data_missing = true;
       }
@@ -594,20 +647,20 @@ display:
       // -----------------------------------------------------
       it.printf(250, 287, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
       if (check_state(id(forecast_rain_today), "forecast_rain_today"))
-        it.printf(268, 290, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_rain_today).state.c_str());
+        it.printf(268, 290, id(font_medium_bold), COLOR_TEXT, "%s mm", id(forecast_rain_today).state.c_str());
       else
-        it.printf(268, 290, id(font_16_book), COLOR_TEXT, "-- mm");
+        it.printf(268, 290, id(font_medium_bold), COLOR_TEXT, "-- mm");
 
       it.printf(355, 287, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
       if (check_state(id(forecast_wind_today), "forecast_wind_today"))
-        it.printf(372, 290, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_wind_today).state.c_str());
+        it.printf(372, 290, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_wind_today).state.c_str());
       else
-        it.printf(372, 290, id(font_16_book), COLOR_TEXT, "-- km/h");
+        it.printf(372, 290, id(font_medium_bold), COLOR_TEXT, "-- km/h");
 
       // -----------------------------------------------------
       // Divider + "Forecast" title
       // -----------------------------------------------------
-      it.line(25, 320, 460, 320, COLOR_TEXT);
+      it.filled_rectangle(25, 319, 436, 3, COLOR_ACCENT);
       it.printf(240, 340, id(font_30_book), COLOR_TEXT, TextAlign::TOP_CENTER, "Vorhersage");
 
       // -----------------------------------------------------
@@ -627,19 +680,19 @@ display:
 
       it.printf(65, 518, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
       if (has_valid(id(forecast_4h_temp)))
-        it.printf(80, 522, id(font_16_book), COLOR_TEXT, "%s°C", id(forecast_4h_temp).state.c_str());
+        it.printf(80, 522, id(font_medium_bold), COLOR_TEXT, "%s°C", id(forecast_4h_temp).state.c_str());
 
       it.printf(65, 543, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
       if (has_valid(id(forecast_4h_precipitation)))
-        it.printf(80, 547, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_4h_precipitation).state.c_str());
+        it.printf(80, 547, id(font_medium_bold), COLOR_TEXT, "%s mm", id(forecast_4h_precipitation).state.c_str());
 
       it.printf(65, 568, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
       if (has_valid(id(forecast_4h_wind_speed)))
-        it.printf(80, 572, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_4h_wind_speed).state.c_str());
+        it.printf(80, 572, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_4h_wind_speed).state.c_str());
 
       it.printf(65, 593, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0F38");
       if (has_valid(id(forecast_4h_wind_gust_speed)))
-        it.printf(80, 597, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_4h_wind_gust_speed).state.c_str());
+        it.printf(80, 597, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_4h_wind_gust_speed).state.c_str());
 
       // +8h
       if (has_valid(id(forecast_8h_timestamp)) && id(forecast_8h_timestamp).state.size() >= 13) {
@@ -651,19 +704,19 @@ display:
 
       it.printf(200, 518, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
       if (has_valid(id(forecast_8h_temp)))
-        it.printf(215, 522, id(font_16_book), COLOR_TEXT, "%s°C", id(forecast_8h_temp).state.c_str());
+        it.printf(215, 522, id(font_medium_bold), COLOR_TEXT, "%s°C", id(forecast_8h_temp).state.c_str());
 
       it.printf(200, 543, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
       if (has_valid(id(forecast_8h_precipitation)))
-        it.printf(215, 547, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_8h_precipitation).state.c_str());
+        it.printf(215, 547, id(font_medium_bold), COLOR_TEXT, "%s mm", id(forecast_8h_precipitation).state.c_str());
 
       it.printf(200, 568, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
       if (has_valid(id(forecast_8h_wind_speed)))
-        it.printf(215, 572, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_8h_wind_speed).state.c_str());
+        it.printf(215, 572, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_8h_wind_speed).state.c_str());
 
       it.printf(200, 593, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0F38");
       if (has_valid(id(forecast_8h_wind_gust_speed)))
-        it.printf(215, 597, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_8h_wind_gust_speed).state.c_str());
+        it.printf(215, 597, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_8h_wind_gust_speed).state.c_str());
 
       // +12h
       if (has_valid(id(forecast_12h_timestamp)) && id(forecast_12h_timestamp).state.size() >= 13) {
@@ -675,19 +728,19 @@ display:
 
       it.printf(335, 518, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
       if (has_valid(id(forecast_12h_temp)))
-        it.printf(350, 522, id(font_16_book), COLOR_TEXT, "%s°C", id(forecast_12h_temp).state.c_str());
+        it.printf(350, 522, id(font_medium_bold), COLOR_TEXT, "%s°C", id(forecast_12h_temp).state.c_str());
 
       it.printf(335, 543, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
       if (has_valid(id(forecast_12h_precipitation)))
-        it.printf(350, 547, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_12h_precipitation).state.c_str());
+        it.printf(350, 547, id(font_medium_bold), COLOR_TEXT, "%s mm", id(forecast_12h_precipitation).state.c_str());
 
       it.printf(335, 568, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
       if (has_valid(id(forecast_12h_wind_speed)))
-        it.printf(350, 572, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_12h_wind_speed).state.c_str());
+        it.printf(350, 572, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_12h_wind_speed).state.c_str());
 
       it.printf(335, 593, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0F38");
       if (has_valid(id(forecast_12h_wind_gust_speed)))
-        it.printf(350, 597, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_12h_wind_gust_speed).state.c_str());
+        it.printf(350, 597, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_12h_wind_gust_speed).state.c_str());
 
       // -----------------------------------------------------
       // Extra: pool temperature (only if available)
@@ -701,7 +754,8 @@ display:
       // Trash pickup (today/tomorrow)
       // -----------------------------------------------------
       it.printf(225, 675, id(font_54_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F06CC");
-      it.printf(255, 665, id(font_medium_bold), COLOR_TEXT, "Heute:");
+      bool muell_heute = has_valid(id(trash_today)) && id(trash_today).state != "-" && id(trash_today).state != "Keine";
+      it.printf(255, 665, id(font_medium_bold), muell_heute ? COLOR_ACCENT : COLOR_TEXT, "Heute:");
       it.printf(255, 685, id(font_16_book),   COLOR_TEXT, "%s", id(trash_today).state.c_str());
       it.printf(255, 705, id(font_medium_bold), COLOR_TEXT, "Morgen:");
       it.printf(255, 725, id(font_16_book),   COLOR_TEXT, "%s", id(trash_tomorrow).state.c_str());
@@ -710,13 +764,13 @@ display:
       // Data issue indicator (warning icon)
       // -----------------------------------------------------
       if (data_missing) {
-        it.printf(450, 20, id(font_22_mdi), COLOR_TEXT, "\U000F0026");
+        it.printf(450, 20, id(font_22_mdi), (id(eink_theme).state == "morgen") ? COLOR_HEADER_TEXT : COLOR_ACCENT, "\U000F0026");
       }
 
       // -----------------------------------------------------
       // Divider & timestamp
       // -----------------------------------------------------
-      it.line(25, 635, 460, 635, COLOR_TEXT);
+      it.filled_rectangle(25, 634, 436, 3, COLOR_ACCENT);
       char str[17];
       time_t currTime = id(homeassistant_time).now().timestamp;
       strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
