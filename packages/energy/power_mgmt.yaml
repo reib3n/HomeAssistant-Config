@@ -6,21 +6,21 @@ package_energy_power_mgmt:
     - platform: statistics
       name: "m1_ac_power_a_stat"
       unique_id: "m1_ac_power_a_stat"
-      entity_id: sensor.mb_solaredge_m1_ac_power_a_final
+      entity_id: sensor.meter_1_leistung_l1
       state_characteristic: average_linear
       sampling_size: 20
 
     - platform: statistics
       name: "m1_ac_power_b_stat"
       unique_id: "m1_ac_power_b_stat"
-      entity_id: sensor.mb_solaredge_m1_ac_power_b_final
+      entity_id: sensor.meter_1_leistung_l2
       state_characteristic: average_linear
       sampling_size: 20
 
     - platform: statistics
       name: "m1_ac_power_c_stat"
       unique_id: "m1_ac_power_c_stat"
-      entity_id: sensor.mb_solaredge_m1_ac_power_c_final
+      entity_id: sensor.meter_1_leistung_l3
       state_characteristic: average_linear
       sampling_size: 20
 
@@ -34,7 +34,7 @@ package_energy_power_mgmt:
           state_class: measurement
           icon: mdi:transmission-tower-import
           state: >
-            {% set val = states('sensor.mb_solaredge_m1_ac_power_final') | float(0) %}
+            {% set val = states('sensor.meter_1_leistung') | float(0) %}
             {{ (val * -1) if val < 0 else 0 }}
 
         # --- Grid Export (positive when feeding to grid) ----------------------
@@ -45,5 +45,5 @@ package_energy_power_mgmt:
           state_class: measurement
           icon: mdi:transmission-tower-export
           state: >
-            {% set val = states('sensor.mb_solaredge_m1_ac_power_final') | float(0) %}
+            {% set val = states('sensor.meter_1_leistung') | float(0) %}
             {{ val if val > 0 else 0 }}

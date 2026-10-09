@@ -1,13 +1,6 @@
 wgt_mode_2:
   alias: WGT-Mode
   sequence:
-  # WICHTIG (verifiziert am 30.07.2026): Die WGT nimmt die Freigaben 231/232 nur an,
-  # wenn sie bereits in der passenden Betriebsart laeuft. Ein "232 = 1" im Zustand
-  # "Aus" wird verworfen - im Sommerbetrieb greift es sofort (WP-Status 49).
-  # Beim Einschalten von Heizen/Kuehlen wird daher zuerst die Betriebsart (100)
-  # gesetzt, auf deren Rueckmeldung gewartet und erst dann freigegeben.
-  # Beim Abschalten (fan_only) ist es umgekehrt: erst Freigaben auf 0, damit beim
-  # Start des Sommerbetriebs nicht kurz gekuehlt wird.
   - if:
     - condition: template
       value_template: '{{modus == "cool"}}'
@@ -21,7 +14,7 @@ wgt_mode_2:
         - 3
     - alias: Warten bis Sommerbetrieb zurueckgemeldet wird
       wait_template: '{{ states(''sensor.betriebsart_wgt'') | int(-1) in [3, 4] }}'
-      timeout: '00:00:30'
+      timeout: 00:00:30
       continue_on_timeout: true
     - service: modbus.write_register
       data:
@@ -68,7 +61,7 @@ wgt_mode_2:
         - 2
     - alias: Warten bis Winterbetrieb zurueckgemeldet wird
       wait_template: '{{ states(''sensor.betriebsart_wgt'') | int(-1) == 2 }}'
-      timeout: '00:00:30'
+      timeout: 00:00:30
       continue_on_timeout: true
     - service: modbus.write_register
       data:
@@ -191,87 +184,6 @@ eink_display_eg_diele_licht:
         text:
       name: Modus
       required: true
-wohnbereich_gute_nacht_2:
-  sequence:
-  - action: cover.close_cover
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - cover.kuche
-      - cover.esszimmer_sud
-  - action: switch.turn_off
-    metadata: {}
-    data: {}
-    target:
-      entity_id: switch.mb_powersocket_fernseher
-  - action: light.turn_off
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - light.mb_wohnzimmer
-      - light.mb_esszimmertisch
-      - light.mb_esszimmer
-      - light.mb_kuche
-      - light.wohnbereich_std_lavalampe
-      - light.marmorlampe_2
-  alias: Wohnbereich - Gute Nacht
-  icon: mdi:weather-sunset-down
-  mode: single
-  description: ''
-wohnbereich_guten_morgen_2:
-  sequence:
-  - variables:
-      lux: '{{ states(''sensor.wetterluxtotal'') | float(0) }}'
-      dunkel: '{{ lux < states(''input_number.morgenlicht_schwelle_lux'') | float(500)
-        }}'
-  - alias: Immer hoch - Küche, Esszimmer Süd, Esszimmer Jalousie
-    action: cover.open_cover
-    metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - cover.kuche_low_speed
-      - cover.esszimmer_sud_low_speed
-      - cover.jalousie_esszimmer
-  - alias: Draußen schon hell (wie Open - BY SUN) - auch Wohnzimmer Jalousie hoch
-    if:
-    - condition: template
-      value_template: '{{ lux > 100 }}'
-    then:
-    - action: cover.open_cover
-      metadata: {}
-      data: {}
-      target:
-        entity_id: cover.wohnzimmer_jalousie
-  - alias: Draußen noch zu dunkel - Licht an und für automatisches Aus markieren
-    if:
-    - condition: template
-      value_template: '{{ dunkel }}'
-    then:
-    - action: light.turn_on
-      metadata: {}
-      data:
-        brightness_pct: 75
-      target:
-        entity_id: light.mb_esszimmertisch
-    - action: light.turn_on
-      metadata: {}
-      data:
-        brightness_pct: 50
-        color_temp_kelvin: 2700
-      target:
-        entity_id: light.marmorlampe_2
-    - action: input_boolean.turn_on
-      metadata: {}
-      data: {}
-      target:
-        entity_id: input_boolean.guten_morgen_licht_aktiv
-  alias: Wohnbereich - Guten Morgen
-  icon: mdi:weather-sunset-up
-  mode: single
-  description: ''
 voice_ausgabe_wetterbericht_jetzt:
   sequence:
   - variables:
@@ -280,9 +192,7 @@ voice_ausgabe_wetterbericht_jetzt:
         temp_jetzt] | reject(''none'') | min }}'
       temp_max: '{{ [states(''sensor.forecast_weather_max_temp_today'') | float(None),
         temp_jetzt] | reject(''none'') | max }}'
-  - action: assist_satellite.announce
-    metadata: {}
-    data:
+  - variables:
       message: 'Die Außentemperatur beträgt aktuell {{ temp_jetzt | round }}°. Die
         Temperaturspanne reicht heute von {{ temp_min | round }}° bis {{ temp_max
         | round }}°.
@@ -290,26 +200,41 @@ voice_ausgabe_wetterbericht_jetzt:
         {% if is_state(''binary_sensor.ads_wetterrain'', ''on'') %} Es regnet. {%
         endif %}
 
-        {% if states(''sensor.forecast_weather_regen_today'') | int(0) > 0 %} Es sollen
-        heute noch {{ states(''sensor.forecast_weather_regen_today'') | round(1) }}
-        Liter Regen fallen. {% else %} Es ist kein Regen vorhergesagt. {% endif %}
+        {% if states(''sensor.forecast_weather_regen_today'') | float(0) > 0 %} Es
+        sollen heute noch {{ states(''sensor.forecast_weather_regen_today'') | round(1)
+        }} Liter Regen fallen. {% else %} Es ist kein Regen vorhergesagt. {% endif
+        %}
 
         {% if states(''sensor.stadt_dornstetten_aktuelle_warnstufe'') | int(0) > 0
         %} Aktuell gibt es eine Wetterwarnung vor {{ states(''sensor.dwd_aktuelle_warnungen_text'')}}
         {% endif %}'
-      preannounce: false
-    target:
-      device_id: '{{ target_device }}'
+  - if:
+    - condition: template
+      value_template: '{{ (target_device | default('''', true)) | length > 0 }}'
+    then:
+    - action: assist_satellite.announce
+      data:
+        message: '{{ message }}'
+        preannounce: false
+      target:
+        device_id: '{{ target_device }}'
+  - variables:
+      ergebnis:
+        message: '{{ message }}'
+  - stop: Wetterbericht erstellt
+    response_variable: ergebnis
   alias: Voice - Ausgabe - Wetterbericht (jetzt)
   description: Announce current temperature, today's range, rain, and warnings on
-    a selected device.
+    a selected device. Always returns the text as response (message), so callers without
+    a satellite can use it as conversation response.
   icon: mdi:weather-cloudy
   mode: single
   fields:
     target_device:
       name: Zielgerät (Device)
-      description: Wähle das Assist-/Satelliten-Gerät für die Ausgabe.
-      required: true
+      description: Assist-/Satelliten-Gerät für die Ansage. Ohne Gerät wird nur der
+        Text zurückgegeben.
+      required: false
       selector:
         device:
           multiple: false
@@ -384,4 +309,85 @@ watch_werkstatt_lufter:
       entity_id: fan.werkstatt
     data: {}
   alias: Watch - Werkstatt Lüfter
+  description: ''
+wohnbereich_guten_morgen:
+  sequence:
+  - variables:
+      lux: '{{ states(''sensor.wetterluxtotal'') | float(0) }}'
+      dunkel: '{{ lux < states(''input_number.morgenlicht_schwelle_lux'') | float(500)
+        }}'
+  - alias: Immer hoch - Küche, Esszimmer Süd, Esszimmer Jalousie
+    action: cover.open_cover
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - cover.kuche_low_speed
+      - cover.esszimmer_sud_low_speed
+      - cover.jalousie_esszimmer
+  - alias: Draußen schon hell (wie Open - BY SUN) - auch Wohnzimmer Jalousie hoch
+    if:
+    - condition: template
+      value_template: '{{ lux > 100 }}'
+    then:
+    - action: cover.open_cover
+      metadata: {}
+      data: {}
+      target:
+        entity_id: cover.wohnzimmer_jalousie
+  - alias: Draußen noch zu dunkel - Licht an und für automatisches Aus markieren
+    if:
+    - condition: template
+      value_template: '{{ dunkel }}'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        brightness_pct: 75
+      target:
+        entity_id: light.mb_esszimmertisch
+    - action: light.turn_on
+      metadata: {}
+      data:
+        brightness_pct: 50
+        color_temp_kelvin: 2700
+      target:
+        entity_id: light.marmorlampe_2
+    - action: input_boolean.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: input_boolean.guten_morgen_licht_aktiv
+  alias: Wohnbereich - Guten Morgen
+  icon: mdi:weather-sunset-up
+  mode: single
+  description: ''
+wohnbereich_gute_nacht:
+  sequence:
+  - action: cover.close_cover
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - cover.kuche
+      - cover.esszimmer_sud
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.mb_powersocket_fernseher
+  - action: light.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - light.mb_wohnzimmer
+      - light.mb_esszimmertisch
+      - light.mb_esszimmer
+      - light.mb_kuche
+      - light.wohnbereich_std_lavalampe
+      - light.marmorlampe_2
+  alias: Wohnbereich - Gute Nacht
+  icon: mdi:weather-sunset-down
+  mode: single
   description: ''

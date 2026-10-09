@@ -31,6 +31,8 @@ package_energy_pv_performance:
       # stimmt der ABSOLUTE PR nicht. Der zeitliche VERLAUF ist trotzdem
       # aussagekraeftig, weil der Fehler ein konstanter Faktor ist.
 
+  # sensor.solaredge_garage_leistung_heute (UI-Helfer) zaehlt in kWh: Quelle
+  # ist die Lebensdauer-Energie der SolarEdge-Modbus-Integration.
   template:
     - sensor:
         - name: "PV Performance Ratio"
@@ -46,13 +48,13 @@ package_energy_pv_performance:
           availability: >
             {{ states('sensor.globalstrahlung_heute') | float(0) > 0.15 }}
           state: >
-            {% set ist  = (states('sensor.solaredge_garage_leistung_heute') | float(0)) / 1000 %}
+            {% set ist  = states('sensor.solaredge_garage_leistung_heute') | float(0) %}
             {% set hgl  = states('sensor.globalstrahlung_heute') | float(0) %}
             {% set kwp  = states('input_number.pv_anlagenleistung_kwp') | float(10) %}
             {{ [100 * ist / (hgl * kwp), 200] | min | round(1) }}
           attributes:
             ertrag_kwh: >
-              {{ ((states('sensor.solaredge_garage_leistung_heute') | float(0)) / 1000) | round(2) }}
+              {{ (states('sensor.solaredge_garage_leistung_heute') | float(0)) | round(2) }}
             einstrahlung_kwh_m2: >
               {{ states('sensor.globalstrahlung_heute') | float(0) | round(2) }}
 
@@ -65,7 +67,7 @@ package_energy_pv_performance:
           state_class: measurement
           icon: mdi:solar-power-variant
           state: >
-            {% set ist = (states('sensor.solaredge_garage_leistung_heute') | float(0)) / 1000 %}
+            {% set ist = states('sensor.solaredge_garage_leistung_heute') | float(0) %}
             {% set kwp = states('input_number.pv_anlagenleistung_kwp') | float(10) %}
             {{ (ist / kwp) | round(3) }}
 
@@ -87,7 +89,7 @@ package_energy_pv_performance:
             {% set r = states('sensor.energy_production_today_remaining') | float(0) %}
             {{ (p - r) > 0.2 }}
           state: >
-            {% set ist  = (states('sensor.solaredge_garage_leistung_heute') | float(0)) / 1000 %}
+            {% set ist  = states('sensor.solaredge_garage_leistung_heute') | float(0) %}
             {% set p    = states('sensor.energy_production_today') | float(0) %}
             {% set r    = states('sensor.energy_production_today_remaining') | float(0) %}
             {% set soll = p - r %}

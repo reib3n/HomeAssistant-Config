@@ -527,7 +527,19 @@ trigger:
     %}\n{% set shade_over = past_window or (sun_el > t_elev_max)\n                    or
     (geo and ((lux < t_lux_open) or clarity_gone)) %}\n{{ heat_gate and sun_up and
     shade_over }}\n"
-condition: '{{ not disabled }}'
+# Nur laufen, wenn einer der drei choose-Zweige unten etwas tun wuerde.
+# Der 5-Minuten-Poll loeste sonst bei jeder Automation 288 leere Laeufe pro
+# Tag aus - jeder schrieb den Automation-State zweimal, feuerte
+# automation_triggered und landete im Logbuch. Laeufe, die an der Bedingung
+# scheitern, erzeugen nichts davon. Die Ausdruecke muessen exakt den
+# conditions der Zweige entsprechen; Zweig 1 zusaetzlich mit "not is_open",
+# weil er bei offenem Rollo ohnehin nichts tut.
+condition: >
+  {{ not disabled and (
+       (windy and not fully_closed and not is_open)
+       or (want_shade and not block_shade and need_shade_cmd)
+       or ((trigger.id | default('')) == 'shade_end' and not block_open and not is_open)
+     ) }}
 action:
 - choose:
   - conditions: '{{ windy and not fully_closed }}'

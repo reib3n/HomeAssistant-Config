@@ -376,7 +376,7 @@ package_building_hvac:
   #
   # 1b) GEMITTELTER NETZÜBERSCHUSS
   #
-  # sensor.mb_solaredge_m1_ac_power_final ist der Momentanwert des Zählers (Meter 1).
+  # sensor.meter_1_leistung ist der Momentanwert des Zählers (Meter 1, SolarEdge-Modbus-Integration).
   # Der schwankt sekündlich um mehrere kW und ist als Schaltkriterium unbrauchbar.
   # Für die Sommersteuerung wird deshalb der 15-Minuten-Mittelwert verwendet.
   ################################################################################################
@@ -384,7 +384,7 @@ package_building_hvac:
     - platform: statistics
       name: "PV Ueberschuss Mittel 15min"
       unique_id: "pv_ueberschuss_mittel_15min"
-      entity_id: sensor.mb_solaredge_m1_ac_power_final
+      entity_id: sensor.meter_1_leistung
       state_characteristic: mean
       sampling_size: 250
       max_age:

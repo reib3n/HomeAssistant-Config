@@ -14,3 +14,23 @@ package_area_garage:
             {% elif is_state('sensor.status_garagentor', '3') %}
               geöffnet
             {% endif %}
+
+  sensor:
+    # Giftschrank Werkstatt: der PT100 (ADS, 0.1 K Aufloesung) rauscht in der
+    # letzten Stelle und lieferte alle ~3.5 s einen neuen Wert, rund 24.000
+    # Recorder-Zeilen pro Tag. Aufgezeichnet wird deshalb nur dieser
+    # geglaettete Wert (5-min-Mittel, hoechstens ein Wert pro Minute); der
+    # Rohwert sensor.ads_giftschrankwerkstatt_temp ist im Recorder
+    # ausgeschlossen. Nach einem Neustart fuellt sich das Mittel erst wieder
+    # auf, weil der Rohwert keine Historie mehr hat - fuer eine Schrank-
+    # temperatur unerheblich.
+    - platform: filter
+      name: "Giftschrank Werkstatt Temperatur"
+      unique_id: giftschrank_werkstatt_temperatur
+      entity_id: sensor.ads_giftschrankwerkstatt_temp
+      filters:
+        - filter: time_simple_moving_average
+          window_size: "00:05"
+          precision: 1
+        - filter: time_throttle
+          window_size: "00:01"

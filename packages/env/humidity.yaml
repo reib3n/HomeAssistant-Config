@@ -95,6 +95,11 @@ package_env_humidity:
     # Sensortoleranz, und ein Fenster fuer 0.1 g/m3 zu oeffnen lohnt nicht.
     # delay_off haelt die Empfehlung stabil, damit sie bei Messrauschen um
     # die Schwelle nicht im Minutentakt flackert.
+    #
+    # Attribut differenz nur auf 0.1 g/m3: jede Attributaenderung schreibt
+    # eine neue Recorder-Zeile fuer den Binaersensor. Mit zwei Nachkommastellen
+    # waren das rund 7.300 Zeilen pro Sensor und Tag, obwohl der Zustand nur
+    # selten kippt. 0.1 g/m3 reicht bei einer Schwelle von 0.7 voellig.
     # -------------------------------------------------------------------
     - binary_sensor:
         - name: "Lüften sinnvoll Keller"
@@ -111,7 +116,7 @@ package_env_humidity:
           attributes:
             differenz: >
               {{ ((states('sensor.absolute_feuchte_keller') | float(0))
-                  - (states('sensor.absolute_feuchte_aussen') | float(0))) | round(2) }}
+                  - (states('sensor.absolute_feuchte_aussen') | float(0))) | round(1) }}
 
         - name: "Lüften sinnvoll Werkstatt"
           unique_id: lueften_sinnvoll_werkstatt
@@ -127,7 +132,7 @@ package_env_humidity:
           attributes:
             differenz: >
               {{ ((states('sensor.absolute_feuchte_werkstatt') | float(0))
-                  - (states('sensor.absolute_feuchte_aussen') | float(0))) | round(2) }}
+                  - (states('sensor.absolute_feuchte_aussen') | float(0))) | round(1) }}
 
         - name: "Lüften sinnvoll Garage"
           unique_id: lueften_sinnvoll_garage
@@ -143,4 +148,4 @@ package_env_humidity:
           attributes:
             differenz: >
               {{ ((states('sensor.absolute_feuchte_garage') | float(0))
-                  - (states('sensor.absolute_feuchte_aussen') | float(0))) | round(2) }}
+                  - (states('sensor.absolute_feuchte_aussen') | float(0))) | round(1) }}

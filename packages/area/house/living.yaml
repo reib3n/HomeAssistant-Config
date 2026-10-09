@@ -133,7 +133,7 @@ package_area_house_living:
   # -------------------------------------------------------------------
   # Guten Morgen: Licht bei Dunkelheit, automatisch aus bei Helligkeit
   # -------------------------------------------------------------------
-  # Das Skript wohnbereich_guten_morgen_2 setzt die Markierung, wenn es
+  # Das Skript wohnbereich_guten_morgen setzt die Markierung, wenn es
   # das Licht einschaltet. Die Automation "Wohnbereich - Morgenlicht aus
   # bei Helligkeit" schaltet nur dann aus - von Hand eingeschaltetes Licht
   # bleibt unangetastet. Die Markierung faellt, sobald beide Lampen aus

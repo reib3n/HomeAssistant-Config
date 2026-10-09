@@ -79,9 +79,9 @@ package_building_holzofen:
                heisst Aussentemperatur unter der Heizgrenze - im Sommer ist
                ein warmes Wohnzimmer schlicht Restwaerme. #}
             {{ spitze >= s and (states('sensor.heizgradbedarf') | float(0)) > 0 }}
-          attributes:
-            signal_jetzt: "{{ states('sensor.holzofen_signal') }}"
-            signal_spitze_2h: "{{ states('sensor.holzofen_signal_max_2h') }}"
+          # Keine Attribute signal_jetzt/signal_spitze_2h mehr: beide Werte gibt
+          # es als eigene Sensoren, und jede Attributaenderung schrieb eine neue
+          # Recorder-Zeile fuer diesen Binaersensor (rund 2.300 pro Tag).
 
   sensor:
     # Anstieg als Statistik-Fenster statt derivative-Plattform: change
@@ -127,11 +127,15 @@ package_building_holzofen:
       start: "{{ today_at('00:00') }}"
       end: "{{ now() }}"
 
-    - platform: history_stats
+  # Monatssumme als utility_meter statt als zweite history_stats: eine
+  # history_stats rechnet nach jedem Neustart aus dem Recorder nach, und der
+  # haelt nur 10 Tage vor (packages/system/recorder.yaml). Ab dem 11. eines
+  # Monats fehlten deshalb nach jedem Neustart Stunden. Der Zaehler summiert
+  # stattdessen den Tageswert auf; dessen naechtlichen Ruecksprung auf 0
+  # wertet periodically_resetting (Default) als Reset, nicht als Abnahme.
+  utility_meter:
+    holzofen_stunden_monat:
+      always_available: true
       name: "Holzofen Stunden Monat"
-      unique_id: holzofen_stunden_monat
-      entity_id: binary_sensor.holzofen_aktiv
-      state: "on"
-      type: time
-      start: "{{ now().replace(day=1, hour=0, minute=0, second=0) }}"
-      end: "{{ now() }}"
+      source: sensor.holzofen_stunden_heute
+      cycle: monthly

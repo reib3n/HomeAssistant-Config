@@ -17,36 +17,7 @@ package_system_recorder:
     commit_interval: 30
 
     exclude:
-      entity_globs:
-        # SunSpec-Skalierungsfaktoren: praktisch konstant, in der History ohne Aussage
-        - sensor.mb_solaredge_*_sf
-
-        # Blockread-Register (Mantissen + mitgelesene SF, siehe packages/solaredge.yaml).
-        # Reine Verdrahtung: erst kombiniert ergeben sie einen Wert -> nur die
-        # skalierten *_final-Sensoren gehören in die History.
-        # Achtung: kein *_final-Sensor enthält "_blk", der Glob trifft sie also nicht.
-        - sensor.mb_solaredge_*_blk
-        - sensor.mb_solaredge_*_blk_*
-
       entities:
-        # Rohe, UNskalierte Elektro-Detailregister. Erst mit dem passenden SF
-        # ergeben sie einen sinnvollen Wert -> die skalierten *_final-Sensoren
-        # bleiben aufgezeichnet, die Rohwerte fliegen aus der History.
-
-        # --- Wechselrichter Garage ---
-        # Explizit statt Glob: "..._energy_now*" würde sonst auch den
-        # aufzuzeichnenden ..._energy_now_final treffen.
-        - sensor.mb_solaredge_garage_energy_now
-        - sensor.mb_solaredge_garage_energy_now_1
-        - sensor.mb_solaredge_garage_ac_current
-        - sensor.mb_solaredge_garage_ac_voltage
-        - sensor.mb_solaredge_garage_ac_freq
-
-        # --- Zähler M1: Frequenz ---
-        # Spannung (m1_volt_blk*) und Leistungsfaktor (m1_fac_blk*) sind
-        # Blockreads und werden bereits von den *_blk-Globs oben erfasst.
-        - sensor.mb_solaredge_m1_ac_freq
-
         # ==================================================================
         # AUFRAEUMEN 08/2026 - Schreiblast senken
         # 
@@ -62,9 +33,9 @@ package_system_recorder:
         #   3. keine Quelle eines Helfers -> kein statistics/utility_meter/
         #                                    integration haengt daran
         #   4. nicht in .storage/energy   -> faengt Faelle wie
-        #      mb_solaredge_m1_ac_power_final_inverted ab: ein reiner W-Sensor
-        #      ohne has_sum, der trotzdem im Energie-Dashboard konfiguriert
-        #      ist und deshalb aufgezeichnet bleibt.
+        #      meter_1_leistung ab: ein reiner W-Sensor ohne has_sum, der
+        #      trotzdem im Energie-Dashboard konfiguriert ist (Netzleistung,
+        #      invertiert) und deshalb aufgezeichnet bleibt.
         # 
         # Wetterdaten bleiben vollstaendig erhalten (Vorgabe).
         # 
@@ -83,39 +54,33 @@ package_system_recorder:
         - sensor.system_monitor_freier_speicher
         - sensor.system_monitor_speicherauslastung
 
-        # --- SolarEdge Zaehler M1: Schein- und Blindleistung, Leistungsfaktor,
-#       Spannungen und Strom je Phase. Die WIRKleistung (_ac_power_final
-#       sowie _a/_b/_c_final) bleibt drin - sie speist Helfer, und
-#       _final_inverted haengt im Energie-Dashboard.
-        - sensor.mb_solaredge_m1_ac_current_a_final
-        - sensor.mb_solaredge_m1_ac_power_app_a_final
-        - sensor.mb_solaredge_m1_ac_power_app_b_final
-        - sensor.mb_solaredge_m1_ac_power_app_c_final
-        - sensor.mb_solaredge_m1_ac_power_app_final
-        - sensor.mb_solaredge_m1_ac_power_fac_a_final
-        - sensor.mb_solaredge_m1_ac_power_fac_b_final
-        - sensor.mb_solaredge_m1_ac_power_fac_c_final
-        - sensor.mb_solaredge_m1_ac_power_fac_final
-        - sensor.mb_solaredge_m1_ac_power_rea_a_final
-        - sensor.mb_solaredge_m1_ac_power_rea_b_final
-        - sensor.mb_solaredge_m1_ac_power_rea_c_final
-        - sensor.mb_solaredge_m1_ac_power_rea_final
-        - sensor.mb_solaredge_m1_ac_volt_a_final
-        - sensor.mb_solaredge_m1_ac_volt_b_final
-        - sensor.mb_solaredge_m1_ac_volt_c_final
+        # --- SolarEdge Zaehler (Meter 1, SolarEdge-Modbus-Integration): Schein- und
+#       Blindleistung, Leistungsfaktor, Spannungen und Strom. Die WIRKleistung
+#       (meter_1_leistung sowie _l1/_l2/_l3) bleibt drin - sie speist Helfer,
+#       und meter_1_leistung haengt invertiert im Energie-Dashboard.
+        - sensor.meter_1_blindleistung
+        - sensor.meter_1_leistungsfaktor
+        - sensor.meter_1_scheinleistung
+        - sensor.meter_1_spannung_l1_n
+        - sensor.meter_1_spannung_l2_n
+        - sensor.meter_1_spannung_l3_n
+        - sensor.meter_1_stromstarke
+        - sensor.meter_1_stromstarke_l1
+        - sensor.meter_1_stromstarke_l2
+        - sensor.meter_1_stromstarke_l3
 
         # --- SolarEdge Wechselrichter Garage: DC-Details, Schein- und Blindleistung,
-#       Spannung, cos phi. Der Tagesertrag laeuft ueber den utility_meter
+#       Spannung, Strom, cos phi. Der Tagesertrag laeuft ueber den utility_meter
 #       aus der Lebensdauer-Energie und ist nicht betroffen.
-        - sensor.mb_solaredge_garage_ac_current_final
-        - sensor.mb_solaredge_garage_ac_pf_final
-        - sensor.mb_solaredge_garage_ac_va_final
-        - sensor.mb_solaredge_garage_ac_var_final
-        - sensor.mb_solaredge_garage_ac_voltage_final
-        - sensor.mb_solaredge_garage_dc_current_final
-        - sensor.mb_solaredge_garage_dc_power_final
-        - sensor.mb_solaredge_garage_dc_voltage_final
-        # sensor.mb_solaredge_garage_energy_now_final NICHT ausschliessen:
+        - sensor.garage_solaredge_garage_blindleistung
+        - sensor.garage_solaredge_garage_dc_leistung
+        - sensor.garage_solaredge_garage_dc_spannung
+        - sensor.garage_solaredge_garage_dc_stromstarke
+        - sensor.garage_solaredge_garage_leistungsfaktor
+        - sensor.garage_solaredge_garage_scheinleistung
+        - sensor.garage_solaredge_garage_spannung
+        - sensor.garage_solaredge_garage_stromstarke
+        # sensor.garage_solaredge_garage_leistung NICHT ausschliessen:
         # Tile "PV Garage" auf der Startseite (Ueberblick).
 
         # --- Shelly Pro3EM Heizung: Momentanleistungen je Phase und gesamt. Fuer die
@@ -124,6 +89,7 @@ package_system_recorder:
         - sensor.pro3em_heizung_phase_a_apparent_power
         - sensor.pro3em_heizung_phase_b_active_power
         - sensor.pro3em_heizung_phase_b_apparent_power
+        - sensor.pro3em_heizung_phase_a_power_factor
         - sensor.pro3em_heizung_phase_b_power_factor
         - sensor.pro3em_heizung_phase_c_active_power
         - sensor.pro3em_heizung_phase_c_apparent_power
@@ -164,4 +130,38 @@ package_system_recorder:
         #       Ersparnis: rund 5.800 Zeilen pro Tag.
         - sensor.wetterwindspeedboe30min
         - sensor.wetterwindspeedboe4h
+
+        # ==================================================================
+        # AUFRAEUMEN 10/2026 - zweite Runde, nach denselben vier Pruefungen.
+        # Zusaetzlich geprueft: keine statistics-, history_stats- oder
+        # filter-Plattform und keine Automation liest die HISTORIE dieser
+        # Entities - nur ihren aktuellen State.
+        # ==================================================================
+
+        # --- Holzofen-Zwischenwerte (statistics "change" ueber 1 h). Nur
+        #       sensor.holzofen_signal liest sie, und zwar live. Beim Start
+        #       fuellen sie ihr Fenster aus der Historie ihrer QUELLE
+        #       (Raumtemperaturen), nicht aus der eigenen.
+        #       Ersparnis: rund 46.700 Zeilen pro Tag.
+        - sensor.wohnzimmer_anstieg_1h
+        - sensor.referenzraum_anstieg_1h
+
+        # --- Geglaettete Phasenleistung (statistics average_linear). Die
+        #       Graph-Karte "Stromverbrauch" zeigt Stundenmittel und liest
+        #       dafuer jetzt direkt sensor.meter_1_leistung_l1/_l2/_l3 - deren
+        #       Stundenmittel ist dasselbe. Ersparnis: rund 50.000 Zeilen/Tag.
+        - sensor.m1_ac_power_a_stat
+        - sensor.m1_ac_power_b_stat
+        - sensor.m1_ac_power_c_stat
+
+        # --- ADS-Heartbeat: kippt alle ~5 s, die Historie ist ohne Aussage.
+        #       automation.system_ads_connection_reboot liest last_changed
+        #       aus der State Machine, nicht aus dem Recorder.
+        #       Ersparnis: rund 18.300 Zeilen pro Tag.
+        - binary_sensor.ads_alive
+
+        # --- Rohwert Giftschrank-Temperatur: aufgezeichnet wird der geglaettete
+        #       sensor.giftschrank_werkstatt_temperatur (packages/area/garage.yaml).
+        #       Ersparnis: rund 23.000 Zeilen pro Tag.
+        - sensor.ads_giftschrankwerkstatt_temp
 

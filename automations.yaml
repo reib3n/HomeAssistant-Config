@@ -399,27 +399,27 @@
   mode: single
 - id: '1718780262317'
   alias: Monitoring - Gefrierschrank Prevent from OFF
-  description: ''
+  description: Schaltet die Steckdose sofort wieder ein, sobald sie aus geht (auch
+    nach Wiederkehr aus unavailable) und beim HA-Start, falls sie aus ist.
   triggers:
-  - seconds: '30'
-    trigger: time_pattern
+  - trigger: state
+    entity_id: switch.std_gefrierschrank
+    to: 'off'
+  - trigger: homeassistant
+    event: start
   conditions:
-  - condition: device
-    type: is_off
-    device_id: fdb7d62111ba59cfeadd758cd1ea4b35
-    entity_id: 0cd9d297a3128c925fcc0be941e3c3a4
-    domain: switch
+  - condition: state
+    entity_id: switch.std_gefrierschrank
+    state: 'off'
   actions:
-  - type: turn_on
-    device_id: fdb7d62111ba59cfeadd758cd1ea4b35
-    entity_id: 0cd9d297a3128c925fcc0be941e3c3a4
-    domain: switch
+  - action: switch.turn_on
+    target:
+      entity_id: switch.std_gefrierschrank
   - action: notify.notification_group_all_devices
     metadata: {}
     data:
       message: Gefrierschrank musste wieder eingeschaltet werden!
-  mode: parallel
-  max: 10
+  mode: single
 - id: '1722603963360'
   alias: WGT - Set Fan Level Dropdown
   description: ''
@@ -490,27 +490,27 @@
   mode: single
 - id: '1733170085023'
   alias: Monitoring - Kühlschrank Prevent from OFF
-  description: ''
+  description: Schaltet die Steckdose sofort wieder ein, sobald sie aus geht (auch
+    nach Wiederkehr aus unavailable) und beim HA-Start, falls sie aus ist.
   triggers:
-  - seconds: '30'
-    trigger: time_pattern
+  - trigger: state
+    entity_id: switch.std_kuhlschrank
+    to: 'off'
+  - trigger: homeassistant
+    event: start
   conditions:
-  - condition: device
-    type: is_off
-    device_id: bc2325c10edce6d5480fca12778e70e4
-    entity_id: 9864ad8023597e71d21b0dfb0ca31ed4
-    domain: switch
+  - condition: state
+    entity_id: switch.std_kuhlschrank
+    state: 'off'
   actions:
-  - type: turn_on
-    device_id: bc2325c10edce6d5480fca12778e70e4
-    entity_id: 9864ad8023597e71d21b0dfb0ca31ed4
-    domain: switch
+  - action: switch.turn_on
+    target:
+      entity_id: switch.std_kuhlschrank
   - action: notify.notification_group_all_devices
     metadata: {}
     data:
       message: Kühlschrank musste wieder eingeschaltet werden!
-  mode: parallel
-  max: 10
+  mode: single
 - id: '1735476152143'
   alias: Monitoring - Waschmaschine
   description: Monitoring der Waschmaschine
@@ -692,6 +692,7 @@
       target:
         entity_id: cover.jalousie_esszimmer
   mode: single
+  max_exceeded: silent
 - id: '1746342563586'
   alias: Open - OG - Hausgang
   description: ''
@@ -867,6 +868,7 @@
     target:
       entity_id: cover.bad_og_low_speed
   mode: single
+  max_exceeded: silent
 - id: '1749362747767'
   alias: Urlaub - Gerätesteuerung Strom
   description: ''
@@ -1304,94 +1306,39 @@
   mode: single
 - id: '1752162128760'
   alias: Monitoring - LED Weatherman
-  description: ''
+  description: 'Briefkasten vor Müll vor aus: bei jeder Änderung von Briefkasten oder
+    Müllmeldung, wenn die WLED nach einem Ausfall wieder erreichbar ist und beim HA-Start
+    wird der Soll-Zustand neu gesetzt.'
   triggers:
   - trigger: state
-    entity_id:
-    - binary_sensor.ads_briefkasten_full
+    entity_id: binary_sensor.ads_briefkasten_full
     from: 'off'
     to: 'on'
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 0
     id: Belegt
   - trigger: state
-    entity_id:
-    - binary_sensor.ads_briefkasten_full
+    entity_id: binary_sensor.ads_briefkasten_full
     from: 'on'
     to: 'off'
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 0
     id: Frei
   - trigger: state
-    entity_id:
-    - input_boolean.mullmeldung
-    to: 'off'
-    from: 'on'
-    id: Müll aus
-  - trigger: time_pattern
-    minutes: /5
-    id: Time
+    entity_id: input_boolean.mullmeldung
+    to:
+    - 'on'
+    - 'off'
+    id: Müll
   - trigger: state
-    entity_id:
-    - input_boolean.mullmeldung
+    entity_id: light.wled_eg_diele
     from:
-    to: 'on'
-    id: Müll einschalten
+    - unavailable
+    - unknown
+    id: WLED zurück
+  - trigger: homeassistant
+    event: start
+    id: Start
   conditions: []
   actions:
-  - alias: Zeitsteuerung Optionen
-    choose:
-    - conditions:
-      - condition: and
-        conditions:
-        - condition: trigger
-          id:
-          - Time
-        - condition: state
-          entity_id: binary_sensor.ads_briefkasten_full
-          state: 'on'
-        alias: Briefkasten Zeitprüfung
-      sequence:
-      - action: script.eink_display_eg_diele_licht
-        metadata: {}
-        data:
-          modus: Briefkasten
-    - conditions:
-      - alias: Müll Zeitprüfung
-        condition: and
-        conditions:
-        - condition: trigger
-          id:
-          - Time
-        - condition: state
-          entity_id: input_boolean.mullmeldung
-          state: 'on'
-      sequence:
-      - action: script.eink_display_eg_diele_licht
-        metadata: {}
-        data:
-          modus: Müll
-    - conditions:
-      - condition: trigger
-        id:
-        - Time
-      - condition: state
-        entity_id: binary_sensor.ads_briefkasten_full
-        state: 'off'
-      - condition: state
-        entity_id: automation.monitoring_mullmeldung
-        state: 'off'
-      sequence:
-      - action: script.eink_display_eg_diele_licht
-        metadata: {}
-        data:
-          modus: aus
-      alias: Ausschalten
-  - if:
+  - alias: Briefkasten gefüllt
+    if:
     - condition: trigger
       id:
       - Belegt
@@ -1401,61 +1348,14 @@
       data:
         message: Brief erhalten!
         title: POST
-    - action: script.eink_display_eg_diele_licht
-      metadata: {}
-      data:
-        modus: Briefkasten
-    alias: Briefkasten gefüllt
-  - alias: Briefkasten geleert
-    choose:
-    - conditions:
-      - condition: trigger
-        id:
-        - Frei
-      - condition: state
-        entity_id: input_boolean.mullmeldung
-        state: 'off'
-      sequence:
-      - action: script.eink_display_eg_diele_licht
-        metadata: {}
-        data:
-          modus: aus
-    - conditions:
-      - condition: trigger
-        id:
-        - Frei
-      - condition: state
-        entity_id: input_boolean.mullmeldung
-        state: 'on'
-      sequence:
-      - action: script.eink_display_eg_diele_licht
-        metadata: {}
-        data:
-          modus: Müll
-  - alias: Müllmeldung deaktivieren
-    if:
-    - condition: trigger
-      id:
-      - Müll aus
-    then:
-    - action: script.eink_display_eg_diele_licht
-      metadata: {}
-      data:
-        modus: aus
-  - if:
-    - condition: trigger
-      id:
-      - Müll einschalten
-    - condition: state
-      entity_id: binary_sensor.ads_briefkasten_full
-      state: 'off'
-    then:
-    - action: script.eink_display_eg_diele_licht
-      metadata: {}
-      data:
-        modus: Müll
-    alias: Müllmeldung direkt einschalten
-  mode: single
+  - alias: Soll-Zustand setzen
+    action: script.eink_display_eg_diele_licht
+    metadata: {}
+    data:
+      modus: '{{ ''Briefkasten'' if is_state(''binary_sensor.ads_briefkasten_full'',
+        ''on'') else (''Müll'' if is_state(''input_boolean.mullmeldung'', ''on'')
+        else ''aus'') }}'
+  mode: queued
 - id: '1752686838076'
   alias: EnergySave - Schreibtisch
   description: ''
@@ -1716,29 +1616,43 @@
     command: Guten Morgen
   conditions: []
   actions:
-  - action: script.wohnbereich_guten_morgen_2
+  - action: script.wohnbereich_guten_morgen
     data: {}
-  - action: assist_satellite.announce
-    data:
-      message: Guten Morgen, liebe Familie.
-      preannounce: false
-    target:
-      device_id: '{{ trigger.device_id }}'
-  - action: assist_satellite.announce
-    data:
-      message: Im Wohnbereich hat es {{ states('sensor.mb_temp_wohnzimmer') }}°.
-      preannounce: false
-    target:
-      device_id: '{{ trigger.device_id }}'
+  - variables:
+      satellit: '{{ (trigger.device_id | default('''', true)) | length > 0 }}'
+      temp_text: Im Wohnbereich hat es {{ states('sensor.mb_temp_wohnzimmer') }}°.
+  - if:
+    - condition: template
+      value_template: '{{ satellit }}'
+    then:
+    - action: assist_satellite.announce
+      data:
+        message: Guten Morgen, liebe Familie.
+        preannounce: false
+      target:
+        device_id: '{{ trigger.device_id }}'
+    - action: assist_satellite.announce
+      data:
+        message: '{{ temp_text }}'
+        preannounce: false
+      target:
+        device_id: '{{ trigger.device_id }}'
   - action: script.voice_ausgabe_wetterbericht_jetzt
     data:
-      target_device: '{{ trigger.device_id }}'
+      target_device: '{{ trigger.device_id if satellit else '''' }}'
+    response_variable: wetter
+  - if:
+    - condition: template
+      value_template: '{{ not satellit }}'
+    then:
+    - set_conversation_response: Guten Morgen, liebe Familie. {{ temp_text }} {{ wetter.message
+        }}
   mode: single
 - id: '1791530000001'
   alias: Wohnbereich - Morgenlicht aus bei Helligkeit
-  description: Schaltet das vom Guten Morgen eingeschaltete Licht aus, sobald es
-    draußen hell genug ist (Schwelle + Hysterese, frühestens nach der Mindestdauer,
-    spätestens um 10 Uhr), und fährt die Behänge im Wohnbereich hoch. Von Hand eingeschaltetes
+  description: Schaltet das vom Guten Morgen eingeschaltete Licht aus, sobald es draußen
+    hell genug ist (Schwelle + Hysterese, frühestens nach der Mindestdauer, spätestens
+    um 10 Uhr), und fährt die Behänge im Wohnbereich hoch. Von Hand eingeschaltetes
     Licht bleibt an. Sind beide Lampen aus, wird die Markierung zurückgesetzt.
   triggers:
   - alias: Draußen hell genug (Schwelle + Hysterese, 5 Minuten stabil)
@@ -1783,13 +1697,13 @@
           - alias: Draußen über Schwelle + Hysterese
             condition: template
             value_template: '{{ states(''sensor.wetterluxtotal'') | float(0) > states(''input_number.morgenlicht_schwelle_lux'')
-              | float(500) + states(''input_number.morgenlicht_hysterese_lux'') | float(200)
-              }}'
+              | float(500) + states(''input_number.morgenlicht_hysterese_lux'') |
+              float(200) }}'
           - alias: Licht brennt schon mindestens die Mindestdauer
             condition: template
             value_template: '{{ now() - states.input_boolean.guten_morgen_licht_aktiv.last_changed
-              >= timedelta(minutes=states(''input_number.morgenlicht_mindestdauer'') | int(30))
-              }}'
+              >= timedelta(minutes=states(''input_number.morgenlicht_mindestdauer'')
+              | int(30)) }}'
       sequence:
       - action: light.turn_off
         metadata: {}
@@ -1836,13 +1750,21 @@
     command: Gute Nacht
   conditions: []
   actions:
-  - action: assist_satellite.announce
-    data:
-      message: Gute Nacht, schlaf gut
-      preannounce: false
-    target:
-      device_id: '{{ trigger.device_id }}'
-  - action: script.wohnbereich_gute_nacht_2
+  - variables:
+      satellit: '{{ (trigger.device_id | default('''', true)) | length > 0 }}'
+  - if:
+    - condition: template
+      value_template: '{{ satellit }}'
+    then:
+    - action: assist_satellite.announce
+      data:
+        message: Gute Nacht, schlaf gut
+        preannounce: false
+      target:
+        device_id: '{{ trigger.device_id }}'
+    else:
+    - set_conversation_response: Gute Nacht, schlaf gut
+  - action: script.wohnbereich_gute_nacht
     data: {}
   mode: single
 - id: '1785072439118'
@@ -1860,10 +1782,17 @@
     - Brauche ich einen Regenschirm
   conditions: []
   actions:
+  - variables:
+      satellit: '{{ (trigger.device_id | default('''', true)) | length > 0 }}'
   - action: script.voice_ausgabe_wetterbericht_jetzt
-    metadata: {}
     data:
-      target_device: '{{ trigger.device_id }}'
+      target_device: '{{ trigger.device_id if satellit else '''' }}'
+    response_variable: wetter
+  - if:
+    - condition: template
+      value_template: '{{ not satellit }}'
+    then:
+    - set_conversation_response: '{{ wetter.message }}'
   mode: single
 - id: '1785072457454'
   alias: Voice - Command - Wetterwarnungen
@@ -1876,14 +1805,23 @@
     - Gibt es aktuell Wetterwarnungen
   conditions: []
   actions:
-  - action: assist_satellite.announce
-    data:
-      message: '{% if states(''sensor.stadt_dornstetten_aktuelle_warnstufe'') | int(0)
-        > 0 %} Aktuell gibt es eine Wetterwarnung vor {{ states(''sensor.dwd_aktuelle_warnungen_text'')}}
+  - variables:
+      satellit: '{{ (trigger.device_id | default('''', true)) | length > 0 }}'
+      warn_text: '{% if states(''sensor.stadt_dornstetten_aktuelle_warnstufe'') |
+        int(0) > 0 %} Aktuell gibt es eine Wetterwarnung vor {{ states(''sensor.dwd_aktuelle_warnungen_text'')}}
         {% else %} Nein, es gibt aktuell keine Warnungen. {% endif %}'
-      preannounce: false
-    target:
-      device_id: '{{ trigger.device_id }}'
+  - if:
+    - condition: template
+      value_template: '{{ satellit }}'
+    then:
+    - action: assist_satellite.announce
+      data:
+        message: '{{ warn_text }}'
+        preannounce: false
+      target:
+        device_id: '{{ trigger.device_id }}'
+    else:
+    - set_conversation_response: '{{ warn_text }}'
   mode: single
 - id: '1785086599712'
   alias: Beschattung Süd - EG - Esszimmer Süden
