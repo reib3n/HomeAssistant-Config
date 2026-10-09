@@ -25,3 +25,7 @@ __pycache__/
 # Rohdaten-Sicherung entfernter Statistik-Ausreisser (kein Config-Bestandteil)
 /ausreisser_backup_*.json
 /ausreisser_loeschen.sql
+
+# Upstream-Quellen mit fest eingebauten API-Keys (loesen GitHub Push Protection aus, fuer uns irrelevant)
+custom_components/waste_collection_schedule/waste_collection_schedule/source/dunedin_govt_nz.py
+custom_components/waste_collection_schedule/waste_collection_schedule/source/codc_govt_nz.py

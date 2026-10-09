@@ -1,0 +1,14 @@
+package_area_house_sleep_lock:
+  # Schlaefer-Schutz pro Kinderzimmer fuer die Beschattung-Automationen
+  # (Blueprint beschattung/beschattung_fenster.yaml, Input 'sleep_lock').
+  # Steht der Schalter auf 'on', faehrt die Automation den Behang NICHT
+  # hoch (Zweig D und Wind-Zweig bleiben stehen); beschattet wird weiterhin.
+  # Wird von Hand oder per eigener Automation geschaltet - der Blueprint
+  # liest ihn nur.
+  input_boolean:
+    sleep_lock_lihe:
+      name: "Sleep-Lock: LiHe"
+      icon: mdi:sleep
+    sleep_lock_erik:
+      name: "Sleep-Lock: Erik"
+      icon: mdi:sleep

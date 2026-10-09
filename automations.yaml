@@ -61,30 +61,43 @@
   mode: single
 - id: '1641065185674'
   alias: Close - UG - Technikraum
-  description: ''
+  description: Schließt bei Dunkelheit (<20 lx für 5 min, Sonne <4°), spätestens Sonnenuntergang
+    + 1200s.
   triggers:
-  - entity_id:
+  - trigger: numeric_state
+    entity_id: sensor.wetterluxtotal
+    below: 20
+    for:
+      minutes: 5
+  - trigger: sun
+    event: sunset
+    offset: '1200'
+  - trigger: state
+    entity_id:
     - binary_sensor.fenster_technikraum
     to: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
-    trigger: state
-  - event: sunset
-    offset: '1200'
-    trigger: sun
   conditions:
-  - condition: sun
-    after: sunset
-    after_offset: '1200'
   - condition: state
     entity_id: binary_sensor.fenster_technikraum
     state: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
+  - condition: or
+    conditions:
+    - condition: and
+      conditions:
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 20
+      - condition: numeric_state
+        entity_id: sun.sun
+        attribute: elevation
+        below: 4
+    - condition: sun
+      after: sunset
+      after_offset: '1200'
   actions:
   - delay:
       seconds: '{{ range(0, 20) | random }}'
@@ -95,30 +108,43 @@
   mode: single
 - id: '1641065185675'
   alias: Close - UG - Hobbyraum Süd
-  description: ''
+  description: Schließt bei Dunkelheit (<20 lx für 5 min, Sonne <4°), spätestens Sonnenuntergang
+    + 1200s.
   triggers:
-  - entity_id:
+  - trigger: numeric_state
+    entity_id: sensor.wetterluxtotal
+    below: 20
+    for:
+      minutes: 5
+  - trigger: sun
+    event: sunset
+    offset: '1200'
+  - trigger: state
+    entity_id:
     - binary_sensor.fenster_hobbyraum_sud
     to: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
-    trigger: state
-  - event: sunset
-    offset: '1200'
-    trigger: sun
   conditions:
-  - condition: sun
-    after: sunset
-    after_offset: '1200'
   - condition: state
     entity_id: binary_sensor.fenster_hobbyraum_sud
     state: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
+  - condition: or
+    conditions:
+    - condition: and
+      conditions:
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 20
+      - condition: numeric_state
+        entity_id: sun.sun
+        attribute: elevation
+        below: 4
+    - condition: sun
+      after: sunset
+      after_offset: '1200'
   actions:
   - delay:
       seconds: '{{ range(0, 20) | random }}'
@@ -129,30 +155,43 @@
   mode: single
 - id: '1641065185676'
   alias: Close - UG - Balkontür
-  description: ''
+  description: Schließt bei Dunkelheit (<20 lx für 5 min, Sonne <4°), spätestens Sonnenuntergang
+    + 1300s.
   triggers:
-  - entity_id:
+  - trigger: numeric_state
+    entity_id: sensor.wetterluxtotal
+    below: 20
+    for:
+      minutes: 5
+  - trigger: sun
+    event: sunset
+    offset: '1300'
+  - trigger: state
+    entity_id:
     - binary_sensor.terassentur
     to: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
-    trigger: state
-  - event: sunset
-    offset: '1300'
-    trigger: sun
   conditions:
-  - condition: sun
-    after: sunset
-    after_offset: '1300'
   - condition: state
     entity_id: binary_sensor.terassentur
     state: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
+  - condition: or
+    conditions:
+    - condition: and
+      conditions:
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 20
+      - condition: numeric_state
+        entity_id: sun.sun
+        attribute: elevation
+        below: 4
+    - condition: sun
+      after: sunset
+      after_offset: '1300'
   actions:
   - delay:
       seconds: '{{ range(0, 20) | random }}'
@@ -163,30 +202,43 @@
   mode: single
 - id: '1641065185677'
   alias: Close - UG - Hobbyraum West
-  description: ''
+  description: Schließt bei Dunkelheit (<20 lx für 5 min, Sonne <4°), spätestens Sonnenuntergang
+    + 1200s.
   triggers:
-  - entity_id:
+  - trigger: numeric_state
+    entity_id: sensor.wetterluxtotal
+    below: 20
+    for:
+      minutes: 5
+  - trigger: sun
+    event: sunset
+    offset: '1200'
+  - trigger: state
+    entity_id:
     - binary_sensor.fenster_hobbyraum_west
     to: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
-    trigger: state
-  - event: sunset
-    offset: '1200'
-    trigger: sun
   conditions:
-  - condition: sun
-    after: sunset
-    after_offset: '1200'
   - condition: state
     entity_id: binary_sensor.fenster_hobbyraum_west
     state: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
+  - condition: or
+    conditions:
+    - condition: and
+      conditions:
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 20
+      - condition: numeric_state
+        entity_id: sun.sun
+        attribute: elevation
+        below: 4
+    - condition: sun
+      after: sunset
+      after_offset: '1200'
   actions:
   - delay:
       seconds: '{{ range(0, 20) | random }}'
@@ -197,30 +249,43 @@
   mode: single
 - id: '1641065185678'
   alias: Close - EG - WC
-  description: ''
+  description: Schließt bei Dunkelheit (<20 lx für 5 min, Sonne <4°), spätestens Sonnenuntergang
+    + 1200s.
   triggers:
-  - entity_id:
+  - trigger: numeric_state
+    entity_id: sensor.wetterluxtotal
+    below: 20
+    for:
+      minutes: 5
+  - trigger: sun
+    event: sunset
+    offset: '1200'
+  - trigger: state
+    entity_id:
     - binary_sensor.fenster_bad_eg
     to: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
-    trigger: state
-  - event: sunset
-    offset: '1200'
-    trigger: sun
   conditions:
-  - condition: sun
-    after: sunset
-    after_offset: '1200'
   - condition: state
     entity_id: binary_sensor.fenster_bad_eg
     state: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
+  - condition: or
+    conditions:
+    - condition: and
+      conditions:
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 20
+      - condition: numeric_state
+        entity_id: sun.sun
+        attribute: elevation
+        below: 4
+    - condition: sun
+      after: sunset
+      after_offset: '1200'
   actions:
   - delay:
       seconds: '{{ range(0, 20) | random }}'
@@ -231,12 +296,32 @@
   mode: single
 - id: '1641320769609'
   alias: Close - OG - Hausgang
-  description: ''
+  description: Schließt bei Dunkelheit (<20 lx für 5 min, Sonne <4°), spätestens Sonnenuntergang
+    + 1200s.
   triggers:
-  - event: sunset
+  - trigger: numeric_state
+    entity_id: sensor.wetterluxtotal
+    below: 20
+    for:
+      minutes: 5
+  - trigger: sun
+    event: sunset
     offset: '1200'
-    trigger: sun
-  conditions: []
+  conditions:
+  - condition: or
+    conditions:
+    - condition: and
+      conditions:
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 20
+      - condition: numeric_state
+        entity_id: sun.sun
+        attribute: elevation
+        below: 4
+    - condition: sun
+      after: sunset
+      after_offset: '1200'
   actions:
   - delay:
       seconds: '{{ range(0, 20) | random }}'
@@ -267,30 +352,43 @@
   mode: single
 - id: '1643808353305'
   alias: Close - EG - Buro
-  description: ''
+  description: Schließt bei Dunkelheit (<20 lx für 5 min, Sonne <4°), spätestens Sonnenuntergang
+    + 1800s.
   triggers:
-  - entity_id:
+  - trigger: numeric_state
+    entity_id: sensor.wetterluxtotal
+    below: 20
+    for:
+      minutes: 5
+  - trigger: sun
+    event: sunset
+    offset: '1800'
+  - trigger: state
+    entity_id:
     - binary_sensor.fenster_buro_eg
     to: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
-    trigger: state
-  - event: sunset
-    offset: '1800'
-    trigger: sun
   conditions:
-  - condition: sun
-    after: sunset
-    after_offset: '1200'
   - condition: state
     entity_id: binary_sensor.fenster_buro_eg
     state: 'off'
     for:
-      hours: 0
-      minutes: 0
       seconds: 5
+  - condition: or
+    conditions:
+    - condition: and
+      conditions:
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 20
+      - condition: numeric_state
+        entity_id: sun.sun
+        attribute: elevation
+        below: 4
+    - condition: sun
+      after: sunset
+      after_offset: '1200'
   actions:
   - delay:
       seconds: '{{ range(0, 20) | random }}'
@@ -735,12 +833,32 @@
   mode: single
 - id: '1747548529506'
   alias: Close - OG - Bad
-  description: ''
+  description: Schließt bei Dunkelheit (<20 lx für 5 min, Sonne <4°), spätestens Sonnenuntergang
+    + 900s.
   triggers:
-  - event: sunset
+  - trigger: numeric_state
+    entity_id: sensor.wetterluxtotal
+    below: 20
+    for:
+      minutes: 5
+  - trigger: sun
+    event: sunset
     offset: '900'
-    trigger: sun
-  conditions: []
+  conditions:
+  - condition: or
+    conditions:
+    - condition: and
+      conditions:
+      - condition: numeric_state
+        entity_id: sensor.wetterluxtotal
+        below: 20
+      - condition: numeric_state
+        entity_id: sun.sun
+        attribute: elevation
+        below: 4
+    - condition: sun
+      after: sunset
+      after_offset: '900'
   actions:
   - delay:
       seconds: '{{ range(0, 20) | random }}'
@@ -1184,295 +1302,6 @@
         data: {}
         alias: UAP-Werkstatt ON
   mode: single
-- id: '1750848812381'
-  alias: Beschattung - OG - LiHe Süd
-  description: ''
-  triggers:
-  - trigger: time_pattern
-    minutes: /5
-  conditions:
-  - condition: not
-    conditions:
-    - condition: state
-      entity_id: cover.linus_sud_custom
-      state: closed
-    alias: Wenn Fenster nicht geschlossen ist
-  - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster_sw
-    state: 'on'
-  actions:
-  - delay:
-      seconds: '{{ range(0, 20) | random }}'
-  - choose:
-    - conditions:
-      - condition: state
-        entity_id: binary_sensor.beschattung_suden_close
-        state: 'on'
-      sequence:
-      - action: cover.set_cover_position
-        metadata: {}
-        data:
-          position: 58
-        target:
-          entity_id: cover.linus_sud_custom
-      alias: Beschatten
-    - conditions:
-      - condition: numeric_state
-        entity_id: cover.linus_sud_custom
-        attribute: current_position
-        above: 0
-      sequence:
-      - action: cover.open_cover
-        metadata: {}
-        data: {}
-        target:
-          entity_id: cover.linus_sud_custom
-      alias: Öffnen
-  mode: restart
-- id: '1750848963671'
-  alias: Beschattung - UG - Technikraum
-  description: ''
-  triggers:
-  - trigger: time_pattern
-    minutes: /5
-  conditions:
-  - condition: not
-    conditions:
-    - condition: state
-      entity_id: cover.technikraum
-      state: closed
-    alias: Wenn Fenster nicht geschlossen ist
-  - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster_sw
-    state: 'on'
-  actions:
-  - delay:
-      seconds: '{{ range(0, 20) | random }}'
-  - choose:
-    - conditions:
-      - condition: and
-        conditions:
-        - condition: state
-          entity_id: binary_sensor.fenster_technikraum
-          state: 'off'
-        - condition: state
-          entity_id: binary_sensor.beschattung_suden_close
-          state: 'on'
-      sequence:
-      - action: button.press
-        metadata: {}
-        data: {}
-        target:
-          entity_id: button.technikraum_my_position
-      alias: Beschatten
-    - conditions:
-      - condition: numeric_state
-        entity_id: cover.technikraum
-        attribute: current_position
-        above: 0
-      sequence:
-      - action: cover.open_cover
-        metadata: {}
-        data: {}
-        target:
-          entity_id: cover.technikraum_low_speed
-      alias: Öffnen
-  mode: single
-- id: '1750850796546'
-  alias: Beschattung - UG - Hobby Süd
-  description: ''
-  triggers:
-  - trigger: time_pattern
-    minutes: /5
-  conditions:
-  - condition: not
-    conditions:
-    - condition: state
-      entity_id: cover.hobby_sud
-      state: closed
-    alias: Wenn Fenster nicht geschlossen ist
-  - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster_sw
-    state: 'on'
-  actions:
-  - delay:
-      seconds: '{{ range(0, 20) | random }}'
-  - choose:
-    - conditions:
-      - condition: and
-        conditions:
-        - condition: state
-          entity_id: binary_sensor.fenster_hobbyraum_sud
-          state: 'off'
-        - condition: state
-          entity_id: binary_sensor.beschattung_suden_close
-          state: 'on'
-      sequence:
-      - action: button.press
-        metadata: {}
-        data: {}
-        target:
-          entity_id: button.hobby_sud_my_position
-      alias: Beschatten
-    - conditions:
-      - condition: numeric_state
-        entity_id: cover.hobby_sud
-        attribute: current_position
-        above: 0
-      sequence:
-      - action: cover.open_cover
-        metadata: {}
-        data: {}
-        target:
-          entity_id: cover.hobby_sud_low_speed
-      alias: Öffnen
-  mode: single
-- id: '1750864984348'
-  alias: Beschattung - UG - Hobby West
-  description: ''
-  triggers:
-  - trigger: time_pattern
-    minutes: /5
-  conditions:
-  - condition: not
-    conditions:
-    - condition: state
-      entity_id: cover.hobby_west
-      state: closed
-    alias: Wenn Fenster nicht geschlossen ist
-  - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster_sw
-    state: 'on'
-  actions:
-  - delay:
-      seconds: '{{ range(0, 20) | random }}'
-  - choose:
-    - conditions:
-      - condition: and
-        conditions:
-        - condition: state
-          entity_id: binary_sensor.fenster_hobbyraum_west
-          state: 'off'
-        - condition: state
-          entity_id: binary_sensor.beschattung_westen_close
-          state: 'on'
-      sequence:
-      - action: button.press
-        metadata: {}
-        data: {}
-        target:
-          entity_id: button.hobby_west_my_position
-      alias: Beschatten
-    - conditions:
-      - condition: numeric_state
-        entity_id: cover.hobby_west
-        attribute: current_position
-        above: 0
-      - condition: numeric_state
-        entity_id: sensor.wetterluxtotal
-        below: 1000
-      sequence:
-      - action: cover.open_cover
-        metadata: {}
-        data: {}
-        target:
-          entity_id: cover.hobby_west_low_speed
-      alias: Öffnen
-  mode: single
-- id: '1750865074285'
-  alias: Beschattung - OG - Erik West
-  description: ''
-  triggers:
-  - trigger: time_pattern
-    minutes: /5
-  conditions:
-  - condition: not
-    conditions:
-    - condition: state
-      entity_id: cover.erik_west
-      state: closed
-    alias: Wenn Fenster nicht geschlossen ist
-  - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster_sw
-    state: 'on'
-  actions:
-  - delay:
-      seconds: '{{ range(0, 20) | random }}'
-  - choose:
-    - conditions:
-      - condition: state
-        entity_id: binary_sensor.beschattung_westen_close
-        state: 'on'
-      sequence:
-      - action: button.press
-        metadata: {}
-        data: {}
-        target:
-          entity_id: button.erik_west_my_position
-      alias: Beschatten
-    - conditions:
-      - condition: numeric_state
-        entity_id: cover.erik_west
-        attribute: current_position
-        above: 0
-      - condition: numeric_state
-        entity_id: sensor.wetterluxtotal
-        below: 1000
-      sequence:
-      - action: cover.open_cover
-        metadata: {}
-        data: {}
-        target:
-          entity_id: cover.erik_west_low_speed
-      alias: Öffnen
-  mode: single
-- id: '1750865139579'
-  alias: Beschattung - OG - LiHe West
-  description: ''
-  triggers:
-  - trigger: time_pattern
-    minutes: /5
-  conditions:
-  - condition: not
-    conditions:
-    - condition: state
-      entity_id: cover.linus_west
-      state: closed
-    alias: Wenn Fenster nicht geschlossen ist
-  - condition: state
-    entity_id: binary_sensor.beschattung_zeitfenster_sw
-    state: 'on'
-  actions:
-  - delay:
-      seconds: '{{ range(0, 20) | random }}'
-  - choose:
-    - conditions:
-      - condition: state
-        entity_id: binary_sensor.beschattung_westen_close
-        state: 'on'
-      sequence:
-      - action: button.press
-        metadata: {}
-        data: {}
-        target:
-          entity_id: button.linus_west_my_position
-      alias: Beschatten
-    - conditions:
-      - condition: numeric_state
-        entity_id: cover.linus_west
-        attribute: current_position
-        above: 0
-      - condition: numeric_state
-        entity_id: sensor.wetterluxtotal
-        below: 1000
-      sequence:
-      - action: cover.open_cover
-        metadata: {}
-        data: {}
-        target:
-          entity_id: cover.linus_west_low_speed
-      alias: Öffnen
-  mode: single
 - id: '1752162128760'
   alias: Monitoring - LED Weatherman
   description: ''
@@ -1895,14 +1724,15 @@
       preannounce: false
     target:
       device_id: '{{ trigger.device_id }}'
-  - action: script.voice_ausgabe_wetterbericht_jetzt
-    data: {}
   - action: assist_satellite.announce
     data:
       message: Im Wohnbereich hat es {{ states('sensor.mb_temp_wohnzimmer') }}°.
       preannounce: false
     target:
       device_id: '{{ trigger.device_id }}'
+  - action: script.voice_ausgabe_wetterbericht_jetzt
+    data:
+      target_device: '{{ trigger.device_id }}'
   mode: single
 - id: '1785071774512'
   alias: Voice - Command - Gute Nacht
@@ -1970,7 +1800,7 @@
       clarity_sensor: sensor.sonnenklarheit
       clarity_close: 60
       clarity_open: 45
-      cover: cover.esszimmer_sud
+      cover: cover.esszimmer_sud_low_speed
       shade_button: button.esszimmer_sud_my_position
       azimuth_start: 130
       lux_sensor: sensor.wetterluxtotal
@@ -1991,7 +1821,7 @@
       clarity_sensor: sensor.sonnenklarheit
       clarity_close: 60
       clarity_open: 45
-      cover: cover.kuche
+      cover: cover.kuche_low_speed
       shade_button: button.kuche_my_position
       azimuth_start: 130
       lux_sensor: sensor.wetterluxtotal
@@ -2134,7 +1964,7 @@
       clarity_sensor: sensor.sonnenklarheit
       clarity_close: 60
       clarity_open: 45
-      cover: cover.bad_og
+      cover: cover.bad_og_low_speed
       shade_button: button.bad_og_my_position
       azimuth_start: 130
       lux_sensor: sensor.wetterluxtotal
@@ -2146,3 +1976,176 @@
       lux_close: 25000
       lux_open: 20000
       shaded_today_helper: input_boolean.beschattung_heute_bad_og
+- id: '1788683279420'
+  alias: EnergySave - Ladegeräte Werkstatt
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.ladegerate_werkstatt_leistung
+    for:
+      hours: 0
+      minutes: 15
+      seconds: 0
+    below: 10
+  conditions: []
+  actions:
+  - action: switch.turn_off
+    metadata: {}
+    target:
+      entity_id: switch.mb_power_ladewerkstatt
+    data: {}
+  mode: single
+- id: '1788683445602'
+  alias: EnergySave - Ladegeräte Fahrräder
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.ladegerate_fahrrad_leistung
+    for:
+      hours: 0
+      minutes: 15
+      seconds: 0
+    below: 10
+  conditions: []
+  actions:
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.mb_power_ladegarage
+  mode: single
+- id: '1789583271724'
+  alias: Beschattung Süd - OG - LiHe Süd
+  description: ''
+  use_blueprint:
+    path: beschattung/beschattung_fenster.yaml
+    input:
+      clarity_sensor: sensor.sonnenklarheit
+      clarity_close: 60
+      clarity_open: 45
+      lux_sensor: sensor.wetterluxtotal
+      forecast_sensor: sensor.forecast_weather_max_temp_today
+      forecast_high_min: 23
+      indoor_target: 24
+      azimuth_start: 130
+      lux_close: 25000
+      lux_open: 20000
+      cover: cover.linus_sud_custom
+      shade_position: 58
+      indoor_sensor: sensor.temperatur_linus_henry
+      indoor_target_sensor: sensor.komfort_obergrenze_linus_henry
+      shaded_today_helper: input_boolean.beschattung_heute_linus_sud
+      sleep_lock: input_boolean.sleep_lock_lihe
+- id: '1789583271725'
+  alias: Beschattung West - OG - LiHe West
+  description: ''
+  use_blueprint:
+    path: beschattung/beschattung_fenster.yaml
+    input:
+      clarity_sensor: sensor.sonnenklarheit
+      clarity_close: 60
+      clarity_open: 45
+      lux_sensor: sensor.wetterluxtotal
+      forecast_sensor: sensor.forecast_weather_max_temp_today
+      forecast_high_min: 23
+      indoor_target: 24
+      azimuth_start: 210
+      azimuth_end: 360
+      elevation_min: 4
+      lux_close: 3000
+      lux_open: 1000
+      cover: cover.linus_west_low_speed
+      shade_button: button.linus_west_my_position
+      indoor_sensor: sensor.temperatur_linus_henry
+      indoor_target_sensor: sensor.komfort_obergrenze_linus_henry
+      shaded_today_helper: input_boolean.beschattung_heute_linus_west
+      sleep_lock: input_boolean.sleep_lock_lihe
+- id: '1789583271726'
+  alias: Beschattung West - OG - Erik West
+  description: ''
+  use_blueprint:
+    path: beschattung/beschattung_fenster.yaml
+    input:
+      clarity_sensor: sensor.sonnenklarheit
+      clarity_close: 60
+      clarity_open: 45
+      lux_sensor: sensor.wetterluxtotal
+      forecast_sensor: sensor.forecast_weather_max_temp_today
+      forecast_high_min: 23
+      indoor_target: 24
+      azimuth_start: 210
+      azimuth_end: 360
+      elevation_min: 4
+      lux_close: 3000
+      lux_open: 1000
+      cover: cover.erik_west_low_speed
+      shade_button: button.erik_west_my_position
+      indoor_sensor: sensor.temperatur_erik
+      indoor_target_sensor: sensor.komfort_obergrenze_erik
+      shaded_today_helper: input_boolean.beschattung_heute_erik_west
+      sleep_lock: input_boolean.sleep_lock_erik
+- id: '1789583271727'
+  alias: Beschattung Süd - UG - Technikraum
+  description: ''
+  use_blueprint:
+    path: beschattung/beschattung_fenster.yaml
+    input:
+      clarity_sensor: sensor.sonnenklarheit
+      clarity_close: 60
+      clarity_open: 45
+      lux_sensor: sensor.wetterluxtotal
+      forecast_sensor: sensor.forecast_weather_max_temp_today
+      forecast_high_min: 23
+      indoor_target: 24
+      azimuth_start: 130
+      lux_close: 25000
+      lux_open: 20000
+      cover: cover.technikraum_low_speed
+      shade_button: button.technikraum_my_position
+      contact_sensor: binary_sensor.fenster_technikraum
+      indoor_sensor: sensor.mb_temp_technikraum
+      shaded_today_helper: input_boolean.beschattung_heute_technikraum
+- id: '1789583271728'
+  alias: Beschattung Süd - UG - Hobby Süd
+  description: ''
+  use_blueprint:
+    path: beschattung/beschattung_fenster.yaml
+    input:
+      clarity_sensor: sensor.sonnenklarheit
+      clarity_close: 60
+      clarity_open: 45
+      lux_sensor: sensor.wetterluxtotal
+      forecast_sensor: sensor.forecast_weather_max_temp_today
+      forecast_high_min: 23
+      indoor_target: 24
+      azimuth_start: 130
+      lux_close: 25000
+      lux_open: 20000
+      cover: cover.hobby_sud_low_speed
+      shade_button: button.hobby_sud_my_position
+      contact_sensor: binary_sensor.fenster_hobbyraum_sud
+      shaded_today_helper: input_boolean.beschattung_heute_hobby_sud
+- id: '1789583271729'
+  alias: Beschattung West - UG - Hobby West
+  description: ''
+  use_blueprint:
+    path: beschattung/beschattung_fenster.yaml
+    input:
+      clarity_sensor: sensor.sonnenklarheit
+      clarity_close: 60
+      clarity_open: 45
+      lux_sensor: sensor.wetterluxtotal
+      forecast_sensor: sensor.forecast_weather_max_temp_today
+      forecast_high_min: 23
+      indoor_target: 24
+      azimuth_start: 210
+      azimuth_end: 360
+      elevation_min: 4
+      lux_close: 3000
+      lux_open: 1000
+      cover: cover.hobby_west_low_speed
+      shade_button: button.hobby_west_my_position
+      contact_sensor: binary_sensor.fenster_hobbyraum_west
+      shaded_today_helper: input_boolean.beschattung_heute_hobby_west

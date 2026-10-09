@@ -16,6 +16,7 @@ from ....entity_filtering import (
     async_filter_known_services,
     async_find_services_in_sequence,
     async_get_all_services,
+    async_name_helper_in_the_registry,
 )
 from ....repairs import AbstractSpookRepair
 
@@ -30,7 +31,10 @@ class SpookRepair(AbstractSpookRepair):
         EVENT_SERVICE_REGISTERED,
         EVENT_SERVICE_REMOVED,
     }
-    inspect_config_entry_changed = "template"
+    # Any integration, not just template: whether an action counts as missing
+    # depends on whether the integration providing it is disabled, and that
+    # can change without an action coming or going.
+    inspect_config_entry_changed = True
     inspect_on_reload = "template"
     automatically_clean_up_issues = True
 
@@ -71,8 +75,12 @@ class SpookRepair(AbstractSpookRepair):
 
             self.async_create_issue(
                 issue_id=entry.entry_id,
+                references=unknown_services,
                 translation_placeholders={
                     "helper": entry.title,
+                    "entity_id": async_name_helper_in_the_registry(
+                        self.hass, entry.entry_id
+                    ),
                     "edit": "/config/helpers",
                     "services": "\n".join(
                         f"- `{service}`" for service in sorted(unknown_services)

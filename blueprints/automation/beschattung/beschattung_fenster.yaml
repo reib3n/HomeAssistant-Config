@@ -1,156 +1,30 @@
-# =============================================================================
-# AGENT-BRIEFING  (fuer KI-Agents, die dieses Blueprint aendern)
-# =============================================================================
-# Lies diesen Block, BEVOR du unten etwas aenderst. Er haelt fest, warum die
-# Logik so aussieht, wie sie aussieht. Die Begruendungen stammen aus Messungen
-# an der echten Anlage, nicht aus Annahmen - die Zahlen stehen dabei.
-#
-# UMGANG MIT DIESEN VORGABEN
-#   Der Benutzer darf jede Entscheidung hier revidieren; sie sind Stand des
-#   Wissens, kein Gesetz. Aber: Wenn eine neue Anweisung einer der unten
-#   festgehaltenen Entscheidungen widerspricht, weise den Benutzer darauf hin,
-#   nenne die betroffene Nummer und ihre Begruendung, und lass ihn entscheiden.
-#   Setze die Aenderung dann um und aktualisiere diesen Block mit.
-#
-# -----------------------------------------------------------------------------
-# GRUNDIDEE
-#   Die Automation ist fuer EIN Fenster zustaendig und hat zwei Aufgaben:
-#   herunterfahren, wenn die Sonne den Raum aufheizt, und ihre eigene
-#   Beschattung wieder zuruecknehmen. Sie ist NICHT dafuer da, einen
-#   Soll-Zustand "offen" durchzusetzen.
-#
-# -----------------------------------------------------------------------------
-# ENTSCHEIDUNGEN
-#
-# (1) OEFFNEN IST EINE FLANKE, KEIN DAUERZUSTAND.
-#     Zweig D laeuft ausschliesslich auf dem Trigger 'shade_end'. Der
-#     5-Minuten-Poll kommt dort nicht durch.
-#     Grund: frueher war die Oeffnen-Bedingung schlicht die Negation der
-#     Beschattungs-Bedingung und damit nachts und an kuehlen Tagen dauerhaft
-#     wahr. Jede manuelle Zwischenstellung wurde binnen 5 Minuten ueberfahren.
-#     Gemessen am 20.08.2026: 24 Auf-/Zu-Fahrten an einem Tag an einem Fenster.
-#     NICHT zurueckbauen auf "want_open als Variable + Poll".
-#
-# (2) DAS WAERME-GATE IST VORBEDINGUNG FUERS OEFFNEN, KEIN OEFFNUNGSGRUND.
-#     Frueher stand 'heat_gone' als ODER-Term unter den Oeffnungsgruenden - "zu
-#     kuehl zum Beschatten" fuehrte also aktiv zum Aufmachen. Am 25.08.2026
-#     (Prognose 18 C, Schwelle 23) fuhr deshalb eine von Hand geschlossene
-#     Jalousie an einem Tag hoch, an dem die Automation gar nicht zustaendig
-#     war. An einem kuehlen Tag hat sie den Behang nicht anzufassen.
-#
-# (3) DAS WAERME-GATE IM TRIGGER LAEUFT OHNE TEMPERATUR-HYSTERESE.
-#     Also dieselbe Schwelle wie beim Beschatten (indoor >= target), nicht
-#     target - hysterese. Mit Hysterese waere die Zustaendigkeit breiter als
-#     die Beschattung selbst und es entstuende ein Temperaturband, in dem zwar
-#     geoeffnet, aber nie beschattet wird. Genau dort lag der 25.08. (innen
-#     22,9 C: ueber 24-1,5, aber unter 24).
-#
-# (4) DER HAUPTZEITRAUM KOMMT AUS DEM SONNENWINKEL, MIT RICHTUNGSSINN.
-#     'past_window' unterscheidet "Sonne ist am Fenster vorbei" von "Sonne war
-#     noch gar nicht da". Ein blosses 'not geo' ist morgens genauso wahr wie
-#     abends und liess den Behang bei Sonnenaufgang hochfahren (gemessen:
-#     05:57). Lux und Klarheit duerfen nur INNERHALB des Geometriefensters
-#     oeffnen. 'sun_up' (-6 Grad) sperrt zusaetzlich die Nacht aus, sonst
-#     erzeugt der Tageswechsel des Prognose-Sensors um Mitternacht eine Flanke.
-#
-# (5) PENDELSCHUTZ NUR IN RICHTUNG AUF, UND ZWAR ALS "for" AM TRIGGER.
-#     Der Beschattungsgrund muss 'open_delay' Minuten am Stueck weg sein.
-#     Beschattet wird weiterhin sofort - so vom Benutzer gewuenscht.
-#     Das "for" sitzt bewusst in der Trigger-Ebene und nicht als 'delay' in der
-#     Aktion: dort wuerde es der naechste Automationslauf abraeumen.
-#     Wirkung gemessen (20.08.): 31 Oeffnungsflanken roh -> 5 mit for=20min.
-#
-# (6) GEPRUEFT WIRD GEGEN DIE AUFMACH-SCHWELLEN.
-#     Im Trigger stehen lux_open / clarity_open, nicht lux_close /
-#     clarity_close. Sonst wuerde ein Wert knapp unter "Beschatten ab" sofort
-#     wieder aufmachen. Die Hysterese ist der Sinn der zwei Schwellenpaare.
-#
-# (7) mode: queued, NICHT restart. Siehe Kommentar bei mode weiter unten.
-#
-# (8) DER 5-MINUTEN-POLL BLEIBT - ABER NUR FUERS BESCHATTEN.
-#     Er ist der Nachfass-Mechanismus nach HA-Neustart oder einem nicht
-#     angekommenen RTS-Befehl. Beim Oeffnen gibt es diese Absicherung bewusst
-#     nicht mehr (siehe 1); faellt eine Flanke aus, fahren die Behaenge mit der
-#     separaten Morgenautomation (~06:30) hoch.
-#
-# (9) DIE LOGIK-DUPLIKATION variables:/trigger_variables: IST BEWUSST.
-#     Geometrie und Waerme-Gate stehen zweimal: in variables: fuer den
-#     Beschatten-Zweig, im Trigger-Template fuers Oeffnen. trigger_variables
-#     sind in Aktionen nicht sichtbar, und ein Template-Trigger kann keine
-#     Zwischenwerte an die Aktion reichen. Aufloesbar waere es nur, indem auch
-#     das Beschatten ein reiner Flankentrigger wird - das wuerde (8) opfern.
-#     Wenn du hier etwas aenderst: BEIDE Stellen anfassen.
-#
-# (10) 'fully_closed' PRUEFT DIE LAMELLEN MIT - NICHT ENTKOPPELN.
-#     Die Jalousien beschatten ueber den my-Button auf pos 0 / tilt 43-45,
-#     also "unten mit gekippten Lamellen". Wuerde man tilt aus fully_closed
-#     herausnehmen ("unten ist unten"), gaelte die beschattete Jalousie als
-#     komplett geschlossen und wuerde nie wieder geoeffnet.
-#
-# (11) MIT my-BUTTON ENTSCHEIDET is_open, NICHT shade_position.
-#     Bei gesetztem Button steckt die Favoritenstellung im Aktor (gemessen:
-#     Kueche 20 %, Esszimmer Sued 24 %, Buero 35 %); shade_position ist dort
-#     unbenutzt. Ein Vergleich dagegen stimmt nur zufaellig und wuerde bei
-#     kleinen Werten den Button im 5-Minuten-Takt druecken.
-#
-# -----------------------------------------------------------------------------
-# BEKANNTE LUECKEN (offen, bewusst nicht geloest)
-#
-# (A) An einem HEISSEN Tag bleibt eine Handstellung nicht garantiert stehen.
-#     Faellt eine echte 'shade_end'-Flanke nach der Handbedienung, faehrt der
-#     Behang hoch. Zustandslos ist das nicht loesbar: die Automation kann nicht
-#     wissen, ob sie den Behang selbst dorthin gefahren hat. Die diskutierten
-#     Auswege waren (a) Positionsvergleich - bei den Rollaeden eindeutig, bei
-#     den Jalousien nicht, weil Beschattung (pos 0/tilt 45) und Handstellung
-#     (pos 0/tilt 60) fast gleich aussehen - oder (b) ein Merker-
-#     input_boolean pro Fenster. Der Benutzer hat beides zurueckgestellt.
-#     Uebergangsschutz: keep_closed_below und sleep_lock.
-#
-# (B) sensor.sonnenklarheit ist stark verrauscht: gemessen 8 -> 133 % innerhalb
-#     von vier Minuten, mit dutzenden Schwellenkreuzungen pro Tag. Das "for"
-#     aus (5) entschaerft das beim OEFFNEN; beim BESCHATTEN zaehlt weiterhin
-#     der Momentanwert gegen clarity_close. Ein geglaetteter Sensor
-#     (statistics, ~15 min) waere der naechste Schritt - vom Benutzer noch
-#     nicht beauftragt.
-# =============================================================================
-
 blueprint:
   name: Beschattung pro Fenster (Sonnenstand + Saison, Somfy/Tahoma)
-  description: >
-    Beschattet ein einzelnes Fenster anhand des aktuellen Sonnenstands (Azimut +
-    Elevation), der Helligkeit (Lux mit Hysterese) und eines Saison-/Wärme-Gates
-    aus dem Wettervorhersage-Höchstwert (optional beschleunigt durch die Innentemperatur).
-
-    Konzept:
-      * Beschattet nur, wenn die Sonne dieses Fenster trifft UND der Tag laut
-        Vorhersage heiß genug ist (Übergangszeit: Sonne heizt das Haus) UND es
-        hell genug ist UND die Sonne tatsächlich durchkommt (Klarheits-Gate).
-        Ein bereits zu warmer Raum kann zusätzlich auslösen.
-      * Das Klarheits-Gate (Clear-Sky-Index) unterscheidet "hell" von "sonnig":
-        ein bedeckter Regentag ist absolut betrachtet hell genug, hat aber keine
-        direkte Sonne. Weil der Index auf den Sonnenstand normiert ist, sperrt
-        er die tiefstehende Abendsonne trotzdem nicht aus.
-      * Fährt GENAU EINMAL wieder hoch, und zwar auf der Flanke: wenn der
-        Beschattungsgrund wegfällt (Sonne zieht weiter, Wolken, Abend-Lux) und
-        für die eingestellte Öffnungs-Verzögerung am Stück weggeblieben ist.
-        Ohne diese Flanke wird der Behang nicht angefasst – eine manuelle
-        Stellung bleibt deshalb stehen, statt alle 5 Minuten überfahren zu
-        werden. Nicht hochgefahren wird bei komplett geschlossenem Behang
-        (Schläfer-Schutz) oder aktivem Sleep-Lock.
-      * Wind = Vorrang: Zwangsöffnen (Markisenschutz).
-      * Fenster/Tür offen = nicht herunterfahren.
-
-    Positionierung gemischt: entweder Somfy "my"-Favorit-Button (RTS, ohne
-    Ist-Position) ODER exakte %-Position (io-homecontrol / optimistische
-    Template-Cover). Öffnen erfolgt immer per cover.open_cover (RTS + io).
-
-    Hinweis RTS ohne Positions-Feedback: Für den Schläfer-Schutz einen Sleep-Lock
-    verdrahten oder ein positionsmeldendes (optimistisches) Cover verwenden.
+  description: "Beschattet ein einzelnes Fenster anhand des aktuellen Sonnenstands
+    (Azimut + Elevation), der Helligkeit (Lux mit Hysterese) und eines Saison-/Wärme-Gates
+    aus dem Wettervorhersage-Höchstwert (optional beschleunigt durch die Innentemperatur).\nKonzept:\n
+    \ * Beschattet nur, wenn die Sonne dieses Fenster trifft UND der Tag laut\n    Vorhersage
+    heiß genug ist (Übergangszeit: Sonne heizt das Haus) UND es\n    hell genug ist
+    UND die Sonne tatsächlich durchkommt (Klarheits-Gate).\n    Ein bereits zu warmer
+    Raum kann zusätzlich auslösen.\n  * Das Klarheits-Gate (Clear-Sky-Index) unterscheidet
+    \"hell\" von \"sonnig\":\n    ein bedeckter Regentag ist absolut betrachtet hell
+    genug, hat aber keine\n    direkte Sonne. Weil der Index auf den Sonnenstand normiert
+    ist, sperrt\n    er die tiefstehende Abendsonne trotzdem nicht aus.\n  * Fährt
+    GENAU EINMAL wieder hoch, und zwar auf der Flanke: wenn der\n    Beschattungsgrund
+    wegfällt (Sonne zieht weiter, Wolken, Abend-Lux) und\n    für die eingestellte
+    Öffnungs-Verzögerung am Stück weggeblieben ist.\n    Ohne diese Flanke wird der
+    Behang nicht angefasst – eine manuelle\n    Stellung bleibt deshalb stehen, statt
+    alle 5 Minuten überfahren zu\n    werden. Nicht hochgefahren wird bei komplett
+    geschlossenem Behang\n    (Schläfer-Schutz) oder aktivem Sleep-Lock.\n  * Wind
+    = Vorrang: Zwangsöffnen (Markisenschutz).\n  * Fenster/Tür offen = nicht herunterfahren.\n\nPositionierung
+    gemischt: entweder Somfy \"my\"-Favorit-Button (RTS, ohne Ist-Position) ODER exakte
+    %-Position (io-homecontrol / optimistische Template-Cover). Öffnen erfolgt immer
+    per cover.open_cover (RTS + io).\nHinweis RTS ohne Positions-Feedback: Für den
+    Schläfer-Schutz einen Sleep-Lock verdrahten oder ein positionsmeldendes (optimistisches)
+    Cover verwenden.\n"
   domain: automation
   source_url: https://github.com/reib3n/HomeAssistant-Config/blob/main/blueprints/automation/beschattung/beschattung_fenster.yaml
-
   input:
-    # ---------------------------------------------------------------
     aktor:
       name: Aktor / Rollladen
       icon: mdi:window-shutter
@@ -158,33 +32,51 @@ blueprint:
       input:
         cover:
           name: Cover (Fenster)
-          description: Der zu steuernde Rollladen/die Jalousie. Für zuverlässigen Schläfer-Schutz ein Cover mit gemeldeter Position verwenden.
+          description: Der zu steuernde Rollladen/die Jalousie. Für zuverlässigen
+            Schläfer-Schutz ein Cover mit gemeldeter Position verwenden.
           selector:
             entity:
               filter:
-                - domain: cover
+              - domain:
+                - cover
+              multiple: false
+              reorder: false
         shade_button:
-          name: "Somfy 'my'-Favorit-Button (optional, RTS)"
-          description: Wenn gesetzt, wird zum Beschatten dieser Button gedrückt (fixe Favoritenstellung) statt eine %-Position gefahren.
+          name: Somfy 'my'-Favorit-Button (optional, RTS)
+          description: Wenn gesetzt, wird zum Beschatten dieser Button gedrückt (fixe
+            Favoritenstellung) statt eine %-Position gefahren.
           default: {}
           selector:
             entity:
               filter:
-                - domain: button
+              - domain:
+                - button
+              multiple: false
+              reorder: false
         shade_position:
           name: Beschattungsposition (%)
           description: Nur wenn KEIN Favorit-Button gesetzt ist. 0 = zu, 100 = offen.
           default: 40
           selector:
-            number: { min: 0, max: 100, step: 5, unit_of_measurement: "%", mode: slider }
+            number:
+              min: 0.0
+              max: 100.0
+              step: 5.0
+              unit_of_measurement: '%'
+              mode: slider
         keep_closed_below:
           name: Komplett-geschlossen-Grenze (%)
-          description: Ist die gemeldete Position ≤ diesem Wert, wird NICHT hochgefahren (jemand schläft). Bei Covern ohne Positionsmeldung greift stattdessen der Sleep-Lock.
+          description: Ist die gemeldete Position ≤ diesem Wert, wird NICHT hochgefahren
+            (jemand schläft). Bei Covern ohne Positionsmeldung greift stattdessen
+            der Sleep-Lock.
           default: 5
           selector:
-            number: { min: 0, max: 30, step: 1, unit_of_measurement: "%", mode: slider }
-
-    # ---------------------------------------------------------------
+            number:
+              min: 0.0
+              max: 30.0
+              step: 1.0
+              unit_of_measurement: '%'
+              mode: slider
     geometrie:
       name: Sonnenstand / Geometrie
       icon: mdi:sun-compass
@@ -192,30 +84,52 @@ blueprint:
       input:
         azimuth_start:
           name: Azimut Start (°)
-          description: Untere Grenze des Himmelsrichtungsbereichs, in dem die Sonne auf dieses Fenster scheint (Nord=0, Ost=90, Süd=180, West=270).
+          description: Untere Grenze des Himmelsrichtungsbereichs, in dem die Sonne
+            auf dieses Fenster scheint (Nord=0, Ost=90, Süd=180, West=270).
           default: 90
           selector:
-            number: { min: 0, max: 360, step: 1, unit_of_measurement: "°", mode: box }
+            number:
+              min: 0.0
+              max: 360.0
+              step: 1.0
+              unit_of_measurement: °
+              mode: box
         azimuth_end:
           name: Azimut Ende (°)
-          description: Obere Grenze. Wenn Ende < Start, wird der Bereich über 360° hinweg interpretiert.
+          description: Obere Grenze. Wenn Ende < Start, wird der Bereich über 360°
+            hinweg interpretiert.
           default: 270
           selector:
-            number: { min: 0, max: 360, step: 1, unit_of_measurement: "°", mode: box }
+            number:
+              min: 0.0
+              max: 360.0
+              step: 1.0
+              unit_of_measurement: °
+              mode: box
         elevation_min:
           name: Minimale Sonnenhöhe (°)
-          description: Unter dieser Elevation wird nicht beschattet (Sonne zu tief / hinter Horizont oder Hindernis).
+          description: Unter dieser Elevation wird nicht beschattet (Sonne zu tief
+            / hinter Horizont oder Hindernis).
           default: 8
           selector:
-            number: { min: 0, max: 60, step: 1, unit_of_measurement: "°", mode: slider }
+            number:
+              min: 0.0
+              max: 60.0
+              step: 1.0
+              unit_of_measurement: °
+              mode: slider
         elevation_max:
           name: Maximale Sonnenhöhe (°)
-          description: Über dieser Elevation wird nicht beschattet (z. B. Dachüberstand verschattet die Hochsommer-Mittagssonne ohnehin). 90 = keine Obergrenze.
+          description: Über dieser Elevation wird nicht beschattet (z. B. Dachüberstand
+            verschattet die Hochsommer-Mittagssonne ohnehin). 90 = keine Obergrenze.
           default: 90
           selector:
-            number: { min: 10, max: 90, step: 1, unit_of_measurement: "°", mode: slider }
-
-    # ---------------------------------------------------------------
+            number:
+              min: 10.0
+              max: 90.0
+              step: 1.0
+              unit_of_measurement: °
+              mode: slider
     helligkeit:
       name: Helligkeit
       icon: mdi:brightness-6
@@ -226,64 +140,93 @@ blueprint:
           selector:
             entity:
               filter:
-                - domain: sensor
-                  device_class: illuminance
-                - domain: sensor
+              - domain:
+                - sensor
+                device_class:
+                - illuminance
+              - domain:
+                - sensor
+              multiple: false
+              reorder: false
         lux_close:
           name: Beschatten ab (Lux)
           default: 40000
           selector:
-            number: { min: 0, max: 120000, step: 1000, unit_of_measurement: "lx", mode: box }
+            number:
+              min: 0.0
+              max: 120000.0
+              step: 1000.0
+              unit_of_measurement: lx
+              mode: box
         lux_open:
           name: Öffnen unter (Lux)
-          description: Auch die Abend-Schwelle – fällt die Lux hierunter (und keine direkte Sonne), wird hochgefahren. Muss kleiner als "Beschatten ab" sein (Hysterese).
+          description: Auch die Abend-Schwelle – fällt die Lux hierunter (und keine
+            direkte Sonne), wird hochgefahren. Muss kleiner als "Beschatten ab" sein
+            (Hysterese).
           default: 25000
           selector:
-            number: { min: 0, max: 120000, step: 1000, unit_of_measurement: "lx", mode: box }
-
-    # ---------------------------------------------------------------
+            number:
+              min: 0.0
+              max: 120000.0
+              step: 1000.0
+              unit_of_measurement: lx
+              mode: box
     himmel:
       name: Direkte Sonne / Bewölkung
       icon: mdi:weather-partly-cloudy
       collapsed: true
       input:
         clarity_sensor:
-          name: "Sonnenklarheit (%) – optional"
-          description: >
-            Clear-Sky-Index, z. B. sensor.sonnenklarheit: gemessene Helligkeit im
-            Verhältnis zum wolkenlosen Himmel beim aktuellen Sonnenstand.
-            100 % = klar, unter 25 % = Regen/dichte Bewölkung. Im Gegensatz zur
-            Lux-Schwelle ist der Wert unabhängig von der Sonnenhöhe und blockiert
-            deshalb Regentage, ohne die tiefstehende Abendsonne auszusperren.
-            Ohne Sensor entfällt das Gate (Verhalten wie bisher).
+          name: Sonnenklarheit (%) – optional
+          description: 'Clear-Sky-Index, z. B. sensor.sonnenklarheit: gemessene Helligkeit
+            im Verhältnis zum wolkenlosen Himmel beim aktuellen Sonnenstand. 100 %
+            = klar, unter 25 % = Regen/dichte Bewölkung. Im Gegensatz zur Lux-Schwelle
+            ist der Wert unabhängig von der Sonnenhöhe und blockiert deshalb Regentage,
+            ohne die tiefstehende Abendsonne auszusperren. Ohne Sensor entfällt das
+            Gate (Verhalten wie bisher).
+
+            '
           default: {}
           selector:
             entity:
               filter:
-                - domain: sensor
+              - domain:
+                - sensor
+              multiple: false
+              reorder: false
         clarity_close:
           name: Beschatten ab Klarheit (%)
-          description: >
-            Darunter wird nicht beschattet – die Sonne steht zwar richtig, kommt
-            aber nicht durch. Pro Fenster einstellen, der Wert ist
-            himmelsrichtungsabhängig: für Süd und West liegt der Index an klaren
-            Tagen bei 90-100 % (Schwelle 60), im Osten fällt er in den ersten
-            Morgenstunden durch Dunst auf 50-60 % ab und braucht deshalb eine
-            niedrigere Schwelle (45), sonst bleibt die Morgenbeschattung aus.
+          description: 'Darunter wird nicht beschattet – die Sonne steht zwar richtig,
+            kommt aber nicht durch. Pro Fenster einstellen, der Wert ist himmelsrichtungsabhängig:
+            für Süd und West liegt der Index an klaren Tagen bei 90-100 % (Schwelle
+            60), im Osten fällt er in den ersten Morgenstunden durch Dunst auf 50-60
+            % ab und braucht deshalb eine niedrigere Schwelle (45), sonst bleibt die
+            Morgenbeschattung aus.
+
+            '
           default: 60
           selector:
-            number: { min: 0, max: 120, step: 5, unit_of_measurement: "%", mode: slider }
+            number:
+              min: 0.0
+              max: 120.0
+              step: 5.0
+              unit_of_measurement: '%'
+              mode: slider
         clarity_open:
           name: Öffnen unter Klarheit (%)
-          description: >
-            Zieht dauerhaft Bewölkung auf, wird wieder geöffnet. Muss kleiner als
-            "Beschatten ab" sein (Hysterese) und sollte über dem Regenwert liegen
-            (gemessen: bis 27 %), damit bei Regen auch wirklich geöffnet wird.
+          description: 'Zieht dauerhaft Bewölkung auf, wird wieder geöffnet. Muss
+            kleiner als "Beschatten ab" sein (Hysterese) und sollte über dem Regenwert
+            liegen (gemessen: bis 27 %), damit bei Regen auch wirklich geöffnet wird.
+
+            '
           default: 45
           selector:
-            number: { min: 0, max: 120, step: 5, unit_of_measurement: "%", mode: slider }
-
-    # ---------------------------------------------------------------
+            number:
+              min: 0.0
+              max: 120.0
+              step: 5.0
+              unit_of_measurement: '%'
+              mode: slider
     saison:
       name: Saison / Wärme-Gate
       icon: mdi:sun-thermometer
@@ -291,54 +234,85 @@ blueprint:
       input:
         forecast_sensor:
           name: Sensor Tages-Höchsttemperatur (Vorhersage)
-          description: z. B. sensor.forecast_weather_max_temp_today. Kern des Saison-Gates – an kühlen Vorhersagetagen wird nicht beschattet, damit die Sonne heizt.
+          description: z. B. sensor.forecast_weather_max_temp_today. Kern des Saison-Gates
+            – an kühlen Vorhersagetagen wird nicht beschattet, damit die Sonne heizt.
           selector:
             entity:
               filter:
-                - domain: sensor
-                  device_class: temperature
+              - domain:
+                - sensor
+                device_class:
+                - temperature
+              multiple: false
+              reorder: false
         forecast_high_min:
           name: Beschatten erst ab Vorhersage-Höchstwert (°C)
           default: 22
           selector:
-            number: { min: 10, max: 40, step: 0.5, unit_of_measurement: "°C", mode: box }
+            number:
+              min: 10.0
+              max: 40.0
+              step: 0.5
+              unit_of_measurement: °C
+              mode: box
         indoor_sensor:
           name: Innentemperatur-Sensor (optional)
-          description: Beschleuniger, kein Blocker – ein Raum über dem Ziel löst auch an einem grenzwertigen Vorhersagetag aus. Ohne Sensor entscheidet allein der Vorhersage-Höchstwert.
+          description: Beschleuniger, kein Blocker – ein Raum über dem Ziel löst auch
+            an einem grenzwertigen Vorhersagetag aus. Ohne Sensor entscheidet allein
+            der Vorhersage-Höchstwert.
           default: {}
           selector:
             entity:
               filter:
-                - domain: sensor
-                  device_class: temperature
+              - domain:
+                - sensor
+                device_class:
+                - temperature
+              multiple: false
+              reorder: false
         indoor_target_sensor:
           name: Innentemperatur-Ziel als Sensor (optional)
-          description: >
-            Liefert die Komfort-Obergrenze als Entity statt als feste Zahl. Gedacht
-            fuer sensor.komfort_obergrenze_* (WGT-Zieltemperatur + Offset), damit
-            Beschattung und Sommersteuerung nachweislich dieselbe Schwelle benutzen
-            und sich nicht widersprechen koennen. Ist er gesetzt, wird der feste
-            Wert unten ignoriert - faellt er aus (Modbus weg), greift er wieder.
+          description: 'Liefert die Komfort-Obergrenze als Entity statt als feste
+            Zahl. Gedacht fuer sensor.komfort_obergrenze_* (WGT-Zieltemperatur + Offset),
+            damit Beschattung und Sommersteuerung nachweislich dieselbe Schwelle benutzen
+            und sich nicht widersprechen koennen. Ist er gesetzt, wird der feste Wert
+            unten ignoriert - faellt er aus (Modbus weg), greift er wieder.
+
+            '
           default: {}
           selector:
             entity:
               filter:
-                - domain: sensor
-                  device_class: temperature
+              - domain:
+                - sensor
+                device_class:
+                - temperature
+              multiple: false
+              reorder: false
         indoor_target:
           name: Innentemperatur-Ziel (°C)
-          description: Fester Rueckfallwert. Wird nur verwendet, wenn oben kein Sensor gesetzt ist oder dieser gerade keinen Zahlenwert liefert.
+          description: Fester Rueckfallwert. Wird nur verwendet, wenn oben kein Sensor
+            gesetzt ist oder dieser gerade keinen Zahlenwert liefert.
           default: 23
           selector:
-            number: { min: 15, max: 30, step: 0.5, unit_of_measurement: "°C", mode: box }
+            number:
+              min: 15.0
+              max: 30.0
+              step: 0.5
+              unit_of_measurement: °C
+              mode: box
         temp_hysterese:
           name: Temperatur-Hysterese (K)
-          description: Erst so viel Grad unter der Schwelle wird wieder geöffnet (verhindert Flattern).
+          description: Erst so viel Grad unter der Schwelle wird wieder geöffnet (verhindert
+            Flattern).
           default: 1.5
           selector:
-            number: { min: 0, max: 5, step: 0.5, unit_of_measurement: "K", mode: slider }
-
-    # ---------------------------------------------------------------
+            number:
+              min: 0.0
+              max: 5.0
+              step: 0.5
+              unit_of_measurement: K
+              mode: slider
     sicherheit:
       name: Sicherheit / Overrides
       icon: mdi:shield-home
@@ -351,7 +325,10 @@ blueprint:
           selector:
             entity:
               filter:
-                - domain: binary_sensor
+              - domain:
+                - binary_sensor
+              multiple: false
+              reorder: false
         wind_sensor:
           name: Wind-Sensor (optional)
           description: Windgeschwindigkeit. Ab Schwelle Zwangsöffnen (Markisenschutz).
@@ -359,30 +336,48 @@ blueprint:
           selector:
             entity:
               filter:
-                - domain: sensor
+              - domain:
+                - sensor
+              multiple: false
+              reorder: false
         wind_threshold:
           name: Wind-Schwelle
           default: 45
           selector:
-            number: { min: 0, max: 120, step: 1, unit_of_measurement: "km/h", mode: box }
+            number:
+              min: 0.0
+              max: 120.0
+              step: 1.0
+              unit_of_measurement: km/h
+              mode: box
         sleep_lock:
           name: Sleep-Lock (optional)
-          description: Ist dieser Schalter 'on', wird nicht hochgefahren (Schläfer-Schutz für Cover ohne Positionsmeldung, z. B. RTS-Schlafzimmer).
+          description: Ist dieser Schalter 'on', wird nicht hochgefahren (Schläfer-Schutz
+            für Cover ohne Positionsmeldung, z. B. RTS-Schlafzimmer).
           default: {}
           selector:
             entity:
               filter:
-                - domain: [input_boolean, binary_sensor, switch]
+              - domain:
+                - input_boolean
+                - binary_sensor
+                - switch
+              multiple: false
+              reorder: false
         disable_boolean:
           name: Deaktivieren (optional)
-          description: Ist dieser Schalter 'on', ruht die komplette Automation (z. B. Urlaub).
+          description: Ist dieser Schalter 'on', ruht die komplette Automation (z.
+            B. Urlaub).
           default: {}
           selector:
             entity:
               filter:
-                - domain: [input_boolean, binary_sensor, switch]
-
-    # ---------------------------------------------------------------
+              - domain:
+                - input_boolean
+                - binary_sensor
+                - switch
+              multiple: false
+              reorder: false
     tuning:
       name: Feintuning
       icon: mdi:tune
@@ -390,33 +385,35 @@ blueprint:
       input:
         open_delay:
           name: Öffnungs-Verzögerung / Pendelschutz (min)
-          description: >
-            Der Beschattungsgrund muss so lange am Stück weggefallen sein, bevor
-            hochgefahren wird. Wirkt NUR in Richtung Öffnen – beschattet wird
-            weiterhin sofort. Verhindert das Hoch-Runter-Pendeln an
-            durchziehenden Wolken. 0 = sofort öffnen.
+          description: 'Der Beschattungsgrund muss so lange am Stück weggefallen sein,
+            bevor hochgefahren wird. Wirkt NUR in Richtung Öffnen – beschattet wird
+            weiterhin sofort. Verhindert das Hoch-Runter-Pendeln an durchziehenden
+            Wolken. 0 = sofort öffnen.
+
+            '
           default: 20
           selector:
-            number: { min: 0, max: 60, step: 1, unit_of_measurement: "min", mode: slider }
+            number:
+              min: 0.0
+              max: 60.0
+              step: 1.0
+              unit_of_measurement: min
+              mode: slider
         stagger_max:
           name: Zufalls-Verzögerung max. (s)
-          description: Streut die Funkbefehle, damit nicht alle Fenster gleichzeitig senden (Tahoma/RTS-Schonung).
+          description: Streut die Funkbefehle, damit nicht alle Fenster gleichzeitig
+            senden (Tahoma/RTS-Schonung).
           default: 20
           selector:
-            number: { min: 0, max: 60, step: 1, unit_of_measurement: "s", mode: slider }
-
-# mode: queued, NICHT restart. Das Oeffnen haengt an einer einmaligen Flanke
-# (Trigger 'shade_end'). Bei restart koennte der 5-Minuten-Poll einen Lauf
-# abbrechen, waehrend dieser im Stagger-Delay sitzt - die Flanke waere
-# verbraucht, das Template bleibt true, ein zweiter Uebergang kommt nie, und
-# der Behang bliebe bis zur naechsten Morgenautomation unten.
+            number:
+              min: 0.0
+              max: 60.0
+              step: 1.0
+              unit_of_measurement: s
+              mode: slider
 mode: queued
 max: 5
 max_exceeded: silent
-
-# Der Flankentrigger unten braucht seine Werte im Trigger-Kontext; die
-# normalen variables: sind dort noch nicht sichtbar. Deshalb dieselben Inputs
-# hier ein zweites Mal, mit t_-Praefix.
 trigger_variables:
   t_az_start: !input azimuth_start
   t_az_end: !input azimuth_end
@@ -432,7 +429,6 @@ trigger_variables:
   t_indoor_target: !input indoor_target
   t_indoor_target_sensor: !input indoor_target_sensor
   t_temp_hysterese: !input temp_hysterese
-
 variables:
   cover: !input cover
   shade_button: !input shade_button
@@ -457,179 +453,113 @@ variables:
   sleep_lock: !input sleep_lock
   disable_boolean: !input disable_boolean
   stagger_max: !input stagger_max
-  # Einmal pro Lauf gewuerfelt statt einmal pro Zweig - streut die Funkbefehle
-  # ueber die Fenster, ohne sich innerhalb eines Laufs zu widersprechen.
-  stagger: "{{ range(0, stagger_max + 1) | random }}"
+  stagger: '{{ range(0, stagger_max + 1) | random }}'
+  has_button: '{{ shade_button is string and shade_button | length > 0 }}'
+  has_indoor: '{{ indoor_sensor is string and indoor_sensor | length > 0 }}'
+  has_target_sensor: '{{ indoor_target_sensor is string and indoor_target_sensor |
+    length > 0 }}'
+  has_clarity: '{{ clarity_sensor is string and clarity_sensor | length > 0 }}'
+  has_contact: '{{ contact_sensor is string and contact_sensor | length > 0 }}'
+  has_wind: '{{ wind_sensor is string and wind_sensor | length > 0 }}'
+  has_sleep: '{{ sleep_lock is string and sleep_lock | length > 0 }}'
+  has_disable: '{{ disable_boolean is string and disable_boolean | length > 0 }}'
+  sun_az: '{{ state_attr(''sun.sun'',''azimuth'') | float(0) }}'
+  sun_el: '{{ state_attr(''sun.sun'',''elevation'') | float(0) }}'
+  geo_az: "{{ (az_start <= sun_az <= az_end) if az_start <= az_end\n   else (sun_az
+    >= az_start or sun_az <= az_end) }}\n"
+  geo: '{{ geo_az and sun_el >= elev_min and sun_el <= elev_max }}'
+  lux: '{{ states(lux_sensor) | float(0) }}'
+  forecast_high: '{{ states(forecast_sensor) | float(0) }}'
+  indoor: '{{ states(indoor_sensor) | float(-99) if has_indoor else -99 }}'
+  clarity_valid: '{{ has_clarity and has_value(clarity_sensor) }}'
+  sun_direct: "{{ (not clarity_valid)\n   or (states(clarity_sensor) | float(0)) >=
+    clarity_close }}\n"
+  season_ok: '{{ forecast_high >= forecast_high_min }}'
+  indoor_target_eff: "{{ states(indoor_target_sensor) | float(indoor_target)\n   if
+    has_target_sensor else indoor_target }}\n"
+  heat_gate: '{{ season_ok or (has_indoor and indoor >= indoor_target_eff) }}'
+  pos: '{{ state_attr(cover,''current_position'') }}'
+  tilt: '{{ state_attr(cover,''current_tilt_position'') }}'
+  fully_closed: "{{ pos is not none and (pos | float(0)) <= keep_closed_below\n   and
+    (tilt is none or (tilt | float(0)) <= keep_closed_below) }}\n"
+  is_open: '{{ pos is not none and (pos | float(0)) >= 99 }}'
+  sleeping: '{{ has_sleep and is_state(sleep_lock, ''on'') }}'
+  contact_open: '{{ has_contact and is_state(contact_sensor, ''on'') }}'
+  windy: '{{ has_wind and (states(wind_sensor) | float(0) >= wind_threshold) }}'
+  disabled: '{{ has_disable and is_state(disable_boolean, ''on'') }}'
+  block_shade: '{{ fully_closed or contact_open }}'
+  block_open: '{{ fully_closed or sleeping }}'
+  want_shade: '{{ geo and heat_gate and sun_direct and (lux >= lux_close) }}
 
-  # --- Optionale Inputs erkennen ---
-  has_button: "{{ shade_button is string and shade_button | length > 0 }}"
-  has_indoor: "{{ indoor_sensor is string and indoor_sensor | length > 0 }}"
-  has_target_sensor: "{{ indoor_target_sensor is string and indoor_target_sensor | length > 0 }}"
-  has_clarity: "{{ clarity_sensor is string and clarity_sensor | length > 0 }}"
-  has_contact: "{{ contact_sensor is string and contact_sensor | length > 0 }}"
-  has_wind: "{{ wind_sensor is string and wind_sensor | length > 0 }}"
-  has_sleep: "{{ sleep_lock is string and sleep_lock | length > 0 }}"
-  has_disable: "{{ disable_boolean is string and disable_boolean | length > 0 }}"
-
-  # --- Sonnenstand / Geometrie ---
-  sun_az: "{{ state_attr('sun.sun','azimuth') | float(0) }}"
-  sun_el: "{{ state_attr('sun.sun','elevation') | float(0) }}"
-  geo_az: >
-    {{ (az_start <= sun_az <= az_end) if az_start <= az_end
-       else (sun_az >= az_start or sun_az <= az_end) }}
-  geo: "{{ geo_az and sun_el >= elev_min and sun_el <= elev_max }}"
-
-  # --- Messwerte ---
-  lux: "{{ states(lux_sensor) | float(0) }}"
-  forecast_high: "{{ states(forecast_sensor) | float(0) }}"
-  indoor: "{{ states(indoor_sensor) | float(-99) if has_indoor else -99 }}"
-
-  # --- Klarheits-Gate (direkte Sonne statt nur "hell") ---
-  # Faellt der Sensor aus, wird das Gate bewusst offen gelassen: dann gilt
-  # wieder das alte Verhalten (Lux + Waerme) statt gar keiner Beschattung.
-  clarity_valid: "{{ has_clarity and has_value(clarity_sensor) }}"
-  sun_direct: >
-    {{ (not clarity_valid)
-       or (states(clarity_sensor) | float(0)) >= clarity_close }}
-
-  # --- Wärme-Gate ---
-  # Heißer Tag laut Vorhersage ODER Raum schon über Ziel. Innentemperatur ist
-  # Beschleuniger (nie Blocker); die Außentemperatur wird bewusst nicht geprüft
-  # (sie ist morgens am Ostfenster kühl, obwohl der Tag heiß wird).
-  season_ok: "{{ forecast_high >= forecast_high_min }}"
-  # Komfort-Obergrenze: bevorzugt aus dem Sensor, sonst der feste Wert. Der
-  # float()-Default faengt unknown/unavailable ab, damit ein Modbus-Aussetzer
-  # die Beschattung nicht laehmt, sondern auf das alte Verhalten zurueckfaellt.
-  indoor_target_eff: >
-    {{ states(indoor_target_sensor) | float(indoor_target)
-       if has_target_sensor else indoor_target }}
-  heat_gate: "{{ season_ok or (has_indoor and indoor >= indoor_target_eff) }}"
-
-  # --- Zustände / Overrides ---
-  pos: "{{ state_attr(cover,'current_position') }}"
-  tilt: "{{ state_attr(cover,'current_tilt_position') }}"
-  # Bei Lamellen-Jalousien erst bei Position UND Schrägstellung nahe 0 wirklich
-  # komplett zu (siehe Briefing 10). Rollläden ohne Lamellen liefern kein
-  # current_tilt_position -> tilt bleibt None und wird nicht mitgeprüft.
-  # Das float() ist reiner Typ-Cast: der Default kann nicht greifen, weil das
-  # "is not none" davorsteht. Deshalb ueberall derselbe Wert - unterschiedliche
-  # Defaults haben hier frueher eine Fail-Safe-Richtung suggeriert, die es
-  # nicht gibt.
-  fully_closed: >
-    {{ pos is not none and (pos | float(0)) <= keep_closed_below
-       and (tilt is none or (tilt | float(0)) <= keep_closed_below) }}
-  is_open: "{{ pos is not none and (pos | float(0)) >= 99 }}"
-  sleeping: "{{ has_sleep and is_state(sleep_lock, 'on') }}"
-  contact_open: "{{ has_contact and is_state(contact_sensor, 'on') }}"
-  windy: "{{ has_wind and (states(wind_sensor) | float(0) >= wind_threshold) }}"
-  disabled: "{{ has_disable and is_state(disable_boolean, 'on') }}"
-
-  # --- Sperren ---
-  # Alle Gruende, aus denen NICHT gefahren werden darf, an einer Stelle und
-  # getrennt vom Bedarf. Die beiden Listen sind bewusst nicht gleich: ein
-  # offenes Fenster darf nicht zufahren, ein Schlaefer nicht geweckt werden.
-  block_shade: "{{ fully_closed or contact_open }}"
-  block_open: "{{ fully_closed or sleeping }}"
-
-  # --- Bedarf ---
-  # Reine Sonnen-/Wetter-Entscheidung, ohne Sperren. Das Gegenstueck (Oeffnen)
-  # steht als Flankentrigger 'shade_end' unten, nicht hier - Briefing (1).
-  want_shade: >
-    {{ geo and heat_gate and sun_direct and (lux >= lux_close) }}
-  # Nur senden, wenn noetig - schont Tahoma/RTS. Briefing (11).
-  need_shade_cmd: >
-    {{ (pos is none or is_open) if has_button
-       else (pos is none or (pos | float(0)) > shade_position + 5) }}
-
+    '
+  need_shade_cmd: "{{ (pos is none or is_open) if has_button\n   else (pos is none
+    or (pos | float(0)) > shade_position + 5) }}\n"
 trigger:
-  - trigger: time_pattern
-    id: poll
-    minutes: "/5"
-  # Nur bei echten Schwellen-Übertritten reagieren, nicht bei jedem kleinen
-  # Lux-Zappeln. Kurze Entprellzeit gegen einzelne Ausreißer (Sonnenblitz).
-  - trigger: numeric_state
-    id: lux_hoch
-    entity_id: !input lux_sensor
-    above: !input lux_close
-    for: "00:00:30"
-
-  # Beschattungsgrund weggefallen -> genau eine Öffnen-Flanke.
-  # Die Begruendungen stehen im Agent-Briefing am Dateianfang und nur dort:
-  #   heat_gate als Vorbedingung statt Oeffnungsgrund ......... (2)
-  #   heat_gate ohne Temperatur-Hysterese ..................... (3)
-  #   past_window / sun_up statt eines blossen "not geo" ...... (4)
-  #   "for" als Pendelschutz, nur in Richtung auf ............. (5)
-  #   Vergleich gegen die Aufmach-Schwellen ................... (6)
-  - trigger: template
-    id: shade_end
-    for:
-      minutes: !input open_delay
-    value_template: >
-      {% set sun_az = state_attr('sun.sun','azimuth') | float(0) %}
-      {% set sun_el = state_attr('sun.sun','elevation') | float(0) %}
-      {% set geo_az = (t_az_start <= sun_az <= t_az_end) if t_az_start <= t_az_end
-                      else (sun_az >= t_az_start or sun_az <= t_az_end) %}
-      {% set geo = geo_az and sun_el >= t_elev_min and sun_el <= t_elev_max %}
-      {% set lux = states(t_lux_sensor) | float(0) %}
-      {% set has_clarity = t_clarity_sensor is string and t_clarity_sensor | length > 0 %}
-      {% set clarity_gone = has_clarity and has_value(t_clarity_sensor)
-                            and (states(t_clarity_sensor) | float(0)) < t_clarity_open %}
-      {% set has_indoor = t_indoor_sensor is string and t_indoor_sensor | length > 0 %}
-      {% set has_target = t_indoor_target_sensor is string and t_indoor_target_sensor | length > 0 %}
-      {% set indoor = states(t_indoor_sensor) | float(-99) if has_indoor else -99 %}
-      {% set target = states(t_indoor_target_sensor) | float(t_indoor_target)
-                      if has_target else t_indoor_target %}
-      {% set season_ok = (states(t_forecast_sensor) | float(0)) >= t_forecast_high_min %}
-      {% set heat_gate = season_ok or (has_indoor and indoor >= target) %}
-      {% set sun_up = sun_el > -6 %}
-      {% set wrap = t_az_start > t_az_end %}
-      {% set past_window = (not geo) if wrap else
-                           ((sun_az > t_az_end)
-                            or (sun_az >= t_az_start and sun_el < t_elev_min)) %}
-      {% set shade_over = past_window or (sun_el > t_elev_max)
-                          or (geo and ((lux < t_lux_open) or clarity_gone)) %}
-      {{ heat_gate and sun_up and shade_over }}
-
-condition: "{{ not disabled }}"
-
+- trigger: time_pattern
+  id: poll
+  minutes: /5
+- trigger: numeric_state
+  id: lux_hoch
+  entity_id: !input lux_sensor
+  above: !input lux_close
+  for: 00:00:30
+- trigger: template
+  id: shade_end
+  for:
+    minutes: !input open_delay
+  value_template: "{% set sun_az = state_attr('sun.sun','azimuth') | float(0) %} {%
+    set sun_el = state_attr('sun.sun','elevation') | float(0) %} {% set geo_az = (t_az_start
+    <= sun_az <= t_az_end) if t_az_start <= t_az_end\n                else (sun_az
+    >= t_az_start or sun_az <= t_az_end) %}\n{% set geo = geo_az and sun_el >= t_elev_min
+    and sun_el <= t_elev_max %} {% set lux = states(t_lux_sensor) | float(0) %} {%
+    set has_clarity = t_clarity_sensor is string and t_clarity_sensor | length > 0
+    %} {% set clarity_gone = has_clarity and has_value(t_clarity_sensor)\n                      and
+    (states(t_clarity_sensor) | float(0)) < t_clarity_open %}\n{% set has_indoor =
+    t_indoor_sensor is string and t_indoor_sensor | length > 0 %} {% set has_target
+    = t_indoor_target_sensor is string and t_indoor_target_sensor | length > 0 %}
+    {% set indoor = states(t_indoor_sensor) | float(-99) if has_indoor else -99 %}
+    {% set target = states(t_indoor_target_sensor) | float(t_indoor_target)\n                if
+    has_target else t_indoor_target %}\n{% set season_ok = (states(t_forecast_sensor)
+    | float(0)) >= t_forecast_high_min %} {% set heat_gate = season_ok or (has_indoor
+    and indoor >= target) %} {% set sun_up = sun_el > -6 %} {% set wrap = t_az_start
+    > t_az_end %} {% set past_window = (not geo) if wrap else\n                     ((sun_az
+    > t_az_end)\n                      or (sun_az >= t_az_start and sun_el < t_elev_min))
+    %}\n{% set shade_over = past_window or (sun_el > t_elev_max)\n                    or
+    (geo and ((lux < t_lux_open) or clarity_gone)) %}\n{{ heat_gate and sun_up and
+    shade_over }}\n"
+condition: '{{ not disabled }}'
 action:
-  - choose:
-      # B) Wind -> Zwangsöffnen (außer komplett geschlossen), Vorrang.
-      # Das "ist schon offen"-Nichtstun steht bewusst als if INNERHALB des
-      # Zweigs und nicht in der Bedingung: der Zweig muss bei Wind greifen und
-      # damit die folgenden Zweige sperren, sonst wuerde C bei Wind beschatten.
-      - conditions: "{{ windy and not fully_closed }}"
+- choose:
+  - conditions: '{{ windy and not fully_closed }}'
+    sequence:
+    - delay:
+        seconds: '{{ stagger }}'
+    - if: '{{ not is_open }}'
+      then:
+      - action: cover.open_cover
+        target:
+          entity_id: !input cover
+  - conditions: '{{ want_shade and not block_shade and need_shade_cmd }}'
+    sequence:
+    - delay:
+        seconds: '{{ stagger }}'
+    - choose:
+      - conditions: '{{ has_button }}'
         sequence:
-          - delay: { seconds: "{{ stagger }}" }
-          - if: "{{ not is_open }}"
-            then:
-              - action: cover.open_cover
-                target: { entity_id: !input cover }
-
-      # C) Beschatten. Kein "not windy" noetig: wird dieser Zweig ueberhaupt
-      # erreicht, hat B nicht gegriffen - also entweder kein Wind, oder
-      # fully_closed, was ueber block_shade ohnehin blockiert.
-      - conditions: "{{ want_shade and not block_shade and need_shade_cmd }}"
-        sequence:
-          - delay: { seconds: "{{ stagger }}" }
-          - choose:
-              - conditions: "{{ has_button }}"
-                sequence:
-                  - action: button.press
-                    target: { entity_id: !input shade_button }
-            default:
-              - action: cover.set_cover_position
-                target: { entity_id: !input cover }
-                data: { position: !input shade_position }
-
-      # D) Öffnen (Abend / Wolken / kühl) -> NUR auf der Flanke 'shade_end',
-      # NICHT wenn komplett geschlossen oder Sleep-Lock. Der 5-Minuten-Poll
-      # kommt hier absichtlich nicht mehr durch: was von Hand gestellt wurde,
-      # bleibt stehen, weil ohne Übergang niemand einen Öffnen-Befehl auslöst.
-      - conditions: >
-          {{ (trigger.id | default('')) == 'shade_end'
-             and not block_open and not is_open }}
-        sequence:
-          - delay: { seconds: "{{ stagger }}" }
-          - action: cover.open_cover
-            target: { entity_id: !input cover }
+        - action: button.press
+          target:
+            entity_id: !input shade_button
+      default:
+      - action: cover.set_cover_position
+        target:
+          entity_id: !input cover
+        data:
+          position: !input shade_position
+  - conditions: "{{ (trigger.id | default('')) == 'shade_end'\n   and not block_open
+      and not is_open }}\n"
+    sequence:
+    - delay:
+        seconds: '{{ stagger }}'
+    - action: cover.open_cover
+      target:
+        entity_id: !input cover
