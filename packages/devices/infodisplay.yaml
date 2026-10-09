@@ -251,18 +251,66 @@ package_devices_infodisplay:
           state: >
             {{ forecast_data['weather.freudenstadt'].forecast[12].datetime | as_datetime | as_local }}
 
-    # ---------------------- BLOCK 2: DAILY FORECAST ----------------------
+    # ---------------------- BLOCK 2: GEMESSENE TAGESEXTREME ----------------------
+    # Tiefst-/Höchstwert von sensor.temp_aussen_low seit 0 Uhr (heutiger Kalendertag).
+    # Das Attribut "datum" markiert den Tag, zu dem der Wert gehört. Ist es nicht
+    # heute (Mitternacht, HA war aus), beginnt der Wert neu bei der aktuellen Messung.
+    # Der State ändert sich nur bei neuem Extremwert, daher kaum Recorder-Last trotz
+    # häufiger Trigger.
     - trigger:
-        # alle 3 Stunden zur vollen Stunde
+        - trigger: state
+          entity_id: sensor.temp_aussen_low
+        - trigger: time
+          at: "00:00:00"
+        - trigger: homeassistant
+          event: start
+      sensor:
+        - name: "Aussentemp Tagesminimum"
+          unique_id: aussentemp_tagesminimum
+          state: >
+            {% set t = states('sensor.temp_aussen_low') | float(None) %}
+            {% set alt = this.state | float(None)
+                 if this.attributes.get('datum') == now().date() | string else none %}
+            {% set werte = [t, alt] | reject('none') | list %}
+            {{ werte | min if werte else none }}
+          attributes:
+            datum: "{{ now().date() | string }}"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+
+        - name: "Aussentemp Tagesmaximum"
+          unique_id: aussentemp_tagesmaximum
+          state: >
+            {% set t = states('sensor.temp_aussen_low') | float(None) %}
+            {% set alt = this.state | float(None)
+                 if this.attributes.get('datum') == now().date() | string else none %}
+            {% set werte = [t, alt] | reject('none') | list %}
+            {{ werte | max if werte else none }}
+          attributes:
+            datum: "{{ now().date() | string }}"
+          unit_of_measurement: "°C"
+          device_class: temperature
+          state_class: measurement
+
+    # ---------------------- BLOCK 3: DAILY FORECAST ----------------------
+    - trigger:
+        # stündlich zur vollen Stunde
         - trigger: time_pattern
-          hours: "/3"
+          hours: "/1"
           minutes: "0"
         # zusätzlich nach HA-Start
         - trigger: homeassistant
           event: start
+        # sofort nachziehen, wenn ein neuer gemessener Extremwert vorliegt
+        - trigger: state
+          entity_id:
+            - sensor.aussentemp_tagesminimum
+            - sensor.aussentemp_tagesmaximum
 
       action:
         - action: weather.get_forecasts
+          continue_on_error: true
           data:
             type: daily
           target:
@@ -272,66 +320,53 @@ package_devices_infodisplay:
       sensor:
         - name: "Forecast Weather Max Temp today"
           unique_id: forecast_weather_max_temp_today
-          # Tageshöchstwert für den heutigen Kalendertag (0-24 Uhr).
-          # Eintrag wird per Datum gewählt, nicht per festem Index [0]
-          # (die Tagesliste kann im Tagesverlauf verrutschen).
+          # Tageshöchstwert für den heutigen Kalendertag (0-24 Uhr):
+          # das Größere aus aktueller DWD-Prognose und bisher gemessenem
+          # Tagesmaximum (sensor.aussentemp_tagesmaximum).
+          #
+          # Die Prognose wird jedes Mal frisch übernommen, damit DWD-Korrekturen
+          # nach unten auch ankommen (früher: laufendes Maximum aller Abrufe,
+          # das veraltete Prognosewerte festhielt). Der Prognose-Eintrag wird
+          # per Datum gewählt, nicht per Index [0].
           #
           # simple_dwd_weatherforecast liefert für "heute" nur die Stunden ab
-          # dem letzten Abruf, nicht ab 0 Uhr (bereits vergangene Stunden
-          # fallen aus dem Rohdatensatz). Der rohe Tageswert würde dadurch
-          # alle 3h schrumpfen und bereits erreichte Extremwerte verlieren.
-          # Daher hier laufendes Maximum: neuer Wert wird nur noch mit dem
-          # bisherigen kombiniert, außer beim ersten Abruf des Tages (0 Uhr).
-          availability: >
-            {{ forecast_data is defined
-              and forecast_data.get('weather.freudenstadt')
-              and (forecast_data['weather.freudenstadt'].forecast
-                   | selectattr('datetime','defined')
-                   | selectattr('datetime','search', now().strftime('%Y-%m-%d'))
-                   | list | count) > 0 }}
+          # dem Abruf. Bereits vergangene Extremwerte deckt der Messwert ab.
+          # Fällt die Prognose aus, bleibt der bisherige Wert als Ersatz.
           state: >
-            {% set fc = forecast_data['weather.freudenstadt'].forecast %}
+            {% set fc = (forecast_data | default({})).get('weather.freudenstadt', {}).get('forecast', []) %}
             {% set heute = fc | selectattr('datetime','defined')
                  | selectattr('datetime','search', now().strftime('%Y-%m-%d')) | list %}
-            {% set neu = (heute[0].temperature if heute else fc[0].temperature) | float(default=None) %}
-            {% set alt = states('sensor.forecast_weather_max_temp_today') | float(None) %}
-            {% if neu is none %}
-              {{ alt if alt is not none else unknown }}
-            {% elif alt is none or now().hour == 0 %}
-              {{ neu }}
-            {% else %}
-              {{ [neu, alt] | max }}
+            {% set prog = (heute[0].temperature if heute else none) | float(None) %}
+            {% if prog is none and this.last_changed is defined
+                  and (this.last_changed | as_local).date() == now().date() %}
+              {% set prog = this.state | float(None) %}
             {% endif %}
+            {% set mess = states('sensor.aussentemp_tagesmaximum') | float(None)
+                 if state_attr('sensor.aussentemp_tagesmaximum', 'datum') == now().date() | string else none %}
+            {% set werte = [prog, mess] | reject('none') | list %}
+            {{ werte | max if werte else none }}
           unit_of_measurement: "°C"
           device_class: temperature
           state_class: measurement
 
         - name: "Forecast Weather Min Temp today"
           unique_id: forecast_weather_min_temp_today
-          # Tagestiefstwert für den heutigen Kalendertag (0-24 Uhr).
-          # Eintrag per Datum gewählt (siehe Max-Sensor).
-          # Laufendes Minimum aus demselben Grund wie beim Max-Sensor
-          # (siehe dortiger Kommentar).
-          availability: >
-            {{ forecast_data is defined
-              and forecast_data.get('weather.freudenstadt')
-              and (forecast_data['weather.freudenstadt'].forecast
-                   | selectattr('datetime','defined')
-                   | selectattr('datetime','search', now().strftime('%Y-%m-%d'))
-                   | list | count) > 0 }}
+          # Tagestiefstwert für den heutigen Kalendertag (0-24 Uhr):
+          # das Kleinere aus aktueller DWD-Prognose und bisher gemessenem
+          # Tagesminimum (sensor.aussentemp_tagesminimum). Sonst wie Max-Sensor.
           state: >
-            {% set fc = forecast_data['weather.freudenstadt'].forecast %}
+            {% set fc = (forecast_data | default({})).get('weather.freudenstadt', {}).get('forecast', []) %}
             {% set heute = fc | selectattr('datetime','defined')
                  | selectattr('datetime','search', now().strftime('%Y-%m-%d')) | list %}
-            {% set neu = (heute[0].templow if heute else fc[0].templow) | float(default=None) %}
-            {% set alt = states('sensor.forecast_weather_min_temp_today') | float(None) %}
-            {% if neu is none %}
-              {{ alt if alt is not none else unknown }}
-            {% elif alt is none or now().hour == 0 %}
-              {{ neu }}
-            {% else %}
-              {{ [neu, alt] | min }}
+            {% set prog = (heute[0].templow if heute else none) | float(None) %}
+            {% if prog is none and this.last_changed is defined
+                  and (this.last_changed | as_local).date() == now().date() %}
+              {% set prog = this.state | float(None) %}
             {% endif %}
+            {% set mess = states('sensor.aussentemp_tagesminimum') | float(None)
+                 if state_attr('sensor.aussentemp_tagesminimum', 'datum') == now().date() | string else none %}
+            {% set werte = [prog, mess] | reject('none') | list %}
+            {{ werte | min if werte else none }}
           unit_of_measurement: "°C"
           device_class: temperature
           state_class: measurement

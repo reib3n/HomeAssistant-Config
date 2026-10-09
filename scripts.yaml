@@ -255,13 +255,18 @@ wohnbereich_guten_morgen_2:
   description: ''
 voice_ausgabe_wetterbericht_jetzt:
   sequence:
+  - variables:
+      temp_jetzt: '{{ states(''sensor.temp_aussen_low'') | float(None) }}'
+      temp_min: '{{ [states(''sensor.forecast_weather_min_temp_today'') | float(None),
+        temp_jetzt] | reject(''none'') | min }}'
+      temp_max: '{{ [states(''sensor.forecast_weather_max_temp_today'') | float(None),
+        temp_jetzt] | reject(''none'') | max }}'
   - action: assist_satellite.announce
     metadata: {}
     data:
-      message: 'Die Außentemperatur beträgt aktuell {{ states(''sensor.temp_aussen_low'')
-        | round }}°. Die Temperaturspanne reicht von {{ states(''sensor.forecast_weather_min_temp_today'')
-        | round }}° bis {{ states(''sensor.forecast_weather_max_temp_today'') | round
-        }}°.
+      message: 'Die Außentemperatur beträgt aktuell {{ temp_jetzt | round }}°. Die
+        Temperaturspanne reicht heute von {{ temp_min | round }}° bis {{ temp_max
+        | round }}°.
 
         {% if is_state(''binary_sensor.ads_wetterrain'', ''on'') %} Es regnet. {%
         endif %}
