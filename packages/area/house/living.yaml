@@ -129,3 +129,48 @@ package_area_house_living:
           state: >
             {% set s = states('binary_sensor.mb_light_wohnzimmer_status') %}
             {{ s if s in ['on','off'] else 'off' }}
+
+  # -------------------------------------------------------------------
+  # Guten Morgen: Licht bei Dunkelheit, automatisch aus bei Helligkeit
+  # -------------------------------------------------------------------
+  # Das Skript wohnbereich_guten_morgen_2 setzt die Markierung, wenn es
+  # das Licht einschaltet. Die Automation "Wohnbereich - Morgenlicht aus
+  # bei Helligkeit" schaltet nur dann aus - von Hand eingeschaltetes Licht
+  # bleibt unangetastet. Die Markierung faellt, sobald beide Lampen aus
+  # sind (egal ob automatisch oder von Hand).
+  #
+  # Ein:  Aussenhelligkeit unter der Schwelle (beim Guten Morgen).
+  # Aus:  Aussenhelligkeit 5 Minuten ueber Schwelle + Hysterese UND das
+  #       Licht brennt schon die Mindestdauer; spaetestens um 10 Uhr.
+  # Beides zusammen, weil die Helligkeit morgens schnell steigt (ca.
+  # 25 lx/min gemessen) - die Hysterese allein waere in Minuten ueberbrueckt.
+  input_boolean:
+    guten_morgen_licht_aktiv:
+      name: "Guten Morgen: Licht automatisch an"
+      icon: mdi:lightbulb-auto
+
+  input_number:
+    morgenlicht_schwelle_lux:
+      name: "Morgenlicht Schwelle (Lux außen)"
+      icon: mdi:brightness-5
+      min: 50
+      max: 5000
+      step: 50
+      unit_of_measurement: lx
+      mode: box
+    morgenlicht_hysterese_lux:
+      name: "Morgenlicht Hysterese (Lux)"
+      icon: mdi:arrow-expand-vertical
+      min: 0
+      max: 2000
+      step: 50
+      unit_of_measurement: lx
+      mode: box
+    morgenlicht_mindestdauer:
+      name: "Morgenlicht Mindestdauer"
+      icon: mdi:timer-sand
+      min: 0
+      max: 120
+      step: 5
+      unit_of_measurement: min
+      mode: box

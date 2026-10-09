@@ -222,33 +222,52 @@ wohnbereich_gute_nacht_2:
   description: ''
 wohnbereich_guten_morgen_2:
   sequence:
-  - if:
-    - condition: numeric_state
-      entity_id: sensor.wetterluxtotal
-      above: 0
+  - variables:
+      lux: '{{ states(''sensor.wetterluxtotal'') | float(0) }}'
+      dunkel: '{{ lux < states(''input_number.morgenlicht_schwelle_lux'') | float(500)
+        }}'
+  - alias: Immer hoch - Küche, Esszimmer Süd, Esszimmer Jalousie
+    action: cover.open_cover
+    metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - cover.kuche_low_speed
+      - cover.esszimmer_sud_low_speed
+      - cover.jalousie_esszimmer
+  - alias: Draußen schon hell (wie Open - BY SUN) - auch Wohnzimmer Jalousie hoch
+    if:
+    - condition: template
+      value_template: '{{ lux > 100 }}'
     then:
     - action: cover.open_cover
       metadata: {}
       data: {}
       target:
-        entity_id:
-        - cover.kuche
-        - cover.esszimmer_sud
-        - cover.jalousie_esszimmer
-        - cover.wohnzimmer_jalousie
-    else:
+        entity_id: cover.wohnzimmer_jalousie
+  - alias: Draußen noch zu dunkel - Licht an und für automatisches Aus markieren
+    if:
+    - condition: template
+      value_template: '{{ dunkel }}'
+    then:
     - action: light.turn_on
       metadata: {}
       data:
-        brightness_pct: 50
+        brightness_pct: 75
       target:
         entity_id: light.mb_esszimmertisch
     - action: light.turn_on
       metadata: {}
       data:
         brightness_pct: 50
+        color_temp_kelvin: 2700
       target:
         entity_id: light.marmorlampe_2
+    - action: input_boolean.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: input_boolean.guten_morgen_licht_aktiv
   alias: Wohnbereich - Guten Morgen
   icon: mdi:weather-sunset-up
   mode: single

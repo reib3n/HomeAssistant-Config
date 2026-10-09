@@ -1734,6 +1734,100 @@
     data:
       target_device: '{{ trigger.device_id }}'
   mode: single
+- id: '1791530000001'
+  alias: Wohnbereich - Morgenlicht aus bei Helligkeit
+  description: Schaltet das vom Guten Morgen eingeschaltete Licht aus, sobald es
+    draußen hell genug ist (Schwelle + Hysterese, frühestens nach der Mindestdauer,
+    spätestens um 10 Uhr), und fährt die Behänge im Wohnbereich hoch. Von Hand eingeschaltetes
+    Licht bleibt an. Sind beide Lampen aus, wird die Markierung zurückgesetzt.
+  triggers:
+  - alias: Draußen hell genug (Schwelle + Hysterese, 5 Minuten stabil)
+    trigger: template
+    value_template: '{{ states(''sensor.wetterluxtotal'') | float(0) > states(''input_number.morgenlicht_schwelle_lux'')
+      | float(500) + states(''input_number.morgenlicht_hysterese_lux'') | float(200)
+      }}'
+    for:
+      minutes: 5
+    id: hell
+  - alias: Mindestdauer abgelaufen (dann Helligkeit erneut prüfen)
+    trigger: state
+    entity_id: input_boolean.guten_morgen_licht_aktiv
+    to: 'on'
+    for:
+      minutes: '{{ states(''input_number.morgenlicht_mindestdauer'') | int(30) }}'
+    id: hell
+  - trigger: time
+    at: '10:00:00'
+    id: spaetestens
+  - trigger: state
+    entity_id:
+    - light.mb_esszimmertisch
+    - light.marmorlampe_2
+    to: 'off'
+    id: licht_aus
+  conditions:
+  - condition: state
+    entity_id: input_boolean.guten_morgen_licht_aktiv
+    state: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: trigger
+          id: spaetestens
+        - condition: and
+          conditions:
+          - condition: trigger
+            id: hell
+          - alias: Draußen über Schwelle + Hysterese
+            condition: template
+            value_template: '{{ states(''sensor.wetterluxtotal'') | float(0) > states(''input_number.morgenlicht_schwelle_lux'')
+              | float(500) + states(''input_number.morgenlicht_hysterese_lux'') | float(200)
+              }}'
+          - alias: Licht brennt schon mindestens die Mindestdauer
+            condition: template
+            value_template: '{{ now() - states.input_boolean.guten_morgen_licht_aktiv.last_changed
+              >= timedelta(minutes=states(''input_number.morgenlicht_mindestdauer'') | int(30))
+              }}'
+      sequence:
+      - action: light.turn_off
+        metadata: {}
+        data: {}
+        target:
+          entity_id:
+          - light.mb_esszimmertisch
+          - light.marmorlampe_2
+      - action: cover.open_cover
+        metadata: {}
+        data: {}
+        target:
+          entity_id:
+          - cover.kuche_low_speed
+          - cover.esszimmer_sud_low_speed
+          - cover.jalousie_esszimmer
+          - cover.wohnzimmer_jalousie
+      - action: input_boolean.turn_off
+        metadata: {}
+        data: {}
+        target:
+          entity_id: input_boolean.guten_morgen_licht_aktiv
+    - conditions:
+      - condition: trigger
+        id: licht_aus
+      - condition: state
+        entity_id: light.mb_esszimmertisch
+        state: 'off'
+      - condition: state
+        entity_id: light.marmorlampe_2
+        state: 'off'
+      sequence:
+      - action: input_boolean.turn_off
+        metadata: {}
+        data: {}
+        target:
+          entity_id: input_boolean.guten_morgen_licht_aktiv
+  mode: single
 - id: '1785071774512'
   alias: Voice - Command - Gute Nacht
   description: Says good night on the caller device and runs the night routine.
