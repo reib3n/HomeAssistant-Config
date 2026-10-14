@@ -1306,10 +1306,16 @@
   mode: single
 - id: '1752162128760'
   alias: Monitoring - LED Weatherman
-  description: 'Briefkasten vor Müll vor aus: bei jeder Änderung von Briefkasten oder
-    Müllmeldung, wenn die WLED nach einem Ausfall wieder erreichbar ist und beim HA-Start
-    wird der Soll-Zustand neu gesetzt.'
+  description: 'Tür/Tor offen (Abendcheck) vor Briefkasten vor Müll vor aus: bei jeder
+    Änderung von Abendcheck, Briefkasten oder Müllmeldung, wenn die WLED nach einem
+    Ausfall wieder erreichbar ist und beim HA-Start wird der Soll-Zustand neu gesetzt.'
   triggers:
+  - trigger: state
+    entity_id: binary_sensor.abendcheck_offen
+    to:
+    - 'on'
+    - 'off'
+    id: Abendcheck
   - trigger: state
     entity_id: binary_sensor.ads_briefkasten_full
     from: 'off'
@@ -1352,9 +1358,10 @@
     action: script.eink_display_eg_diele_licht
     metadata: {}
     data:
-      modus: '{{ ''Briefkasten'' if is_state(''binary_sensor.ads_briefkasten_full'',
-        ''on'') else (''Müll'' if is_state(''input_boolean.mullmeldung'', ''on'')
-        else ''aus'') }}'
+      modus: '{{ ''Tür offen'' if is_state(''binary_sensor.abendcheck_offen'', ''on'')
+        else (''Briefkasten'' if is_state(''binary_sensor.ads_briefkasten_full'', ''on'')
+        else (''Müll'' if is_state(''input_boolean.mullmeldung'', ''on'') else ''aus''))
+        }}'
   mode: queued
 - id: '1752686838076'
   alias: EnergySave - Schreibtisch

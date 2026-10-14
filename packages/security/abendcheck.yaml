@@ -1,0 +1,52 @@
+package_security_abendcheck:
+  # Abendcheck fuer das WLED in der Diele (Automation "Monitoring - LED
+  # Weatherman", Modus "Tür offen"): 'on', wenn zwischen 21:00 und 06:00 eine
+  # Aussentuer oder das Garagentor laenger als die Haltezeit offen steht.
+  #
+  # Gegen Fehlalarme:
+  # - Haltezeit pro Tuer/Tor ab deren letzter Aenderung: Durchgehen (Haustuer
+  #   im Median 20 s, 90 % unter 3 min) und Torfahrten (Zwischenstellung ~20 s,
+  #   Ein-/Ausfahren 2-4 min) loesen nichts aus. Nach einem HA-Neustart oder
+  #   Modbus-Ausfall beginnt die Haltezeit neu.
+  # - unavailable/unknown zaehlt nicht als offen (die Modbus-Kontakte fallen
+  #   bei Neustarts 1-2 min gemeinsam aus).
+  # - Lueftungsstellung des Garagentors (status_garagentor = 1) zaehlt nicht:
+  #   die SPS faehrt sie abends (~22:22) selbst zu und morgens wieder auf.
+  # - Balkontuer (OG) nicht dabei: steht zum Lueften oft stundenlang offen.
+  #
+  # Attribut 'offen' listet ganztags (ohne Zeitfenster), was gerade laenger
+  # als die Haltezeit offen ist - z. B. fuer Dashboard oder Gute-Nacht-Ansage.
+  template:
+    - binary_sensor:
+        - default_entity_id: binary_sensor.abendcheck_offen
+          name: "Abendcheck Türen & Tor"
+          unique_id: "abendcheck_offen"
+          device_class: problem
+          variables:
+            haltezeit_min: 5
+            tueren:
+              binary_sensor.haustur_tur: Haustür
+              binary_sensor.terassentur: Terrassentür
+              binary_sensor.werkstatttur: Werkstatttür
+              binary_sensor.tur_garage_strasse: Garagentür Straße
+              binary_sensor.tur_garage_haus: Garagentür Haus
+          state: >-
+            {% set grenze = now() - timedelta(minutes=haltezeit_min) %}
+            {{ (now().hour >= 21 or now().hour < 6)
+               and (expand(tueren | list) | selectattr('state', 'eq', 'on')
+                      | selectattr('last_changed', 'lt', grenze) | list | count > 0
+                    or (is_state('sensor.status_garagentor', ['0', '3'])
+                        and states.sensor.status_garagentor.last_changed < grenze)) }}
+          attributes:
+            offen: >-
+              {% set grenze = now() - timedelta(minutes=haltezeit_min) %}
+              {% set ns = namespace(offen=[]) %}
+              {% for s in expand(tueren | list) | selectattr('state', 'eq', 'on')
+                   | selectattr('last_changed', 'lt', grenze) %}
+                {% set ns.offen = ns.offen + [tueren[s.entity_id]] %}
+              {% endfor %}
+              {% if is_state('sensor.status_garagentor', ['0', '3'])
+                    and states.sensor.status_garagentor.last_changed < grenze %}
+                {% set ns.offen = ns.offen + ['Garagentor'] %}
+              {% endif %}
+              {{ ns.offen }}

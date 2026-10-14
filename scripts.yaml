@@ -137,6 +137,22 @@ wgt_mode_2:
       required: true
 eink_display_eg_diele_licht:
   sequence:
+  - alias: Tür offen
+    if:
+    - condition: template
+      value_template: '{{modus == "Tür offen"}}'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        rgb_color:
+        - 255
+        - 0
+        - 0
+        effect: Breathe
+        brightness_pct: 50
+      target:
+        entity_id: light.wled_eg_diele
   - alias: Briefkasten
     if:
     - condition: template
