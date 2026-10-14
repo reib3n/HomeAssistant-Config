@@ -591,15 +591,15 @@ display:
       // -----------------------------------------------------
       it.printf(270, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0143");
       if (check_state(id(temp_max_today), "temp_max_today"))
-        it.printf(283, 130, id(font_medium_bold), COLOR_TEXT, "%2.0f°C", id(temp_max_today).state);
+        it.printf(283, 130, id(font_16_book), COLOR_TEXT, "%2.0f°C", id(temp_max_today).state);
       else
-        it.printf(283, 130, id(font_medium_bold), COLOR_TEXT, "--°C");
+        it.printf(283, 130, id(font_16_book), COLOR_TEXT, "--°C");
 
       it.printf(345, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0140");
       if (check_state(id(temp_min_today), "temp_min_today"))
-        it.printf(357, 130, id(font_medium_bold), COLOR_TEXT, "%2.0f°C", id(temp_min_today).state);
+        it.printf(357, 130, id(font_16_book), COLOR_TEXT, "%2.0f°C", id(temp_min_today).state);
       else
-        it.printf(357, 130, id(font_medium_bold), COLOR_TEXT, "--°C");
+        it.printf(357, 130, id(font_16_book), COLOR_TEXT, "--°C");
 
       it.printf(250, 155, id(font_54_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
       if (check_state(id(out_temp), "out_temp"))
@@ -615,9 +615,9 @@ display:
         it.printf(280, 225, id(font_54_book), COLOR_TEXT, "--%%");
 
       if (check_state(id(out_uv), "out_uv"))
-        it.printf(80, 290, id(font_medium_bold), COLOR_TEXT, "UV: %2.0f", id(out_uv).state);
+        it.printf(80, 290, id(font_16_book), COLOR_TEXT, "UV: %2.0f", id(out_uv).state);
       else
-        it.printf(80, 290, id(font_medium_bold), COLOR_TEXT, "UV: --");
+        it.printf(80, 290, id(font_16_book), COLOR_TEXT, "UV: --");
 
       // -----------------------------------------------------
       // Sunrise / sunset
@@ -625,9 +625,9 @@ display:
       it.printf(42, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059C");
       auto sunrise = id(next_sunrise).state;
       if (sunrise.length() >= 5)
-        it.printf(58, 130, id(font_medium_bold), COLOR_TEXT, sunrise.substr(0, 5).c_str());
+        it.printf(58, 130, id(font_16_book), COLOR_TEXT, sunrise.substr(0, 5).c_str());
       else {
-        it.printf(58, 130, id(font_medium_bold), COLOR_TEXT, "--:--");
+        it.printf(58, 130, id(font_16_book), COLOR_TEXT, "--:--");
         ESP_LOGW("display", "Missing sensor value: next_sunrise");
         data_missing = true;
       }
@@ -635,9 +635,9 @@ display:
       it.printf(117, 125, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059B");
       auto sunset = id(next_sunset).state;
       if (sunset.length() >= 5)
-        it.printf(133, 130, id(font_medium_bold), COLOR_TEXT, sunset.substr(0, 5).c_str());
+        it.printf(133, 130, id(font_16_book), COLOR_TEXT, sunset.substr(0, 5).c_str());
       else {
-        it.printf(133, 130, id(font_medium_bold), COLOR_TEXT, "--:--");
+        it.printf(133, 130, id(font_16_book), COLOR_TEXT, "--:--");
         ESP_LOGW("display", "Missing sensor value: next_sunset");
         data_missing = true;
       }
@@ -647,15 +647,15 @@ display:
       // -----------------------------------------------------
       it.printf(250, 287, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
       if (check_state(id(forecast_rain_today), "forecast_rain_today"))
-        it.printf(268, 290, id(font_medium_bold), COLOR_TEXT, "%s mm", id(forecast_rain_today).state.c_str());
+        it.printf(268, 290, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_rain_today).state.c_str());
       else
-        it.printf(268, 290, id(font_medium_bold), COLOR_TEXT, "-- mm");
+        it.printf(268, 290, id(font_16_book), COLOR_TEXT, "-- mm");
 
       it.printf(355, 287, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
       if (check_state(id(forecast_wind_today), "forecast_wind_today"))
-        it.printf(372, 290, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_wind_today).state.c_str());
+        it.printf(372, 290, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_wind_today).state.c_str());
       else
-        it.printf(372, 290, id(font_medium_bold), COLOR_TEXT, "-- km/h");
+        it.printf(372, 290, id(font_16_book), COLOR_TEXT, "-- km/h");
 
       // -----------------------------------------------------
       // Divider + "Forecast" title
@@ -680,19 +680,19 @@ display:
 
       it.printf(65, 518, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
       if (has_valid(id(forecast_4h_temp)))
-        it.printf(80, 522, id(font_medium_bold), COLOR_TEXT, "%s°C", id(forecast_4h_temp).state.c_str());
+        it.printf(80, 522, id(font_16_book), COLOR_TEXT, "%s°C", id(forecast_4h_temp).state.c_str());
 
       it.printf(65, 543, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
       if (has_valid(id(forecast_4h_precipitation)))
-        it.printf(80, 547, id(font_medium_bold), COLOR_TEXT, "%s mm", id(forecast_4h_precipitation).state.c_str());
+        it.printf(80, 547, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_4h_precipitation).state.c_str());
 
       it.printf(65, 568, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
       if (has_valid(id(forecast_4h_wind_speed)))
-        it.printf(80, 572, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_4h_wind_speed).state.c_str());
+        it.printf(80, 572, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_4h_wind_speed).state.c_str());
 
       it.printf(65, 593, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0F38");
       if (has_valid(id(forecast_4h_wind_gust_speed)))
-        it.printf(80, 597, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_4h_wind_gust_speed).state.c_str());
+        it.printf(80, 597, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_4h_wind_gust_speed).state.c_str());
 
       // +8h
       if (has_valid(id(forecast_8h_timestamp)) && id(forecast_8h_timestamp).state.size() >= 13) {
@@ -704,19 +704,19 @@ display:
 
       it.printf(200, 518, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
       if (has_valid(id(forecast_8h_temp)))
-        it.printf(215, 522, id(font_medium_bold), COLOR_TEXT, "%s°C", id(forecast_8h_temp).state.c_str());
+        it.printf(215, 522, id(font_16_book), COLOR_TEXT, "%s°C", id(forecast_8h_temp).state.c_str());
 
       it.printf(200, 543, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
       if (has_valid(id(forecast_8h_precipitation)))
-        it.printf(215, 547, id(font_medium_bold), COLOR_TEXT, "%s mm", id(forecast_8h_precipitation).state.c_str());
+        it.printf(215, 547, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_8h_precipitation).state.c_str());
 
       it.printf(200, 568, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
       if (has_valid(id(forecast_8h_wind_speed)))
-        it.printf(215, 572, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_8h_wind_speed).state.c_str());
+        it.printf(215, 572, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_8h_wind_speed).state.c_str());
 
       it.printf(200, 593, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0F38");
       if (has_valid(id(forecast_8h_wind_gust_speed)))
-        it.printf(215, 597, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_8h_wind_gust_speed).state.c_str());
+        it.printf(215, 597, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_8h_wind_gust_speed).state.c_str());
 
       // +12h
       if (has_valid(id(forecast_12h_timestamp)) && id(forecast_12h_timestamp).state.size() >= 13) {
@@ -728,19 +728,19 @@ display:
 
       it.printf(335, 518, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F050F");
       if (has_valid(id(forecast_12h_temp)))
-        it.printf(350, 522, id(font_medium_bold), COLOR_TEXT, "%s°C", id(forecast_12h_temp).state.c_str());
+        it.printf(350, 522, id(font_16_book), COLOR_TEXT, "%s°C", id(forecast_12h_temp).state.c_str());
 
       it.printf(335, 543, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0596");
       if (has_valid(id(forecast_12h_precipitation)))
-        it.printf(350, 547, id(font_medium_bold), COLOR_TEXT, "%s mm", id(forecast_12h_precipitation).state.c_str());
+        it.printf(350, 547, id(font_16_book), COLOR_TEXT, "%s mm", id(forecast_12h_precipitation).state.c_str());
 
       it.printf(335, 568, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F059D");
       if (has_valid(id(forecast_12h_wind_speed)))
-        it.printf(350, 572, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_12h_wind_speed).state.c_str());
+        it.printf(350, 572, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_12h_wind_speed).state.c_str());
 
       it.printf(335, 593, id(font_22_mdi), COLOR_TEXT, TextAlign::TOP_CENTER, "\U000F0F38");
       if (has_valid(id(forecast_12h_wind_gust_speed)))
-        it.printf(350, 597, id(font_medium_bold), COLOR_TEXT, "%s km/h", id(forecast_12h_wind_gust_speed).state.c_str());
+        it.printf(350, 597, id(font_16_book), COLOR_TEXT, "%s km/h", id(forecast_12h_wind_gust_speed).state.c_str());
 
       // -----------------------------------------------------
       // Extra: pool temperature (only if available)
