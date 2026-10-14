@@ -398,43 +398,6 @@ package_devices_infodisplay:
           unit_of_measurement: "mm"
           state_class: measurement
 
-    # ---------------------- E-INK DIELE: THEME ----------------------
-    # Steuert die Farben des E-Ink-Displays im Hausgang (esp-eink-eg-diele).
-    #   dunkel - Aussenhelligkeit unter der Schwelle: nur Schwarz auf Weiss
-    #   hell   - ueber Schwelle + Hysterese: Schwarz auf Weiss, Rot als Akzent
-    #   morgen - wie hell, 06-09 Uhr zusaetzlich roter Kopfbalken
-    # Zwischen den Grenzen bleibt der bisherige Zustand (Hysterese), damit
-    # das Display bei Wolken nicht staendig neu zeichnet (~15 s Flackern).
-    # Das ESP zeichnet bei jedem Wechsel sofort neu.
-    - trigger:
-        - trigger: state
-          entity_id:
-            - sensor.wetterluxtotal
-            - input_number.eink_diele_schwelle_lux
-            - input_number.eink_diele_hysterese_lux
-        - trigger: time
-          at:
-            - "06:00:00"
-            - "09:00:00"
-        - trigger: homeassistant
-          event: start
-      sensor:
-        - name: "eInk Diele Theme"
-          unique_id: eink_diele_theme
-          default_entity_id: sensor.eink_diele_theme
-          icon: mdi:palette
-          state: >
-            {% set lux = states('sensor.wetterluxtotal') | float(0) %}
-            {% set schwelle = states('input_number.eink_diele_schwelle_lux') | float(1000) %}
-            {% set hyst = states('input_number.eink_diele_hysterese_lux') | float(500) %}
-            {% set war_hell = this.state in ['hell', 'morgen'] %}
-            {% if lux > schwelle + hyst %}{% set hell = true %}
-            {% elif lux < schwelle %}{% set hell = false %}
-            {% else %}{% set hell = war_hell %}{% endif %}
-            {% if not hell %}dunkel
-            {% elif 6 <= now().hour < 9 %}morgen
-            {% else %}hell{% endif %}
-
     # ---------------------- DATE & MONTH CONVERSION ----------------------
     - sensor:
         - default_entity_id: sensor.weekday_german
@@ -453,26 +416,12 @@ package_devices_infodisplay:
           unique_id: "date_german"
 
   # =======================================================================
-  # E-INK DIELE: Helfer und Automation
+  # E-INK DIELE: Automation
+  # Farben sind fest im ESP (Schwarz auf Weiss, Rot nur als Signal).
+  # Das fruehere Theme nach Aussenhelligkeit (sensor.eink_diele_theme)
+  # wurde am 2026-10-14 entfernt: der wechselnde rote Kopfbalken und
+  # die mal roten, mal schwarzen Linien wirkten wie ein Fehler.
   # =======================================================================
-  input_number:
-    eink_diele_schwelle_lux:
-      name: "eInk Diele Schwelle (Lux außen)"
-      icon: mdi:brightness-5
-      min: 100
-      max: 20000
-      step: 100
-      unit_of_measurement: lx
-      mode: box
-    eink_diele_hysterese_lux:
-      name: "eInk Diele Hysterese (Lux)"
-      icon: mdi:arrow-expand-vertical
-      min: 0
-      max: 5000
-      step: 100
-      unit_of_measurement: lx
-      mode: box
-
   automation:
     - id: eink_diele_refresh_erstes_ganglicht
       alias: eInk Diele - Refresh beim ersten Ganglicht am Morgen

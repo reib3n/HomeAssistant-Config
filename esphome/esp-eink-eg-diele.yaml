@@ -80,8 +80,7 @@ button:
     name: "eInk-EG-Diele - Refresh Screen"
     entity_category: config
     on_press:
-      # Manuell: Farbschema setzen und immer aktualisieren (auch nachts)
-      - script.execute: set_display_colors
+      # Manuell: immer aktualisieren (auch nachts)
       - component.update: eink_display
 
 # ---------------------------------------------------------
@@ -89,7 +88,11 @@ button:
 #   Color(0,0,0,0)   = Weiss
 #   Color(0,0,0,255) = Schwarz
 #   Color(255,0,0,0) = Rot
-# Werte werden in set_display_colors je nach Theme gesetzt.
+# Feste Farben: Schwarz auf Weiss, auch Kopfzeile und Trennlinien.
+# Rot nur als Signal fuer Ausnahmen, die Aufmerksamkeit brauchen
+# (Frost, Muell heute, fehlende Daten) - an normalen Tagen kein Rot.
+# Rot nur fuer fette/grosse Elemente: duenne Schrift verliert in Rot
+# im lichtarmen Gang zu viel Kontrast.
 # ---------------------------------------------------------
 color:
   - id: COLOR_TEXT
@@ -104,39 +107,18 @@ color:
     blue: 0%
     white: 0%
 
-  # Linien, Warnsymbol, Frost, Muell heute
+  # Signalfarbe: Frost, Muell heute, Warnsymbol
   - id: COLOR_ACCENT
-    red: 0%
-    green: 0%
-    blue: 0%
-    white: 100%
-
-  # Kopfbalken (Datum/Wochentag)
-  - id: COLOR_HEADER_BG
-    red: 0%
+    red: 100%
     green: 0%
     blue: 0%
     white: 0%
 
-  - id: COLOR_HEADER_TEXT
-    red: 0%
-    green: 0%
-    blue: 0%
-    white: 100%
-
-# Zuletzt angezeigtes Theme - Refresh nur bei echtem Wechsel,
-# nicht bei jedem erneuten Senden desselben Werts (z. B. nach Reconnect)
-globals:
-  - id: last_theme
-    type: std::string
-    restore_value: no
-    initial_value: '""'
-
 # ---------------------------------------------------------
-# Scripts (display refresh & time-of-day color logic)
+# Scripts (display refresh)
 # ---------------------------------------------------------
 script:
-  # Refresh display between 06–23; set color theme first
+  # Refresh display between 06–23
   - id: refresh_display
     mode: queued
     then:
@@ -148,33 +130,8 @@ script:
           }
           int hour = now.hour;
           if (hour >= 6 && hour <= 23) {
-            id(set_display_colors).execute();
             id(eink_display).update();
           }
-
-  # Farben nach Theme aus HA (sensor.eink_diele_theme):
-  #   dunkel - reines Schwarz auf Weiss, kein Rot (Rot verliert bei wenig
-  #            Licht am meisten Kontrast)
-  #   hell   - Schwarz auf Weiss, Rot als Akzent
-  #   morgen - wie hell, plus roter Kopfbalken mit weisser Schrift
-  # Grundflaeche immer Weiss: E-Paper reflektiert nur, im lichtarmen Gang
-  # ist Schwarz auf Weiss der staerkste Kontrast.
-  # Unbekanntes Theme (HA nicht erreichbar) -> wie "dunkel".
-  - id: set_display_colors
-    mode: restart
-    then:
-      - lambda: |-
-          const Color WHITE = Color(0, 0, 0, 0);
-          const Color BLACK = Color(0, 0, 0, 255);
-          const Color RED   = Color(255, 0, 0, 0);
-          std::string theme = id(eink_theme).has_state() ? id(eink_theme).state : "";
-          bool farbig = (theme == "hell" || theme == "morgen");
-          id(COLOR_BG)          = WHITE;
-          id(COLOR_TEXT)        = BLACK;
-          id(COLOR_ACCENT)      = farbig ? RED : BLACK;
-          id(COLOR_HEADER_BG)   = (theme == "morgen") ? RED : WHITE;
-          id(COLOR_HEADER_TEXT) = (theme == "morgen") ? WHITE : BLACK;
-          ESP_LOGI("display", "Theme: %s", theme.empty() ? "(unbekannt)" : theme.c_str());
 
 # ---------------------------------------------------------
 # Fonts (Gotham + MDI)
@@ -345,19 +302,6 @@ text_sensor:
     reset_reason:
       name: "eInk-EG-Diele - Reset Reason"
       entity_category: diagnostic
-
-  # --- Display-Theme aus HA (dunkel / hell / morgen) ---
-  # Bei Wechsel sofort neu zeichnen (refresh_display prueft 06-23 Uhr).
-  # Der erste Wert nach dem Boot loest keinen Refresh aus - das macht on_boot.
-  - platform: homeassistant
-    entity_id: sensor.eink_diele_theme
-    id: eink_theme
-    on_value:
-      - lambda: |-
-          bool erster = id(last_theme).empty();
-          bool neu = (x != id(last_theme));
-          id(last_theme) = x;
-          if (neu && !erster) id(refresh_display).execute();
 
   # --- Date / current weather condition ---
   - platform: homeassistant
@@ -570,15 +514,13 @@ display:
       };
 
       // -----------------------------------------------------
-      // Header: date & weekday (Balken nur im Theme "morgen" farbig)
+      // Header: date & weekday
       // -----------------------------------------------------
-      it.filled_rectangle(0, 0, 480, 118, COLOR_HEADER_BG);
-
       if (check_state(id(date), "date"))
-        it.printf(240, 30, id(font_medium_bold), COLOR_HEADER_TEXT, TextAlign::TOP_CENTER, id(date).state.c_str());
+        it.printf(240, 30, id(font_medium_bold), COLOR_TEXT, TextAlign::TOP_CENTER, id(date).state.c_str());
 
       if (check_state(id(weekday), "weekday"))
-        it.printf(240, 60, id(font_large_bold), COLOR_HEADER_TEXT, TextAlign::TOP_CENTER, id(weekday).state.c_str());
+        it.printf(240, 60, id(font_large_bold), COLOR_TEXT, TextAlign::TOP_CENTER, id(weekday).state.c_str());
 
       // -----------------------------------------------------
       // Current weather (icon)
@@ -660,7 +602,7 @@ display:
       // -----------------------------------------------------
       // Divider + "Forecast" title
       // -----------------------------------------------------
-      it.filled_rectangle(25, 319, 436, 3, COLOR_ACCENT);
+      it.filled_rectangle(25, 319, 436, 3, COLOR_TEXT);
       it.printf(240, 340, id(font_30_book), COLOR_TEXT, TextAlign::TOP_CENTER, "Vorhersage");
 
       // -----------------------------------------------------
@@ -764,13 +706,13 @@ display:
       // Data issue indicator (warning icon)
       // -----------------------------------------------------
       if (data_missing) {
-        it.printf(450, 20, id(font_22_mdi), (id(eink_theme).state == "morgen") ? COLOR_HEADER_TEXT : COLOR_ACCENT, "\U000F0026");
+        it.printf(450, 20, id(font_22_mdi), COLOR_ACCENT, "\U000F0026");
       }
 
       // -----------------------------------------------------
       // Divider & timestamp
       // -----------------------------------------------------
-      it.filled_rectangle(25, 634, 436, 3, COLOR_ACCENT);
+      it.filled_rectangle(25, 634, 436, 3, COLOR_TEXT);
       char str[17];
       time_t currTime = id(homeassistant_time).now().timestamp;
       strftime(str, sizeof(str), "%H:%M", localtime(&currTime));
